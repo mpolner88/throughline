@@ -1,0 +1,28 @@
+{
+  "id": "007-freeform-billing-api-question",
+  "title": "Billing API question",
+  "metadata": {
+    "user_local_date": "2026-05-06",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Quick note for the agent. I do not know whether Stripe lets us pause a subscription without ending the billing period. Check that before I promise anything in the pricing page. Also ask Priya if she already solved this.",
+  "expected": {
+    "type": "freeform",
+    "title": "Check Stripe pause behavior",
+    "summary": "The user needs to verify Stripe subscription pause behavior before making pricing page promises and wants to ask Priya about prior work.",
+    "todos": [
+      { "text": "Check whether Stripe lets us pause a subscription without ending the billing period", "priority": "high", "due": null, "for_date": null, "context": "before pricing page promises" },
+      { "text": "Ask Priya if she already solved this", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Priya"],
+    "projects": ["Stripe", "pricing page", "billing"],
+    "tags": ["billing", "Stripe", "pricing"],
+    "centers_of_balance": ["profession"]
+  }
+}

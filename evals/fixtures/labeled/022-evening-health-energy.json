@@ -1,0 +1,27 @@
+{
+  "id": "022-evening-health-energy",
+  "title": "Evening health energy reflection",
+  "metadata": {
+    "user_local_date": "2026-05-13",
+    "scenario": "evening",
+    "recording_context": "stationary"
+  },
+  "transcript": "Evening. The run helped. Skipping lunch hurt. I answered the support queue and then I was done. Tomorrow pack lunch before the first call.",
+  "expected": {
+    "type": "evening",
+    "title": "Run helped, lunch carried forward",
+    "summary": "The user notes that a run helped, skipping lunch hurt, support queue was completed, and packing lunch should happen tomorrow.",
+    "todos": [
+      { "text": "Pack lunch before the first call", "priority": "medium", "due": null, "for_date": "2026-05-14", "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": ["Answered the support queue"],
+    "tomorrow_todos": ["Pack lunch before the first call"],
+    "mood": "tired",
+    "people": [],
+    "projects": ["support queue", "lunch", "run"],
+    "tags": ["health", "support", "energy"],
+    "centers_of_balance": ["health", "profession"]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "029-weekly-review-passion-work",
+  "title": "Weekly review balancing music and work",
+  "metadata": {
+    "user_local_date": "2026-05-31",
+    "scenario": "weekly_review",
+    "recording_context": "stationary"
+  },
+  "transcript": "Weekly review. I spent too much of the week in launch mode, but Saturday music felt alive again. Carry forward: one music night before touching the analytics dashboard again. Also thank Harper for listening to the rough mix.",
+  "expected": {
+    "type": "weekly_review",
+    "title": "Music before analytics dashboard",
+    "summary": "The user felt overfocused on launch work, reconnected with music on Saturday, and wants music time before returning to analytics.",
+    "todos": [
+      { "text": "Do one music night before touching the analytics dashboard again", "priority": "high", "due": null, "for_date": null, "context": "carry forward" },
+      { "text": "Thank Harper for listening to the rough mix", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Do one music night before touching the analytics dashboard again"],
+    "intentions": ["Balance launch mode with music"],
+    "accomplishments": ["Saturday music felt alive again"],
+    "tomorrow_todos": [],
+    "mood": "energized",
+    "people": ["Harper"],
+    "projects": ["launch", "music", "analytics dashboard", "rough mix"],
+    "tags": ["weekly review", "music", "analytics", "launch"],
+    "centers_of_balance": ["passions", "profession"]
+  }
+}

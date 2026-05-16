@@ -1,0 +1,52 @@
+{
+  "id": "004-weekly-review-energy",
+  "title": "Weekly energy and deep work review",
+  "metadata": {
+    "user_local_date": "2026-05-03",
+    "scenario": "weekly_review",
+    "recording_context": "stationary"
+  },
+  "transcript": "Sunday review. This week I got energy from long walks and from dinner with Maya. The sapper was context switching between design and billing work. I want to carry forward protecting two deep work blocks next week, and I need to renew the App Store account on Tuesday. Overall grateful and a little tired.",
+  "expected": {
+    "type": "weekly_review",
+    "title": "Walks, Maya, and deep work",
+    "summary": "The weekly review identifies long walks and dinner with Maya as energizing, context switching as draining, and sets deep work and App Store renewal as carry-forward items.",
+    "todos": [
+      {
+        "text": "Renew the App Store account",
+        "status": "open",
+        "priority": "medium",
+        "due": "2026-05-05",
+        "for_date": null,
+        "context": "Tuesday"
+      }
+    ],
+    "priorities": [
+      "Protect two deep work blocks next week"
+    ],
+    "intentions": [
+      "Carry forward protecting two deep work blocks next week"
+    ],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "grateful",
+    "people": [
+      "Maya"
+    ],
+    "projects": [
+      "design work",
+      "billing work",
+      "App Store account"
+    ],
+    "tags": [
+      "weekly review",
+      "deep work",
+      "energy"
+    ],
+    "centers_of_balance": [
+      "health",
+      "relationships",
+      "profession"
+    ]
+  }
+}

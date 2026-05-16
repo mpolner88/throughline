@@ -1,0 +1,27 @@
+{
+  "id": "019-evening-sad-personal",
+  "title": "Evening personal reflection",
+  "metadata": {
+    "user_local_date": "2026-05-12",
+    "scenario": "evening",
+    "recording_context": "walking"
+  },
+  "transcript": "Evening reflection. I am sad about the conversation with Aaron. No task, except maybe give it a day before replying. I did finish the analytics cleanup, which was more than I expected.",
+  "expected": {
+    "type": "evening",
+    "title": "Sad after conversation with Aaron",
+    "summary": "The user feels sad about a conversation with Aaron, wants to wait before replying, and finished analytics cleanup.",
+    "todos": [
+      { "text": "Wait a day before replying to Aaron", "priority": "medium", "due": null, "for_date": null, "context": "maybe" }
+    ],
+    "priorities": [],
+    "intentions": ["Give it a day before replying to Aaron"],
+    "accomplishments": ["Finished the analytics cleanup"],
+    "tomorrow_todos": [],
+    "mood": "sad",
+    "people": ["Aaron"],
+    "projects": ["analytics cleanup"],
+    "tags": ["reflection", "analytics", "conversation"],
+    "centers_of_balance": ["relationships", "profession"]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "id": "001-morning-launch-pricing",
+  "title": "Morning launch and pricing plan",
+  "metadata": {
+    "user_local_date": "2026-05-04",
+    "scenario": "morning",
+    "recording_context": "stationary"
+  },
+  "transcript": "Okay, morning note. Today I need to ship the launch email draft, call Sarah about pricing, and spend one focused block cleaning up the onboarding copy. I feel pretty focused, a little anxious, but mostly clear. If I get stuck, I should choose the smaller version and send it.",
+  "expected": {
+    "type": "morning",
+    "title": "Launch email and pricing call",
+    "summary": "The note sets a focused morning plan around shipping the launch email, calling Sarah about pricing, and tightening onboarding copy.",
+    "todos": [
+      {
+        "text": "Ship the launch email draft",
+        "status": "open",
+        "priority": "high",
+        "due": null,
+        "for_date": null,
+        "context": null
+      },
+      {
+        "text": "Call Sarah about pricing",
+        "status": "open",
+        "priority": "medium",
+        "due": null,
+        "for_date": null,
+        "context": null
+      },
+      {
+        "text": "Clean up the onboarding copy",
+        "status": "open",
+        "priority": "medium",
+        "due": null,
+        "for_date": null,
+        "context": "one focused block"
+      }
+    ],
+    "priorities": [
+      "Ship the launch email draft",
+      "Call Sarah about pricing",
+      "Clean up the onboarding copy"
+    ],
+    "intentions": [
+      "Choose the smaller version and send it if stuck"
+    ],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "focused",
+    "people": [
+      "Sarah"
+    ],
+    "projects": [
+      "launch email",
+      "pricing",
+      "onboarding copy"
+    ],
+    "tags": [
+      "launch",
+      "pricing",
+      "onboarding"
+    ],
+    "centers_of_balance": [
+      "profession",
+      "purpose"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "015-evening-demo-carry-forward",
+  "title": "Demo script evening reflection",
+  "metadata": {
+    "user_local_date": "2026-05-08",
+    "scenario": "evening",
+    "recording_context": "walking"
+  },
+  "transcript": "Evening. I reviewed the demo script and it is cleaner. I did not book the train. Tomorrow book the train first thing and send the demo script to Nina. What went well was cutting the clever intro.",
+  "expected": {
+    "type": "evening",
+    "title": "Demo script cleaner, train carried forward",
+    "summary": "The user improved the demo script, cut the clever intro, and carried train booking plus sending the script to Nina into tomorrow.",
+    "todos": [
+      { "text": "Book the train first thing", "priority": "high", "due": null, "for_date": "2026-05-09", "context": "tomorrow" },
+      { "text": "Send the demo script to Nina", "priority": "medium", "due": null, "for_date": "2026-05-09", "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": ["Reviewed the demo script", "Cut the clever intro"],
+    "tomorrow_todos": ["Book the train first thing", "Send the demo script to Nina"],
+    "mood": "neutral",
+    "people": ["Nina"],
+    "projects": ["demo script", "train booking"],
+    "tags": ["demo", "travel", "carry forward"],
+    "centers_of_balance": ["profession"]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "018-weekly-review-french-trip",
+  "title": "Weekly review with French phrase",
+  "metadata": {
+    "user_local_date": "2026-05-17",
+    "scenario": "weekly_review",
+    "recording_context": "stationary",
+    "language": "English with French phrase"
+  },
+  "transcript": "Weekly review. The phrase from Camille, petit a petit, helped me slow down. I shipped the beta invite and rested more than usual. Next week: choose one onboarding metric and stop changing the mockup every day.",
+  "expected": {
+    "type": "weekly_review",
+    "title": "Petit a petit and onboarding focus",
+    "summary": "The user reflects on slowing down, shipping the beta invite, resting more, and choosing one onboarding metric next week.",
+    "todos": [
+      { "text": "Choose one onboarding metric", "priority": "high", "due": null, "for_date": null, "context": "next week" },
+      { "text": "Stop changing the mockup every day", "priority": "medium", "due": null, "for_date": null, "context": "next week" }
+    ],
+    "priorities": ["Choose one onboarding metric"],
+    "intentions": ["Slow down little by little", "Stop changing the mockup every day"],
+    "accomplishments": ["Shipped the beta invite", "Rested more than usual"],
+    "tomorrow_todos": [],
+    "mood": "calm",
+    "people": ["Camille"],
+    "projects": ["beta invite", "onboarding metric", "mockup"],
+    "tags": ["weekly review", "onboarding", "rest"],
+    "centers_of_balance": ["health", "profession"]
+  }
+}

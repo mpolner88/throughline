@@ -1,0 +1,29 @@
+{
+  "id": "030-evening-final-carry-forward",
+  "title": "Evening final carry-forward",
+  "metadata": {
+    "user_local_date": "2026-05-16",
+    "scenario": "evening",
+    "recording_context": "driving"
+  },
+  "transcript": "Evening drive. I called Aaron and it went better than I feared. I did not touch the metrics doc. Tomorrow: metrics doc first, groceries second, and no email until both are done. Feeling relieved.",
+  "expected": {
+    "type": "evening",
+    "title": "Aaron call done, metrics tomorrow",
+    "summary": "The user called Aaron successfully, did not work on the metrics doc, and carried metrics, groceries, and an email boundary into tomorrow.",
+    "todos": [
+      { "text": "Work on the metrics doc first", "priority": "high", "due": null, "for_date": "2026-05-17", "context": "tomorrow" },
+      { "text": "Buy groceries second", "priority": "medium", "due": null, "for_date": "2026-05-17", "context": "tomorrow" },
+      { "text": "Avoid email until the metrics doc and groceries are done", "priority": "medium", "due": null, "for_date": "2026-05-17", "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": ["Avoid email until the metrics doc and groceries are done"],
+    "accomplishments": ["Called Aaron"],
+    "tomorrow_todos": ["Work on the metrics doc first", "Buy groceries second", "Avoid email until the metrics doc and groceries are done"],
+    "mood": "calm",
+    "people": ["Aaron"],
+    "projects": ["metrics doc", "groceries", "email"],
+    "tags": ["carry forward", "metrics", "relationship"],
+    "centers_of_balance": ["relationships", "profession"]
+  }
+}

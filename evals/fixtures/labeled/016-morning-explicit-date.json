@@ -1,0 +1,28 @@
+{
+  "id": "016-morning-explicit-date",
+  "title": "Morning with explicit due date",
+  "metadata": {
+    "user_local_date": "2026-05-11",
+    "scenario": "morning",
+    "recording_context": "stationary"
+  },
+  "transcript": "Morning note. I need to submit the App Review notes by May 15, email Rachel the privacy answers today, and leave space for a run. Feeling energized.",
+  "expected": {
+    "type": "morning",
+    "title": "App Review and privacy answers",
+    "summary": "The user plans to submit App Review notes by May 15, email Rachel privacy answers today, and leave space for a run.",
+    "todos": [
+      { "text": "Submit the App Review notes", "priority": "high", "due": "2026-05-15", "for_date": null, "context": "by May 15" },
+      { "text": "Email Rachel the privacy answers", "priority": "high", "due": "2026-05-11", "for_date": null, "context": "today" }
+    ],
+    "priorities": ["Submit the App Review notes by May 15", "Email Rachel the privacy answers today"],
+    "intentions": ["Leave space for a run"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "energized",
+    "people": ["Rachel"],
+    "projects": ["App Review", "privacy answers", "run"],
+    "tags": ["App Review", "privacy", "health"],
+    "centers_of_balance": ["profession", "health"]
+  }
+}

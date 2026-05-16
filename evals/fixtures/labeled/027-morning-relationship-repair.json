@@ -1,0 +1,29 @@
+{
+  "id": "027-morning-relationship-repair",
+  "title": "Morning relationship repair",
+  "metadata": {
+    "user_local_date": "2026-05-16",
+    "scenario": "morning",
+    "recording_context": "walking"
+  },
+  "transcript": "Morning. The important thing is not the inbox. It is calling Aaron and apologizing without explaining too much. Then groceries, then one hour on the metrics doc. I am nervous but clear.",
+  "expected": {
+    "type": "morning",
+    "title": "Call Aaron before inbox",
+    "summary": "The user prioritizes calling Aaron to apologize before groceries and one hour on the metrics doc, feeling nervous but clear.",
+    "todos": [
+      { "text": "Call Aaron and apologize without explaining too much", "priority": "high", "due": null, "for_date": null, "context": "important thing" },
+      { "text": "Buy groceries", "priority": "medium", "due": null, "for_date": null, "context": null },
+      { "text": "Spend one hour on the metrics doc", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Call Aaron and apologize without explaining too much"],
+    "intentions": ["Do not make the inbox the important thing"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "anxious",
+    "people": ["Aaron"],
+    "projects": ["inbox", "groceries", "metrics doc"],
+    "tags": ["relationship", "metrics", "groceries"],
+    "centers_of_balance": ["relationships", "profession"]
+  }
+}

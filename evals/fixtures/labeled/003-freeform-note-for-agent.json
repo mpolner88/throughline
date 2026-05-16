@@ -1,0 +1,49 @@
+{
+  "id": "003-freeform-note-for-agent",
+  "title": "Freeform agent note idea",
+  "metadata": {
+    "user_local_date": "2026-05-05",
+    "scenario": "freeform",
+    "recording_context": "driving"
+  },
+  "transcript": "Voice note, random product idea. Throughline should let me dump anything, not just a morning ritual. If I say remind me to ask Dan about the API limit, my agent should see that as a note and a task later. Tag this maybe MCP and onboarding. No urgent deadline.",
+  "expected": {
+    "type": "freeform",
+    "title": "Throughline notes should accept anything",
+    "summary": "The note argues that Throughline should support arbitrary voice notes for agents, not only morning rituals, and includes a reminder to ask Dan about an API limit.",
+    "todos": [
+      {
+        "text": "Ask Dan about the API limit",
+        "status": "open",
+        "priority": null,
+        "due": null,
+        "for_date": null,
+        "context": "No urgent deadline"
+      }
+    ],
+    "priorities": [],
+    "intentions": [
+      "Let users dump anything into Throughline, not just morning rituals"
+    ],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [
+      "Dan"
+    ],
+    "projects": [
+      "API limit",
+      "onboarding",
+      "MCP"
+    ],
+    "tags": [
+      "MCP",
+      "onboarding",
+      "product idea"
+    ],
+    "centers_of_balance": [
+      "profession",
+      "purpose"
+    ]
+  }
+}

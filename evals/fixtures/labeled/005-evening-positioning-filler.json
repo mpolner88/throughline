@@ -1,0 +1,58 @@
+{
+  "id": "005-evening-positioning-filler",
+  "title": "Positioning note with filler",
+  "metadata": {
+    "user_local_date": "2026-05-05",
+    "scenario": "evening",
+    "recording_context": "walking"
+  },
+  "transcript": "Um, okay, I think, uh, for tonight, I mostly want to remember that the app felt too much like plumbing when I described it. It is a note app for agents. Tomorrow, maybe rewrite the README, and do not overbuild the dashboard. I am calm, maybe relieved.",
+  "expected": {
+    "type": "evening",
+    "title": "Note app for agents positioning",
+    "summary": "The note clarifies that Throughline should feel like a note app for agents rather than infrastructure, with README and dashboard guidance carried into tomorrow.",
+    "todos": [
+      {
+        "text": "Rewrite the README",
+        "status": "open",
+        "priority": "medium",
+        "due": null,
+        "for_date": "2026-05-06",
+        "context": "tomorrow"
+      },
+      {
+        "text": "Avoid overbuilding the dashboard",
+        "status": "open",
+        "priority": "medium",
+        "due": null,
+        "for_date": "2026-05-06",
+        "context": "tomorrow"
+      }
+    ],
+    "priorities": [],
+    "intentions": [
+      "Describe Throughline as a note app for agents, not plumbing"
+    ],
+    "accomplishments": [],
+    "tomorrow_todos": [
+      "Rewrite the README",
+      "Avoid overbuilding the dashboard"
+    ],
+    "mood": "calm",
+    "people": [],
+    "projects": [
+      "README",
+      "dashboard",
+      "positioning"
+    ],
+    "tags": [
+      "positioning",
+      "README",
+      "dashboard"
+    ],
+    "centers_of_balance": [
+      "profession",
+      "purpose"
+    ]
+  }
+}

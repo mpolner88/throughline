@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.*
+!/.env.example
+.git
+backend/data
+evals/runs
+evals/tmp
+ios/build
+node_modules

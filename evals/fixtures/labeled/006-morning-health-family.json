@@ -1,0 +1,30 @@
+{
+  "id": "006-morning-health-family",
+  "title": "Morning health and family check-in",
+  "metadata": {
+    "user_local_date": "2026-05-06",
+    "scenario": "morning",
+    "recording_context": "walking",
+    "speaker_profile": "different speaker"
+  },
+  "transcript": "Morning walk. I want today to stay simple: physical therapy at nine, finish the budget notes, and text Mom about Sunday dinner. I am calm, and I want to protect the evening instead of letting work leak into it.",
+  "expected": {
+    "type": "morning",
+    "title": "Physical therapy, budget notes, and Mom",
+    "summary": "The user wants a simple day focused on physical therapy, budget notes, and texting Mom while protecting the evening from work.",
+    "todos": [
+      { "text": "Go to physical therapy", "priority": "high", "due": null, "for_date": null, "context": "at nine" },
+      { "text": "Finish the budget notes", "priority": "medium", "due": null, "for_date": null, "context": null },
+      { "text": "Text Mom about Sunday dinner", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Go to physical therapy", "Finish the budget notes", "Text Mom about Sunday dinner"],
+    "intentions": ["Protect the evening from work"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "calm",
+    "people": ["Mom"],
+    "projects": ["physical therapy", "budget notes", "Sunday dinner"],
+    "tags": ["health", "family", "budget"],
+    "centers_of_balance": ["health", "relationships", "profession"]
+  }
+}

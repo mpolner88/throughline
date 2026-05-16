@@ -1,0 +1,25 @@
+{
+  "id": "008-evening-no-tasks-grateful",
+  "title": "Evening reflection with no tasks",
+  "metadata": {
+    "user_local_date": "2026-05-06",
+    "scenario": "evening",
+    "recording_context": "stationary"
+  },
+  "transcript": "Evening note. Nothing to do from this, just want to remember that dinner with Luis was really good and I felt present for the first time in a while. Work can wait. I am grateful.",
+  "expected": {
+    "type": "evening",
+    "title": "Dinner with Luis felt present",
+    "summary": "The user reflects gratefully on dinner with Luis and explicitly says there are no tasks from the note.",
+    "todos": [],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": ["Had dinner with Luis", "Felt present"],
+    "tomorrow_todos": [],
+    "mood": "grateful",
+    "people": ["Luis"],
+    "projects": [],
+    "tags": ["dinner", "presence", "reflection"],
+    "centers_of_balance": ["relationships"]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "009-morning-heavy-filler",
+  "title": "Filler-heavy morning plan",
+  "metadata": {
+    "user_local_date": "2026-05-07",
+    "scenario": "morning",
+    "recording_context": "driving"
+  },
+  "transcript": "Uh, okay, so, today, I guess the real thing is, um, finish the privacy copy, maybe not perfect it, just finish it. Then send the TestFlight invite to Jonah. I am kind of anxious because the scope keeps growing. Priority is privacy copy first.",
+  "expected": {
+    "type": "morning",
+    "title": "Privacy copy before TestFlight invite",
+    "summary": "The user is anxious about growing scope and wants to finish privacy copy before sending Jonah a TestFlight invite.",
+    "todos": [
+      { "text": "Finish the privacy copy", "priority": "high", "due": null, "for_date": null, "context": "do not perfect it" },
+      { "text": "Send the TestFlight invite to Jonah", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Finish the privacy copy"],
+    "intentions": ["Finish the privacy copy without perfecting it"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "anxious",
+    "people": ["Jonah"],
+    "projects": ["privacy copy", "TestFlight"],
+    "tags": ["privacy", "TestFlight", "scope"],
+    "centers_of_balance": ["profession"]
+  }
+}

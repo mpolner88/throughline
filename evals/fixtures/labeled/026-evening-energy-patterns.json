@@ -1,0 +1,28 @@
+{
+  "id": "026-evening-energy-patterns",
+  "title": "Evening energy pattern note",
+  "metadata": {
+    "user_local_date": "2026-05-15",
+    "scenario": "evening",
+    "recording_context": "walking"
+  },
+  "transcript": "Evening note. Energy giver was the quiet coffee block. Energy sapper was Slack. I got the outline done. Tomorrow turn off Slack until noon and draft the first two sections.",
+  "expected": {
+    "type": "evening",
+    "title": "Coffee block helped, Slack drained",
+    "summary": "The user got the outline done, found quiet coffee energizing and Slack draining, and wants to avoid Slack until noon tomorrow before drafting two sections.",
+    "todos": [
+      { "text": "Turn off Slack until noon", "priority": "medium", "due": null, "for_date": "2026-05-16", "context": "tomorrow" },
+      { "text": "Draft the first two sections", "priority": "high", "due": null, "for_date": "2026-05-16", "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": ["Got the outline done"],
+    "tomorrow_todos": ["Turn off Slack until noon", "Draft the first two sections"],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["outline", "Slack", "draft sections"],
+    "tags": ["energy", "Slack", "writing"],
+    "centers_of_balance": ["profession"]
+  }
+}

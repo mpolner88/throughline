@@ -1,0 +1,25 @@
+{
+  "id": "017-freeform-agent-question",
+  "title": "Question for agent about memory",
+  "metadata": {
+    "user_local_date": "2026-05-11",
+    "scenario": "freeform",
+    "recording_context": "walking"
+  },
+  "transcript": "Question for later: when I ask the agent what did I keep avoiding this month, it should probably search todos I carried forward more than twice. Is that a tool or just a search pattern?",
+  "expected": {
+    "type": "freeform",
+    "title": "Avoidance query idea",
+    "summary": "The user wonders whether repeated carried-forward todos should power an agent query about what they avoided during the month.",
+    "todos": [],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["agent memory", "carried-forward todos", "search"],
+    "tags": ["question", "MCP", "memory"],
+    "centers_of_balance": ["profession", "purpose"]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "010-freeform-creative-song",
+  "title": "Freeform creative fragment",
+  "metadata": {
+    "user_local_date": "2026-05-07",
+    "scenario": "freeform",
+    "recording_context": "walking"
+  },
+  "transcript": "Not a task. I keep hearing the phrase glass weather for the song title. Maybe the chorus should feel like trying to remember a place you never lived. Save that as an idea for the album.",
+  "expected": {
+    "type": "freeform",
+    "title": "Glass weather song idea",
+    "summary": "The user captures a creative song idea around the phrase glass weather and a chorus about remembering a place they never lived.",
+    "todos": [],
+    "priorities": [],
+    "intentions": ["Save glass weather as an idea for the album"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["album", "glass weather"],
+    "tags": ["song idea", "album", "creative"],
+    "centers_of_balance": ["passions"]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "013-morning-travel-parent",
+  "title": "Morning travel and parent planning",
+  "metadata": {
+    "user_local_date": "2026-05-08",
+    "scenario": "morning",
+    "recording_context": "driving"
+  },
+  "transcript": "Today is mostly logistics. Book the train to Boston, call Dad after his appointment, and review the demo script once. I feel tired, so the intention is no heroic version today.",
+  "expected": {
+    "type": "morning",
+    "title": "Boston train, Dad, and demo script",
+    "summary": "The user has a logistics-heavy day with travel booking, a call to Dad, and one demo script review while avoiding overreach.",
+    "todos": [
+      { "text": "Book the train to Boston", "priority": "high", "due": null, "for_date": null, "context": null },
+      { "text": "Call Dad after his appointment", "priority": "high", "due": null, "for_date": null, "context": null },
+      { "text": "Review the demo script once", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Book the train to Boston", "Call Dad after his appointment", "Review the demo script once"],
+    "intentions": ["Do no heroic version today"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "tired",
+    "people": ["Dad"],
+    "projects": ["Boston travel", "demo script"],
+    "tags": ["travel", "family", "demo"],
+    "centers_of_balance": ["relationships", "profession"]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "throughline",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Throughline is where you speak notes for your AI agent.",
+  "scripts": {
+    "start": "node backend/stub-server.mjs",
+    "eval:run": "node evals/run-extraction.mjs",
+    "eval:run:groq": "node evals/run-extraction.mjs --provider command --command ./evals/adapters/groq-extract.mjs --delay-ms 2500",
+    "eval:score": "node evals/score-extraction.mjs --predictions evals/runs/latest",
+    "eval:score:action": "node evals/score-extraction.mjs --predictions evals/runs/latest --profile action",
+    "eval:score:memory": "node evals/score-extraction.mjs --predictions evals/runs/latest --profile memory",
+    "eval:import-feedback": "node evals/import-feedback-fixtures.mjs",
+    "eval:check": "node evals/run-extraction.mjs && node evals/score-extraction.mjs --predictions evals/runs/latest",
+    "ios:sync-config": "node scripts/sync-ios-config.mjs",
+    "ios:build": "npm run ios:sync-config && xcodebuild -project ios/Throughline.xcodeproj -scheme Throughline -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build/DerivedData CODE_SIGNING_ALLOWED=NO build",
+    "ios:build:device": "npm run ios:sync-config && xcodebuild -project ios/Throughline.xcodeproj -scheme Throughline -destination 'generic/platform=iOS' -derivedDataPath ios/build/DerivedDataDevice CODE_SIGNING_ALLOWED=NO build",
+    "agent:smoke": "node backend/smoke-memory-tools.mjs",
+    "mcp:stdio": "node backend/mcp-stdio-server.mjs",
+    "mcp:smoke": "node backend/smoke-mcp-stdio.mjs",
+    "mockup:dev": "node mockup/dev-server.mjs",
+    "stub:dev": "node backend/stub-server.mjs",
+    "stub:dev:extract": "THROUGHLINE_EXTRACTOR_COMMAND=./backend/dev-extractor.mjs node backend/stub-server.mjs",
+    "stub:dev:supabase": "node --env-file=.env.local backend/stub-server.mjs",
+    "supabase:deploy": "supabase functions deploy api --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv && supabase functions deploy mcp --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv"
+  }
+}

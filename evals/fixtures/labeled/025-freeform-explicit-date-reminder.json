@@ -1,0 +1,28 @@
+{
+  "id": "025-freeform-explicit-date-reminder",
+  "title": "Reminder with explicit date",
+  "metadata": {
+    "user_local_date": "2026-05-14",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Reminder: send the contract to Jules on June 2. Also add the insurance clause before it goes out. This is for the studio lease.",
+  "expected": {
+    "type": "freeform",
+    "title": "Studio lease contract reminder",
+    "summary": "The user needs to add an insurance clause and send the studio lease contract to Jules on June 2.",
+    "todos": [
+      { "text": "Add the insurance clause to the studio lease contract", "priority": "high", "due": null, "for_date": null, "context": "before it goes out" },
+      { "text": "Send the contract to Jules", "priority": "high", "due": "2026-06-02", "for_date": null, "context": "on June 2" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Jules"],
+    "projects": ["studio lease", "contract", "insurance clause"],
+    "tags": ["reminder", "contract", "studio lease"],
+    "centers_of_balance": ["profession", "passions"]
+  }
+}

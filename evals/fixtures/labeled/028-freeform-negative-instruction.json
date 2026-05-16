@@ -1,0 +1,25 @@
+{
+  "id": "028-freeform-negative-instruction",
+  "title": "Negative instruction note",
+  "metadata": {
+    "user_local_date": "2026-05-16",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Note to self: do not add calendar integration. That is not a task for tomorrow, it is a constraint. Throughline should let the agent handle calendars through whatever the user already connected.",
+  "expected": {
+    "type": "freeform",
+    "title": "Do not add calendar integration",
+    "summary": "The user records a constraint that Throughline should not add calendar integration because agents should handle calendars through existing user connections.",
+    "todos": [],
+    "priorities": [],
+    "intentions": ["Do not add calendar integration", "Let the agent handle calendars through existing user connections"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["calendar integration", "agent orchestration"],
+    "tags": ["constraint", "calendar", "MCP"],
+    "centers_of_balance": ["profession", "purpose"]
+  }
+}

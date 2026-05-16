@@ -1,0 +1,25 @@
+{
+  "id": "021-freeform-driving-idea",
+  "title": "Driving idea about notes",
+  "metadata": {
+    "user_local_date": "2026-05-12",
+    "scenario": "freeform",
+    "recording_context": "driving"
+  },
+  "transcript": "Driving thought. The app should not ask what kind of note this is before I talk. Let the note be whatever it is and classify it after. That feels core to the promise.",
+  "expected": {
+    "type": "freeform",
+    "title": "Classify notes after speaking",
+    "summary": "The user thinks Throughline should not ask for note type before recording and should classify the note afterward.",
+    "todos": [],
+    "priorities": [],
+    "intentions": ["Let the note be whatever it is and classify it after recording"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["note classification", "recording flow"],
+    "tags": ["product idea", "recording", "classification"],
+    "centers_of_balance": ["profession", "purpose"]
+  }
+}

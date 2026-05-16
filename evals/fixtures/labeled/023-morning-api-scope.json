@@ -1,0 +1,29 @@
+{
+  "id": "023-morning-api-scope",
+  "title": "Morning API scope control",
+  "metadata": {
+    "user_local_date": "2026-05-14",
+    "scenario": "morning",
+    "recording_context": "stationary"
+  },
+  "transcript": "Today the only engineering priority is the upload endpoint. Do not touch auth except for a fake user id. Ask Mateo whether he wants Node or Python for the stub, but do not wait on that to write the contract.",
+  "expected": {
+    "type": "morning",
+    "title": "Upload endpoint before auth",
+    "summary": "The user wants to focus engineering on the upload endpoint, avoid real auth beyond a fake user id, and ask Mateo about backend language.",
+    "todos": [
+      { "text": "Build the upload endpoint", "priority": "high", "due": null, "for_date": null, "context": "only engineering priority" },
+      { "text": "Ask Mateo whether he wants Node or Python for the stub", "priority": "medium", "due": null, "for_date": null, "context": null },
+      { "text": "Write the upload contract without waiting on Mateo", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Build the upload endpoint"],
+    "intentions": ["Do not touch auth except for a fake user id"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Mateo"],
+    "projects": ["upload endpoint", "auth", "backend stub"],
+    "tags": ["engineering", "upload", "scope"],
+    "centers_of_balance": ["profession"]
+  }
+}

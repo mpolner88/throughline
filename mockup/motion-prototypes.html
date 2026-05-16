@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Throughline recording motion prototypes</title>
+    <link rel="stylesheet" href="./motion-prototypes.css" />
+  </head>
+  <body class="focus-breathing">
+    <main class="prototype-shell">
+      <header class="prototype-header">
+        <div>
+          <p class="eyebrow">recording control study</p>
+          <h1>breathing orbit focus</h1>
+        </div>
+        <div class="header-actions">
+          <button class="secondary-action" type="button" id="startAll">start</button>
+          <button class="secondary-action" type="button" id="resetAll">reset</button>
+        </div>
+      </header>
+
+      <section class="prototype-grid" aria-label="Recording motion prototype options">
+        <article class="concept" data-concept="orbit-progress">
+          <div class="concept-head">
+            <p class="eyebrow">option 1 / current favorite</p>
+            <h2>Orbiting Progress Line</h2>
+          </div>
+          <div class="phone-surface">
+            <div class="app-row">
+              <span>throughline</span>
+              <span>backend</span>
+            </div>
+            <div class="prompt-copy">
+              <p class="eyebrow">demo recording</p>
+              <h3>say what's on your mind</h3>
+              <p>Speak for up to 30 seconds. Say anything and Throughline will capture it.</p>
+            </div>
+            <div class="timer" data-timer>0:00 / 0:30</div>
+            <button class="motion-button orbit-progress" type="button" data-recorder aria-pressed="false">
+              <svg class="motion-mark" viewBox="0 0 260 92" aria-hidden="true">
+                <circle class="orbit-track" cx="130" cy="46" r="35" />
+                <circle class="orbit-line" cx="130" cy="46" r="35" />
+                <path class="ground-line" d="M42 46 H96 M164 46 H218" />
+                <rect class="stop-shape" x="119" y="35" width="22" height="22" rx="4" />
+              </svg>
+              <span data-label>start recording</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="concept" data-concept="satellite-thread">
+          <div class="concept-head">
+            <p class="eyebrow">option 2</p>
+            <h2>Satellite Thread</h2>
+          </div>
+          <div class="phone-surface">
+            <div class="app-row">
+              <span>throughline</span>
+              <span>backend</span>
+            </div>
+            <div class="prompt-copy">
+              <p class="eyebrow">demo recording</p>
+              <h3>say what's on your mind</h3>
+              <p>Speak for up to 30 seconds. Say anything and Throughline will capture it.</p>
+            </div>
+            <div class="timer" data-timer>0:00 / 0:30</div>
+            <button class="motion-button satellite-thread" type="button" data-recorder aria-pressed="false">
+              <svg class="motion-mark" viewBox="0 0 260 92" aria-hidden="true">
+                <path class="satellite-line" d="M42 46 H218" />
+                <circle class="satellite-track" cx="130" cy="46" r="36" />
+                <g class="satellite-orbit">
+                  <path class="satellite-arc" d="M130 10 A36 36 0 0 1 166 46" />
+                  <circle class="satellite-dot" cx="130" cy="10" r="5" />
+                </g>
+                <rect class="stop-shape" x="119" y="35" width="22" height="22" rx="4" />
+              </svg>
+              <span data-label>start recording</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="concept" data-concept="breathing-orbit">
+          <div class="concept-head">
+            <p class="eyebrow">focused direction</p>
+            <h2>Breathing Orbit</h2>
+          </div>
+          <div class="phone-surface">
+            <div class="app-row">
+              <span>throughline</span>
+              <span>backend</span>
+            </div>
+            <div class="prompt-copy">
+              <p class="eyebrow">demo recording</p>
+              <h3>say what's on your mind</h3>
+              <p>Speak for up to 30 seconds. Say anything and Throughline will capture it.</p>
+            </div>
+            <button class="motion-button breathing-orbit" type="button" data-recorder aria-pressed="false">
+              <svg class="motion-mark" viewBox="0 0 260 92" aria-hidden="true">
+                <g class="breath-morph-lines">
+                  <path
+                    class="breath-morph breath-left"
+                    data-breath-left
+                    d="M57 46 C75 46 94 46 111 46 C111 46 111 46 111 46"
+                  />
+                  <path
+                    class="breath-morph breath-right"
+                    data-breath-right
+                    d="M149 46 C166 46 185 46 203 46 C203 46 203 46 203 46"
+                  />
+                </g>
+                <path
+                  class="breath-spin-loop"
+                  d="M95 46 C95 27 111 11 130 11 C149 11 165 27 165 46 C165 65 149 81 130 81 C111 81 95 65 95 46"
+                />
+              </svg>
+              <span data-label>start recording</span>
+            </button>
+            <div class="timer" data-timer>0:00 / 0:30</div>
+          </div>
+        </article>
+
+        <article class="concept" data-concept="twin-orbit">
+          <div class="concept-head">
+            <p class="eyebrow">option 4</p>
+            <h2>Twin Orbit Capture</h2>
+          </div>
+          <div class="phone-surface">
+            <div class="app-row">
+              <span>throughline</span>
+              <span>backend</span>
+            </div>
+            <div class="prompt-copy">
+              <p class="eyebrow">demo recording</p>
+              <h3>say what's on your mind</h3>
+              <p>Speak for up to 30 seconds. Say anything and Throughline will capture it.</p>
+            </div>
+            <div class="timer" data-timer>0:00 / 0:30</div>
+            <button class="motion-button twin-orbit" type="button" data-recorder aria-pressed="false">
+              <svg class="motion-mark" viewBox="0 0 260 92" aria-hidden="true">
+                <path class="twin-line" d="M42 46 H218" />
+                <g class="twin-wrap twin-wrap-a">
+                  <path d="M76 46 C76 16 184 16 184 46 C184 76 76 76 76 46" />
+                </g>
+                <g class="twin-wrap twin-wrap-b">
+                  <path d="M76 46 C76 76 184 76 184 46 C184 16 76 16 76 46" />
+                </g>
+                <rect class="stop-shape" x="119" y="35" width="22" height="22" rx="4" />
+              </svg>
+              <span data-label>start recording</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="concept" data-concept="halo-comet">
+          <div class="concept-head">
+            <p class="eyebrow">option 5</p>
+            <h2>Halo Comet</h2>
+          </div>
+          <div class="phone-surface">
+            <div class="app-row">
+              <span>throughline</span>
+              <span>backend</span>
+            </div>
+            <div class="prompt-copy">
+              <p class="eyebrow">demo recording</p>
+              <h3>say what's on your mind</h3>
+              <p>Speak for up to 30 seconds. Say anything and Throughline will capture it.</p>
+            </div>
+            <div class="timer" data-timer>0:00 / 0:30</div>
+            <button class="motion-button halo-comet" type="button" data-recorder aria-pressed="false">
+              <svg class="motion-mark" viewBox="0 0 260 92" aria-hidden="true">
+                <path class="comet-line" d="M42 46 H218" />
+                <circle class="comet-track" cx="130" cy="46" r="36" />
+                <circle class="comet-trail" cx="130" cy="46" r="36" />
+                <g class="comet-head">
+                  <circle class="comet-dot" cx="130" cy="10" r="5" />
+                  <path d="M130 10 C122 17 118 22 112 30" />
+                </g>
+                <rect class="stop-shape" x="119" y="35" width="22" height="22" rx="4" />
+              </svg>
+              <span data-label>start recording</span>
+            </button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="./motion-prototypes.js"></script>
+  </body>
+</html>

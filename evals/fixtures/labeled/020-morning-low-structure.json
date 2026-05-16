@@ -1,0 +1,27 @@
+{
+  "id": "020-morning-low-structure",
+  "title": "Low-structure morning note",
+  "metadata": {
+    "user_local_date": "2026-05-12",
+    "scenario": "morning",
+    "recording_context": "walking"
+  },
+  "transcript": "Morning. I do not really have a list yet. I want to notice what feels heavy and maybe make one clean decision about the homepage. That is all.",
+  "expected": {
+    "type": "morning",
+    "title": "Notice heaviness and decide homepage",
+    "summary": "The user does not have a task list yet and wants to notice what feels heavy while making one clean homepage decision.",
+    "todos": [
+      { "text": "Make one clean decision about the homepage", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Make one clean decision about the homepage"],
+    "intentions": ["Notice what feels heavy"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["homepage"],
+    "tags": ["morning", "homepage", "decision"],
+    "centers_of_balance": ["purpose", "profession"]
+  }
+}

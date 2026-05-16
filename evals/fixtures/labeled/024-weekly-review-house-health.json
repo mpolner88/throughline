@@ -1,0 +1,29 @@
+{
+  "id": "024-weekly-review-house-health",
+  "title": "Weekly house and health review",
+  "metadata": {
+    "user_local_date": "2026-05-24",
+    "scenario": "weekly_review",
+    "recording_context": "walking"
+  },
+  "transcript": "Weekly review. I ignored the dentist again, which is silly. The house felt better after cleaning the desk. Next week schedule the dentist, keep the desk clear, and do one guitar night.",
+  "expected": {
+    "type": "weekly_review",
+    "title": "Dentist, clear desk, guitar night",
+    "summary": "The user notes they avoided the dentist, felt better after cleaning the desk, and wants to schedule the dentist, keep the desk clear, and have a guitar night next week.",
+    "todos": [
+      { "text": "Schedule the dentist", "priority": "high", "due": null, "for_date": null, "context": "next week" },
+      { "text": "Keep the desk clear", "priority": "medium", "due": null, "for_date": null, "context": "next week" },
+      { "text": "Do one guitar night", "priority": "medium", "due": null, "for_date": null, "context": "next week" }
+    ],
+    "priorities": ["Schedule the dentist", "Keep the desk clear", "Do one guitar night"],
+    "intentions": ["Keep the desk clear", "Do one guitar night"],
+    "accomplishments": ["Cleaned the desk"],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["dentist", "desk", "guitar"],
+    "tags": ["weekly review", "health", "home", "music"],
+    "centers_of_balance": ["health", "passions"]
+  }
+}

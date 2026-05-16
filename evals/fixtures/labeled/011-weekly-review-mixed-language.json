@@ -1,0 +1,28 @@
+{
+  "id": "011-weekly-review-mixed-language",
+  "title": "Weekly review with mixed language",
+  "metadata": {
+    "user_local_date": "2026-05-10",
+    "scenario": "weekly_review",
+    "recording_context": "stationary",
+    "language": "English with Spanish phrase"
+  },
+  "transcript": "Weekly review. La caminata with Elena gave me energy, and the late-night debugging drained me. Next week I want to keep mornings for writing and move billing work after lunch. Remember to send Elena the photos.",
+  "expected": {
+    "type": "weekly_review",
+    "title": "Walks, writing mornings, and billing",
+    "summary": "The user found energy in a walk with Elena, was drained by late-night debugging, and wants writing mornings with billing after lunch next week.",
+    "todos": [
+      { "text": "Send Elena the photos", "priority": "medium", "due": null, "for_date": null, "context": null }
+    ],
+    "priorities": ["Keep mornings for writing", "Move billing work after lunch"],
+    "intentions": ["Keep mornings for writing next week", "Move billing work after lunch next week"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Elena"],
+    "projects": ["writing", "billing work", "debugging"],
+    "tags": ["weekly review", "writing", "billing", "energy"],
+    "centers_of_balance": ["relationships", "profession", "health"]
+  }
+}

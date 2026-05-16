@@ -1,0 +1,25 @@
+{
+  "id": "014-freeform-book-note-no-task",
+  "title": "Book note on attention",
+  "metadata": {
+    "user_local_date": "2026-05-08",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Book note. The part about attention being a form of care feels important. No action, just save the thought under the reading project and maybe relationships.",
+  "expected": {
+    "type": "freeform",
+    "title": "Attention as care",
+    "summary": "The user captures a book note that attention can be a form of care and explicitly says there is no action.",
+    "todos": [],
+    "priorities": [],
+    "intentions": ["Save the thought under the reading project"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["reading project"],
+    "tags": ["book note", "attention", "relationships"],
+    "centers_of_balance": ["relationships", "passions"]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "012-evening-frustrated-bug",
+  "title": "Evening bug frustration",
+  "metadata": {
+    "user_local_date": "2026-05-07",
+    "scenario": "evening",
+    "recording_context": "stationary"
+  },
+  "transcript": "End of day. I fixed the login redirect bug, but the upload retry is still broken and I am frustrated. Tomorrow I need to reproduce it with airplane mode and then write the failing test before changing code.",
+  "expected": {
+    "type": "evening",
+    "title": "Login fixed, upload retry next",
+    "summary": "The user fixed the login redirect bug but remains frustrated about upload retry, which they plan to reproduce and test tomorrow.",
+    "todos": [
+      { "text": "Reproduce the upload retry bug with airplane mode", "priority": "high", "due": null, "for_date": "2026-05-08", "context": "tomorrow" },
+      { "text": "Write the failing upload retry test before changing code", "priority": "high", "due": null, "for_date": "2026-05-08", "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": ["Fixed the login redirect bug"],
+    "tomorrow_todos": ["Reproduce the upload retry bug with airplane mode", "Write the failing upload retry test before changing code"],
+    "mood": "frustrated",
+    "people": [],
+    "projects": ["login redirect", "upload retry", "airplane mode test"],
+    "tags": ["bug", "upload", "testing"],
+    "centers_of_balance": ["profession"]
+  }
+}

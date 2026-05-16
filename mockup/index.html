@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Throughline local capture</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell" aria-label="Throughline local capture">
+      <section class="phone" aria-live="polite">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="status-icons">5g  82%</span>
+        </div>
+
+        <div class="app-chrome">
+          <div class="wordmark">throughline</div>
+          <button class="top-action icon-button" type="button" aria-label="Settings" id="topAction">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+
+        <div class="screen-track" id="screenTrack">
+          <article class="screen hero-screen" data-step="0">
+            <div class="hero-content">
+              <p class="eyebrow">morning capture</p>
+              <h1>voice <span aria-hidden="true">→</span> agent</h1>
+              <p class="subhead">the shortest path from your voice to an agent</p>
+            </div>
+            <div class="hero-lower">
+              <p class="promise">Throughline is the quiet thread between what you said and what your AI does next.</p>
+              <button class="primary-button" type="button" data-next>try it</button>
+            </div>
+          </article>
+
+          <article class="screen record-screen" data-step="1">
+            <div class="center-stack">
+              <p class="eyebrow">throughline note</p>
+              <h2>say anything for your agent</h2>
+              <p class="body-copy">A thought, task, question, fragment, reminder, or full download.</p>
+            </div>
+
+            <form class="capture-form" id="noteForm">
+              <div class="type-control" role="radiogroup" aria-label="Note type">
+                <button class="type-pill is-selected" type="button" role="radio" aria-checked="true" data-type="freeform">freeform</button>
+                <button class="type-pill" type="button" role="radio" aria-checked="false" data-type="morning">morning</button>
+                <button class="type-pill" type="button" role="radio" aria-checked="false" data-type="evening">evening</button>
+              </div>
+
+              <label class="sr-only" for="transcriptInput">Throughline note</label>
+              <textarea id="transcriptInput" class="note-input" rows="7" maxlength="5000" placeholder="Tell your agent anything..."></textarea>
+
+              <div class="record-area">
+                <div class="timer" id="timer">0:00</div>
+                <button class="record-button" type="button" id="recordButton" aria-label="Start dictation">
+                  <span></span>
+                </button>
+                <p class="record-label" id="recordLabel">tap to dictate</p>
+                <div class="wave" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+              </div>
+
+              <p class="inline-status" id="captureStatus" role="status"></p>
+
+              <button class="primary-button" type="submit" id="sendButton">send to agent</button>
+              <button class="secondary-button" type="button" id="sampleButton">use sample note</button>
+            </form>
+          </article>
+
+          <article class="screen magic-screen" data-step="2">
+            <div>
+              <p class="eyebrow" id="processingEyebrow">saved</p>
+              <h2 id="noteTitle">your words became a surface</h2>
+            </div>
+
+            <div class="transcript-card">
+              <p id="transcriptPreview">Your note will appear here after it reaches the backend.</p>
+            </div>
+
+            <div class="extraction-card">
+              <div class="mini-section">
+                <p class="section-label">todos</p>
+                <div class="note-list" id="todoList">
+                  <p>No todos extracted yet.</p>
+                </div>
+              </div>
+              <div class="mini-section">
+                <p class="section-label">summary</p>
+                <p id="summaryPreview">Awaiting extraction.</p>
+              </div>
+              <div class="pill-row" id="pillRow">
+                <span class="pill">pending</span>
+              </div>
+            </div>
+
+            <button class="primary-button" type="button" id="viewHomeButton">view home <span aria-hidden="true">→</span></button>
+          </article>
+
+          <article class="screen sign-in-screen" data-step="3">
+            <div>
+              <p class="eyebrow">save your thread</p>
+              <h2>sign in to keep it</h2>
+              <p class="body-copy">Your demo recording moves into your account after sign in.</p>
+            </div>
+            <div class="auth-stack">
+              <button class="auth-button primary-auth" type="button" data-next>
+                <span class="auth-mark"></span>
+                continue with apple
+              </button>
+              <button class="auth-button" type="button" data-next>
+                <span class="google-dot"></span>
+                continue with google
+              </button>
+              <button class="text-button" type="button" data-next>continue with email</button>
+            </div>
+          </article>
+
+          <article class="screen home-screen" data-step="4">
+            <div class="home-date">
+              <p class="eyebrow">today</p>
+              <h2 id="homeHeading">local memory</h2>
+            </div>
+
+            <div class="captured-card">
+              <div>
+                <p class="section-label" id="homeMeta">waiting for first note</p>
+                <h3 id="homeTitle">say anything</h3>
+              </div>
+              <p id="homeSummary">Your latest Throughline note will land here after the backend saves it.</p>
+              <div class="pill-row" id="homePills">
+                <span class="pill">not connected</span>
+              </div>
+            </div>
+
+            <div class="home-record-area">
+              <button class="home-record-button" type="button" aria-label="Record another note" id="homeRecordButton"><span></span></button>
+              <p class="record-label">new note</p>
+            </div>
+          </article>
+        </div>
+
+        <nav class="stepper" aria-label="Onboarding steps">
+          <button type="button" data-go="0" aria-label="Hero screen"></button>
+          <button type="button" data-go="1" aria-label="Record screen"></button>
+          <button type="button" data-go="2" aria-label="Magic moment screen"></button>
+          <button type="button" data-go="3" aria-label="Sign in screen"></button>
+          <button type="button" data-go="4" aria-label="Home screen"></button>
+        </nav>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

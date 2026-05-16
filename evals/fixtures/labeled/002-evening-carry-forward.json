@@ -1,0 +1,60 @@
+{
+  "id": "002-evening-carry-forward",
+  "title": "Evening launch reflection",
+  "metadata": {
+    "user_local_date": "2026-05-04",
+    "scenario": "evening",
+    "recording_context": "walking"
+  },
+  "transcript": "Evening note. I shipped the launch email draft, but I did not call Sarah. I spent most of the afternoon in customer support and that drained me. Tomorrow I need to call Sarah before lunch and write the shorter pricing note. What went well was choosing the small version; it kept moving.",
+  "expected": {
+    "type": "evening",
+    "title": "Launch email done, pricing carried forward",
+    "summary": "The user shipped the launch email draft, missed the Sarah pricing call, and carried two pricing tasks into tomorrow.",
+    "todos": [
+      {
+        "text": "Call Sarah before lunch",
+        "status": "open",
+        "priority": "high",
+        "due": null,
+        "for_date": "2026-05-05",
+        "context": "tomorrow"
+      },
+      {
+        "text": "Write the shorter pricing note",
+        "status": "open",
+        "priority": "medium",
+        "due": null,
+        "for_date": "2026-05-05",
+        "context": "tomorrow"
+      }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [
+      "Shipped the launch email draft",
+      "Chose the small version"
+    ],
+    "tomorrow_todos": [
+      "Call Sarah before lunch",
+      "Write the shorter pricing note"
+    ],
+    "mood": "tired",
+    "people": [
+      "Sarah"
+    ],
+    "projects": [
+      "launch email",
+      "customer support",
+      "pricing"
+    ],
+    "tags": [
+      "launch",
+      "pricing",
+      "customer support"
+    ],
+    "centers_of_balance": [
+      "profession"
+    ]
+  }
+}

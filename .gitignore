@@ -1,0 +1,19 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Eval outputs
+evals/runs/
+evals/tmp/
+
+# Local backend stub data
+backend/data/
+
+# iOS build output
+ios/build/
+ios/Config/Local.xcconfig
+ios/Config/LocalRelease.xcconfig
+ios/Throughline.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcuserstate
