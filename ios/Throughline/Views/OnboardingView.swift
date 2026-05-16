@@ -13,6 +13,7 @@ struct OnboardingView: View {
     @State private var authPassword = ""
     @State private var authMode: AuthMode = .createAccount
     @State private var authError: String?
+    @State private var authNotice: String?
     @State private var isAuthenticating = false
     #if DEBUG
     private let debugStep: Int?
@@ -245,10 +246,10 @@ struct OnboardingView: View {
     private var signInScreen: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow(text: "get started")
-                Text("create your account")
+                Eyebrow(text: authMode.eyebrow)
+                Text(authMode.heading)
                     .font(.throughlineHeading)
-                Text("Sign in so new notes are saved to your private Throughline memory.")
+                Text(authMode.supportingText)
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
@@ -257,6 +258,16 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
+                Picker("Account", selection: $authMode) {
+                    Text("create").tag(AuthMode.createAccount)
+                    Text("sign in").tag(AuthMode.signIn)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: authMode) { _, _ in
+                    authError = nil
+                    authNotice = nil
+                }
+
                 VStack(spacing: 10) {
                     TextField("email", text: $authEmail)
                         .textContentType(.emailAddress)
@@ -290,11 +301,19 @@ struct OnboardingView: View {
                 Button(authMode.switchTitle) {
                     authMode = authMode == .createAccount ? .signIn : .createAccount
                     authError = nil
+                    authNotice = nil
                 }
                 .font(.system(size: 16))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
+
+                if let authNotice {
+                    Text(authNotice)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
 
                 if let authError {
                     Text(authError)
@@ -404,9 +423,18 @@ struct OnboardingView: View {
                 }
                 appState.setSession(session)
                 authError = nil
+                authNotice = nil
                 finishOnboarding()
             } catch {
-                authError = error.localizedDescription
+                if let authClientError = error as? AuthClientError,
+                   case .emailConfirmationRequired = authClientError {
+                    authMode = .signIn
+                    authError = nil
+                    authNotice = "Check your email to confirm your account, then sign in here."
+                } else {
+                    authNotice = nil
+                    authError = error.localizedDescription
+                }
             }
         }
     }
@@ -430,17 +458,40 @@ private enum AuthMode {
     case createAccount
     case signIn
 
-    var primaryTitle: String {
+    var eyebrow: String {
         switch self {
         case .createAccount: "create account"
+        case .signIn: "welcome back"
+        }
+    }
+
+    var heading: String {
+        switch self {
+        case .createAccount: "create your account"
+        case .signIn: "sign in"
+        }
+    }
+
+    var supportingText: String {
+        switch self {
+        case .createAccount:
+            "Create an account so new notes are saved to your private Throughline memory."
+        case .signIn:
+            "Use the email and password you confirmed to open your private Throughline memory."
+        }
+    }
+
+    var primaryTitle: String {
+        switch self {
+        case .createAccount: "send confirmation email"
         case .signIn: "sign in"
         }
     }
 
     var switchTitle: String {
         switch self {
-        case .createAccount: "already have an account?"
-        case .signIn: "create a new account"
+        case .createAccount: "Already confirmed? Sign in"
+        case .signIn: "Need an account? Create one"
         }
     }
 }

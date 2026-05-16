@@ -195,6 +195,7 @@ struct HomeView: View {
                 didJustSave = true
                 isProcessing = true
                 await refreshRecordingUntilSettled(id: response.id)
+                await refreshFromBackend()
                 isProcessing = false
             } catch {
                 isFinishingRecording = false
@@ -353,6 +354,17 @@ private struct CapturedCard: View {
                 .foregroundStyle(.secondary)
                 .lineSpacing(4)
 
+            if !transcriptText.isEmpty {
+                VStack(alignment: .leading, spacing: 7) {
+                    Eyebrow(text: "transcript")
+                    Text(transcriptText)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.primary.opacity(0.82))
+                        .lineSpacing(4)
+                        .lineLimit(8)
+                }
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 if let mood = note.mood {
                     Pill(text: mood.rawValue, isMood: true)
@@ -378,6 +390,10 @@ private struct CapturedCard: View {
                 onDelete()
             }
         }
+    }
+
+    private var transcriptText: String {
+        note.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
