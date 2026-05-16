@@ -103,7 +103,7 @@ struct UploadResponse: Decodable {
     let status: String
     let processingStatus: String
     let hasNote: Bool
-    let recordingURL: String
+    let recordingURL: String?
     let recording: RecordingPayload?
 
     enum CodingKeys: String, CodingKey {

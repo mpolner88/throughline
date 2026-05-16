@@ -352,7 +352,7 @@ async function handlePostDemoRecording(req: Request) {
     status: recording.status,
     processing_status: recording.processing_status,
     has_note: Boolean(recording.structured_note),
-    recording_url: null,
+    recording_url: `/demo/recordings/${recording.id}`,
     recording,
   });
 }
