@@ -403,7 +403,7 @@ private struct FeedbackPrompt: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("agent ready?")
+            Text("Save recording")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
 
