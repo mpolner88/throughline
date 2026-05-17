@@ -22,6 +22,6 @@
     "stub:dev": "node backend/stub-server.mjs",
     "stub:dev:extract": "THROUGHLINE_EXTRACTOR_COMMAND=./backend/dev-extractor.mjs node backend/stub-server.mjs",
     "stub:dev:supabase": "node --env-file=.env.local backend/stub-server.mjs",
-    "supabase:deploy": "supabase functions deploy api --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv && supabase functions deploy mcp --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv"
+    "supabase:deploy": "node scripts/deploy-supabase.mjs"
   }
 }
