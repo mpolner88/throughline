@@ -42,7 +42,12 @@ struct HomeView: View {
 
                     let importantItems = mostImportantItems
                     if !importantItems.isEmpty {
-                        MostImportantView(items: importantItems)
+                        MostImportantView(
+                            items: importantItems,
+                            onToggle: { item, isCompleted in
+                                setActionItem(item, isCompleted: isCompleted)
+                            }
+                        )
                     }
 
                     ForEach(appState.latestNotes) { note in
@@ -51,6 +56,19 @@ struct HomeView: View {
                             label: note.type.displayName,
                             feedbackStatus: feedbackStatus[note.id],
                             onOpen: { selectedNote = note },
+                            onToggleImportant: { actionItem, isCompleted in
+                                setActionItem(
+                                    ImportantItem(
+                                        id: "\(note.id)-\(actionItem.id)",
+                                        recordingID: note.id,
+                                        text: actionItem.text,
+                                        noteTitle: note.title,
+                                        createdAt: note.createdAt,
+                                        isCompleted: actionItem.isCompleted
+                                    ),
+                                    isCompleted: isCompleted
+                                )
+                            },
                             onFeedback: { sendFeedback(for: note, qualityScore: $0) },
                             onDelete: { delete(note: note) }
                         )
@@ -85,6 +103,19 @@ struct HomeView: View {
             NoteDetailSheet(
                 note: note,
                 feedbackStatus: feedbackStatus[note.id],
+                onToggleImportant: { actionItem, isCompleted in
+                    setActionItem(
+                        ImportantItem(
+                            id: "\(note.id)-\(actionItem.id)",
+                            recordingID: note.id,
+                            text: actionItem.text,
+                            noteTitle: note.title,
+                            createdAt: note.createdAt,
+                            isCompleted: actionItem.isCompleted
+                        ),
+                        isCompleted: isCompleted
+                    )
+                },
                 onFeedback: { score, issueTypes, correction in
                     sendFeedback(
                         for: note,
@@ -209,17 +240,19 @@ struct HomeView: View {
         for note in appState.latestNotes {
             guard note.processingStatus == "processed" || note.processingStatus == nil else { continue }
 
-            for text in note.displayMostImportant {
-                let key = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            for actionItem in note.displayImportantActionItems {
+                let key = actionItem.text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 guard !key.isEmpty, !seen.contains(key) else { continue }
 
                 seen.insert(key)
                 items.append(
                     ImportantItem(
                         id: "\(note.id)-\(items.count)",
-                        text: text,
+                        recordingID: note.id,
+                        text: actionItem.text,
                         noteTitle: note.title,
-                        createdAt: note.createdAt
+                        createdAt: note.createdAt,
+                        isCompleted: actionItem.isCompleted
                     )
                 )
 
@@ -230,6 +263,28 @@ struct HomeView: View {
         }
 
         return items
+    }
+
+    private func setActionItem(_ item: ImportantItem, isCompleted: Bool) {
+        guard item.recordingID.hasPrefix("rec_") else { return }
+
+        Task {
+            do {
+                let recording = try await UploadClient().updateActionItem(
+                    recordingID: item.recordingID,
+                    text: item.text,
+                    isCompleted: isCompleted
+                )
+                let updatedNote = recording.displayNote()
+                appState.addUploadedNote(updatedNote)
+                if selectedNote?.id == updatedNote.id {
+                    selectedNote = updatedNote
+                }
+                uploadError = nil
+            } catch {
+                uploadError = error.localizedDescription
+            }
+        }
     }
 
     private func stopAndUploadRecording() {
@@ -386,13 +441,16 @@ private struct CarryForwardView: View {
 
 private struct ImportantItem: Identifiable {
     let id: String
+    let recordingID: String
     let text: String
     let noteTitle: String
     let createdAt: Date
+    let isCompleted: Bool
 }
 
 private struct MostImportantView: View {
     let items: [ImportantItem]
+    let onToggle: (ImportantItem, Bool) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -400,22 +458,117 @@ private struct MostImportantView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(items) { item in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.text)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineSpacing(3)
+                    SwipeCompleteRow(item: item, onToggle: onToggle)
+                }
+            }
+        }
+    }
+}
 
-                        Text("\(item.noteTitle) · \(item.createdAt.formatted(.dateTime.hour().minute()))")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
+private struct SwipeCompleteRow: View {
+    let item: ImportantItem
+    let onToggle: (ImportantItem, Bool) -> Void
+    @State private var horizontalOffset: CGFloat = 0
+
+    private let completeThreshold: CGFloat = 76
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            HStack {
+                Image(systemName: item.isCompleted ? "arrow.uturn.left" : "checkmark")
+                    .font(.system(size: 15, weight: .semibold))
+                Text(item.isCompleted ? "Reopen" : "Done")
+                    .font(.system(size: 13, weight: .medium))
+                Spacer()
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .background(item.isCompleted ? Color.secondary : Theme.blue)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            HStack(alignment: .top, spacing: 10) {
+                Button {
+                    onToggle(item, !item.isCompleted)
+                } label: {
+                    Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 19, weight: .medium))
+                        .foregroundColor(item.isCompleted ? Theme.blue : Color.secondary)
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(item.isCompleted ? "Reopen item" : "Complete item")
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.text)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(item.isCompleted ? Color.secondary : Color.primary)
+                        .strikethrough(item.isCompleted, color: .secondary)
+                        .lineSpacing(3)
+
+                    Text("\(item.noteTitle) · \(item.createdAt.formatted(.dateTime.hour().minute()))")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, 9)
+            .padding(.horizontal, 11)
+            .background(.background)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Theme.border, lineWidth: 0.5)
+            }
+            .offset(x: max(0, horizontalOffset))
+            .gesture(
+                DragGesture(minimumDistance: 18)
+                    .onChanged { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        horizontalOffset = max(0, min(value.translation.width, completeThreshold + 18))
                     }
-                    .padding(.leading, 13)
-                    .overlay(alignment: .leading) {
-                        Rectangle()
-                            .fill(Theme.blue)
-                            .frame(width: 2)
+                    .onEnded { value in
+                        let shouldToggle = value.translation.width >= completeThreshold
+                        withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
+                            horizontalOffset = 0
+                        }
+
+                        if shouldToggle {
+                            onToggle(item, !item.isCompleted)
+                        }
                     }
+            )
+        }
+    }
+}
+
+private struct ImportantActionSection: View {
+    let title: String
+    let items: [ActionItem]
+    let onToggle: (ActionItem, Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Eyebrow(text: title)
+
+            ForEach(items) { item in
+                HStack(alignment: .top, spacing: 8) {
+                    Button {
+                        onToggle(item, !item.isCompleted)
+                    } label: {
+                        Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(item.isCompleted ? Theme.blue : Color.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(item.isCompleted ? "Reopen item" : "Complete item")
+
+                    Text(item.text)
+                        .font(.system(size: 14))
+                        .foregroundColor(item.isCompleted ? Color.secondary : Color.primary.opacity(0.86))
+                        .strikethrough(item.isCompleted, color: .secondary)
+                        .lineSpacing(3)
                 }
             }
         }
@@ -427,6 +580,7 @@ private struct CapturedCard: View {
     let label: String
     let feedbackStatus: FeedbackStatus?
     let onOpen: () -> Void
+    let onToggleImportant: (ActionItem, Bool) -> Void
     let onFeedback: (Int) -> Void
     let onDelete: () -> Void
     @State private var isConfirmingDelete = false
@@ -463,7 +617,11 @@ private struct CapturedCard: View {
             }
 
             if !note.displayMostImportant.isEmpty {
-                ExtractedSection(title: "most important", items: note.displayMostImportant, limit: 3)
+                ImportantActionSection(
+                    title: "most important",
+                    items: Array(note.displayImportantActionItems.prefix(3)),
+                    onToggle: onToggleImportant
+                )
             }
 
             Text(note.previewText)
@@ -651,6 +809,7 @@ private struct ExtractionGradePrompt: View {
 private struct NoteDetailSheet: View {
     let note: ThroughlineNote
     let feedbackStatus: FeedbackStatus?
+    let onToggleImportant: (ActionItem, Bool) -> Void
     let onFeedback: (Int, [String], String?) -> Void
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -679,7 +838,11 @@ private struct NoteDetailSheet: View {
                     }
 
                     if !note.displayMostImportant.isEmpty {
-                        ExtractedSection(title: "most important", items: note.displayMostImportant)
+                        ImportantActionSection(
+                            title: "most important",
+                            items: note.displayImportantActionItems,
+                            onToggle: onToggleImportant
+                        )
                     }
 
                     if !note.todos.isEmpty {

@@ -129,6 +129,7 @@ export function userLocalDateFromTime(userLocalTime) {
 function postprocessExtraction(actual, metadata) {
   deriveTomorrowTodos(actual, metadata);
   deriveMostImportant(actual);
+  deriveActionItems(actual);
   return actual;
 }
 
@@ -240,6 +241,37 @@ function deriveMostImportant(actual) {
   actual.most_important = values.slice(0, 5);
 }
 
+function deriveActionItems(actual) {
+  const items = [];
+
+  for (const todo of actual.todos ?? []) {
+    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at);
+  }
+
+  for (const text of actual.most_important ?? []) {
+    addActionItem(items, text, "most_important");
+  }
+
+  actual.action_items = items;
+}
+
+function addActionItem(items, candidate, source, status = null, completedAt = null) {
+  const text = nullableString(candidate);
+  if (!text) return;
+
+  const key = normalizeForComparison(text);
+  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
+
+  const normalizedStatus = status === "completed" || status === "done" ? "completed" : "open";
+  items.push({
+    id: stableActionItemId(text),
+    text,
+    status: normalizedStatus,
+    source,
+    completed_at: normalizedStatus === "completed" ? nullableString(completedAt) : null,
+  });
+}
+
 function addUniqueImportant(values, candidates) {
   const seen = new Set(values.map(normalizeForComparison));
 
@@ -253,6 +285,14 @@ function addUniqueImportant(values, candidates) {
     values.push(text.slice(0, 180));
     seen.add(key);
   }
+}
+
+function stableActionItemId(text) {
+  const normalized = normalizeForComparison(text)
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `act_${normalized.slice(0, 80) || "item"}`;
 }
 
 function nextIsoDate(isoDate) {

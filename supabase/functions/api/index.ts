@@ -246,6 +246,11 @@ async function handleRequest(req: Request) {
     return handlePostFeedback(req, context, decodeURIComponent(feedbackForRecordingMatch[1]));
   }
 
+  const actionItemsMatch = pathname.match(/^\/recordings\/([^/]+)\/action-items$/);
+  if (req.method === "PATCH" && actionItemsMatch) {
+    return handlePatchActionItem(req, context, decodeURIComponent(actionItemsMatch[1]));
+  }
+
   if (req.method === "GET" && pathname === "/recordings") {
     const recordings = await listRecordings(context);
     return jsonResponse(200, { recordings, count: recordings.length });
@@ -429,6 +434,30 @@ async function handlePostFeedback(req: Request, context: RequestContext, recordi
     quality_score: qualityScore,
     feedback_url: `/feedback/${feedback.id}`,
   });
+}
+
+async function handlePatchActionItem(req: Request, context: RequestContext, recordingId: string) {
+  const recording = await readRecording(recordingId, context);
+  const body = await parseJsonRequest(req);
+  const text = nullableString(body.text);
+  const completed = nullableBoolean(body.completed);
+
+  if (!text) {
+    throw new HttpError(400, "Action item text is required");
+  }
+
+  if (completed === null) {
+    throw new HttpError(400, "Action item completed must be a boolean");
+  }
+
+  if (!recording.structured_note) {
+    throw new HttpError(400, "Recording does not have an extracted note yet");
+  }
+
+  updateActionItemCompletion(recording.structured_note, text, completed);
+  await persistRecording(recording);
+
+  return jsonResponse(200, { recording });
 }
 
 async function handleDeleteAccount(context: RequestContext) {
@@ -1193,6 +1222,7 @@ function metadataForRecording(recording: any) {
 function postprocessExtraction(actual: any, metadata: Record<string, unknown>) {
   deriveTomorrowTodos(actual, metadata);
   deriveMostImportant(actual);
+  deriveActionItems(actual);
   return actual;
 }
 
@@ -1292,6 +1322,43 @@ function deriveMostImportant(actual: any) {
   actual.most_important = values.slice(0, 5);
 }
 
+function deriveActionItems(actual: any) {
+  const items: any[] = [];
+
+  for (const todo of actual.todos ?? []) {
+    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at);
+  }
+
+  for (const text of actual.most_important ?? []) {
+    addActionItem(items, text, "most_important");
+  }
+
+  actual.action_items = items;
+}
+
+function addActionItem(
+  items: any[],
+  candidate: unknown,
+  source: string,
+  status: unknown = null,
+  completedAt: unknown = null,
+) {
+  const text = nullableString(candidate);
+  if (!text) return;
+
+  const key = normalizeForComparison(text);
+  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
+
+  const normalizedStatus = status === "completed" || status === "done" ? "completed" : "open";
+  items.push({
+    id: stableActionItemId(text),
+    text,
+    status: normalizedStatus,
+    source,
+    completed_at: normalizedStatus === "completed" ? nullableString(completedAt) : null,
+  });
+}
+
 function addUniqueImportant(values: string[], candidates: unknown[]) {
   const seen = new Set(values.map(normalizeForComparison));
 
@@ -1305,6 +1372,51 @@ function addUniqueImportant(values: string[], candidates: unknown[]) {
     values.push(text.slice(0, 180));
     seen.add(key);
   }
+}
+
+function updateActionItemCompletion(note: any, text: string, completed: boolean) {
+  note.action_items = Array.isArray(note.action_items) ? note.action_items : [];
+
+  if (!note.action_items.length) {
+    deriveActionItems(note);
+  }
+
+  const key = normalizeForComparison(text);
+  const completedAt = completed ? new Date().toISOString() : null;
+  let matched = false;
+
+  for (const item of note.action_items) {
+    if (normalizeForComparison(item.text) !== key) continue;
+
+    item.status = completed ? "completed" : "open";
+    item.completed_at = completedAt;
+    matched = true;
+  }
+
+  if (!matched) {
+    note.action_items.push({
+      id: stableActionItemId(text),
+      text,
+      status: completed ? "completed" : "open",
+      source: "manual",
+      completed_at: completedAt,
+    });
+  }
+
+  for (const todo of note.todos ?? []) {
+    if (normalizeForComparison(todo.text) !== key) continue;
+
+    todo.status = completed ? "completed" : "open";
+    todo.completed_at = completedAt;
+  }
+}
+
+function stableActionItemId(text: string) {
+  const normalized = normalizeForComparison(text)
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `act_${normalized.slice(0, 80) || randomHex(4)}`;
 }
 
 async function requestContext(req: Request): Promise<RequestContext | null> {

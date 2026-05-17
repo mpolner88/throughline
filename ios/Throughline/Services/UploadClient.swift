@@ -133,6 +133,7 @@ struct UploadResponse: Decodable {
             summary: Self.summary(for: processingStatus),
             transcript: "Recording uploaded. Extraction will replace this placeholder.",
             mostImportant: [],
+            actionItems: [],
             todos: [],
             priorities: [],
             intentions: [],
@@ -197,6 +198,7 @@ struct RecordingPayload: Decodable {
             summary: structuredNote.summary,
             transcript: transcriptRaw ?? "",
             mostImportant: structuredNote.mostImportant,
+            actionItems: structuredNote.actionItems,
             todos: structuredNote.todos,
             priorities: structuredNote.priorities,
             intentions: structuredNote.intentions,
@@ -229,6 +231,7 @@ struct RecordingPayload: Decodable {
             summary: UploadResponse.summary(for: status),
             transcript: transcriptRaw ?? "Recording saved. Transcript will appear here after processing.",
             mostImportant: [],
+            actionItems: [],
             todos: [],
             priorities: [],
             intentions: [],
@@ -259,6 +262,7 @@ struct StructuredNotePayload: Decodable {
     let title: String
     let summary: String
     let mostImportant: [String]
+    let actionItems: [ActionItem]
     let todos: [Todo]
     let priorities: [String]
     let intentions: [String]
@@ -275,6 +279,7 @@ struct StructuredNotePayload: Decodable {
         case title
         case summary
         case mostImportant = "most_important"
+        case actionItems = "action_items"
         case todos
         case priorities
         case intentions
@@ -293,6 +298,7 @@ struct StructuredNotePayload: Decodable {
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? "voice note"
         summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
         mostImportant = try container.decodeIfPresent([String].self, forKey: .mostImportant) ?? []
+        actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
         todos = try container.decodeIfPresent([Todo].self, forKey: .todos) ?? []
         priorities = try container.decodeIfPresent([String].self, forKey: .priorities) ?? []
         intentions = try container.decodeIfPresent([String].self, forKey: .intentions) ?? []
@@ -452,6 +458,22 @@ struct UploadClient {
         try validate(response: response, data: data)
     }
 
+    func updateActionItem(recordingID: String, text: String, isCompleted: Bool) async throws -> RecordingPayload {
+        var request = try await authorizedRequest(url: baseURL
+            .appendingPathComponent("recordings")
+            .appendingPathComponent(recordingID)
+            .appendingPathComponent("action-items"))
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            ActionItemUpdateRequest(text: text, completed: isCompleted)
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+    }
+
     func deleteAccount() async throws {
         var request = try await authorizedRequest(url: baseURL.appendingPathComponent("account"))
         request.httpMethod = "DELETE"
@@ -536,6 +558,11 @@ private struct FeedbackRequest: Encodable {
         case source
         case rubricVersion = "rubric_version"
     }
+}
+
+private struct ActionItemUpdateRequest: Encodable {
+    let text: String
+    let completed: Bool
 }
 
 struct FeedbackResponse: Decodable {

@@ -341,6 +341,27 @@ function listOpenTodos(recordings, input) {
         recording_title: note.title,
       });
     }
+
+    for (const item of note.action_items ?? []) {
+      if (item.status && item.status !== "open") continue;
+      if (priority) continue;
+
+      const key = normalizeForComparison(item.text);
+      if (!key || seen.has(key)) continue;
+
+      seen.add(key);
+      todos.push({
+        text: item.text,
+        status: item.status ?? "open",
+        priority: null,
+        due: null,
+        for_date: null,
+        context: item.source ?? "most_important",
+        recording_id: recording.id,
+        recording_created_at: recording.created_at,
+        recording_title: note.title,
+      });
+    }
   }
 
   return { todos: todos.slice(0, limit) };
@@ -509,6 +530,7 @@ function searchableText(recording) {
     note.title,
     note.summary,
     ...(note.most_important ?? []),
+    ...(note.action_items ?? []).map((item) => item.text),
     ...(note.todos ?? []).map((todo) => todo.text),
     ...(note.priorities ?? []),
     ...(note.intentions ?? []),
@@ -525,6 +547,7 @@ function matchedExcerpt(recording, queryTokens) {
   const candidates = [
     recording.structured_note?.summary,
     ...(recording.structured_note?.most_important ?? []),
+    ...(recording.structured_note?.action_items ?? []).map((item) => item.text),
     recording.transcript_raw,
     ...(recording.structured_note?.todos ?? []).map((todo) => todo.text),
     ...(recording.structured_note?.intentions ?? []),

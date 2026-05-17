@@ -33,44 +33,106 @@ enum Mood: String, Codable {
 struct Todo: Identifiable, Codable, Hashable {
     var id = UUID().uuidString
     var text: String
+    var status: String?
     var priority: String?
     var due: String?
     var forDate: String?
     var context: String?
+    var completedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
         case text
+        case status
         case priority
         case due
         case forDate = "for_date"
         case context
+        case completedAt = "completed_at"
     }
 
     init(
         id: String = UUID().uuidString,
         text: String,
+        status: String? = nil,
         priority: String?,
         due: String?,
         forDate: String?,
-        context: String?
+        context: String?,
+        completedAt: String? = nil
     ) {
         self.id = id
         self.text = text
+        self.status = status
         self.priority = priority
         self.due = due
         self.forDate = forDate
         self.context = context
+        self.completedAt = completedAt
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
         text = try container.decode(String.self, forKey: .text)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
         priority = try container.decodeIfPresent(String.self, forKey: .priority)
         due = try container.decodeIfPresent(String.self, forKey: .due)
         forDate = try container.decodeIfPresent(String.self, forKey: .forDate)
         context = try container.decodeIfPresent(String.self, forKey: .context)
+        completedAt = try container.decodeIfPresent(String.self, forKey: .completedAt)
+    }
+}
+
+struct ActionItem: Identifiable, Codable, Hashable {
+    var id: String
+    var text: String
+    var status: String
+    var source: String?
+    var completedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case text
+        case status
+        case source
+        case completedAt = "completed_at"
+    }
+
+    init(
+        id: String = UUID().uuidString,
+        text: String,
+        status: String = "open",
+        source: String? = nil,
+        completedAt: String? = nil
+    ) {
+        self.id = id
+        self.text = text
+        self.status = status
+        self.source = source
+        self.completedAt = completedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        text = try container.decode(String.self, forKey: .text)
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? Self.stableID(for: text)
+        status = try container.decodeIfPresent(String.self, forKey: .status) ?? "open"
+        source = try container.decodeIfPresent(String.self, forKey: .source)
+        completedAt = try container.decodeIfPresent(String.self, forKey: .completedAt)
+    }
+
+    var isCompleted: Bool {
+        status == "completed" || status == "done"
+    }
+
+    private static func stableID(for text: String) -> String {
+        let normalized = text
+            .lowercased()
+            .filter { $0.isLetter || $0.isNumber || $0.isWhitespace || $0 == "-" }
+            .split(separator: " ")
+            .joined(separator: "-")
+        return normalized.isEmpty ? UUID().uuidString : String(normalized.prefix(80))
     }
 }
 
@@ -83,6 +145,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
     var summary: String
     var transcript: String
     var mostImportant: [String]
+    var actionItems: [ActionItem]
     var todos: [Todo]
     var priorities: [String]
     var intentions: [String]
@@ -103,6 +166,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         case summary
         case transcript
         case mostImportant
+        case actionItems
         case todos
         case priorities
         case intentions
@@ -124,6 +188,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         summary: String,
         transcript: String,
         mostImportant: [String] = [],
+        actionItems: [ActionItem] = [],
         todos: [Todo],
         priorities: [String],
         intentions: [String],
@@ -143,6 +208,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         self.summary = summary
         self.transcript = transcript
         self.mostImportant = mostImportant
+        self.actionItems = actionItems
         self.todos = todos
         self.priorities = priorities
         self.intentions = intentions
@@ -165,6 +231,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
         transcript = try container.decodeIfPresent(String.self, forKey: .transcript) ?? ""
         mostImportant = try container.decodeIfPresent([String].self, forKey: .mostImportant) ?? []
+        actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
         todos = try container.decodeIfPresent([Todo].self, forKey: .todos) ?? []
         priorities = try container.decodeIfPresent([String].self, forKey: .priorities) ?? []
         intentions = try container.decodeIfPresent([String].self, forKey: .intentions) ?? []
@@ -228,6 +295,21 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         return Array(values.prefix(5))
     }
 
+    var displayImportantActionItems: [ActionItem] {
+        var statusByText: [String: ActionItem] = [:]
+        for item in actionItems {
+            statusByText[Self.normalizedText(item.text)] = item
+        }
+
+        return displayMostImportant.map { text in
+            if let item = statusByText[Self.normalizedText(text)] {
+                return item
+            }
+
+            return ActionItem(id: Self.stableActionID(for: text), text: text, source: "most_important")
+        }
+    }
+
     private func appendUnique(_ candidates: [String], to values: inout [String]) {
         for candidate in candidates {
             let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -243,6 +325,18 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
             || text.localizedCaseInsensitiveContains("extraction will replace")
     }
 
+    private static func normalizedText(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func stableActionID(for text: String) -> String {
+        let normalized = normalizedText(text)
+            .filter { $0.isLetter || $0.isNumber || $0.isWhitespace || $0 == "-" }
+            .split(separator: " ")
+            .joined(separator: "-")
+        return normalized.isEmpty ? UUID().uuidString : String(normalized.prefix(80))
+    }
+
     static let sample = ThroughlineNote(
         id: "sample-note",
         createdAt: Date(),
@@ -251,6 +345,10 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         summary: "Keep the morning light. Finish the first version, then walk again tonight and see what still feels true.",
         transcript: "I want to keep the morning light. Ship the small thing first, then walk again tonight and see what still feels true.",
         mostImportant: ["Ship the small thing first", "Walk again tonight"],
+        actionItems: [
+            ActionItem(text: "Ship the small thing first", source: "most_important"),
+            ActionItem(text: "Walk again tonight", source: "most_important")
+        ],
         todos: [
             Todo(text: "Ship the small thing first", priority: "high", due: nil, forDate: nil, context: nil),
             Todo(text: "Walk again tonight", priority: nil, due: nil, forDate: nil, context: nil)
