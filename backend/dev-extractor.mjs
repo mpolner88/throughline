@@ -82,6 +82,7 @@ try {
     type: inferType(input.metadata),
     title: titleFromTranscript(transcript),
     summary: transcript.slice(0, 220),
+    most_important: tomorrowTodos.length ? tomorrowTodos.slice(0, 5) : [],
     todos: todosFromTomorrow(tomorrowTodos, input.metadata?.user_local_date),
     priorities: [],
     intentions: [],

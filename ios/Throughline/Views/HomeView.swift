@@ -2,8 +2,16 @@ import SwiftUI
 
 private enum FeedbackStatus: Equatable {
     case sending
-    case sent
+    case sent(Int)
     case failed
+
+    var savedScore: Int? {
+        if case let .sent(score) = self {
+            return score
+        }
+
+        return nil
+    }
 }
 
 struct HomeView: View {
@@ -17,6 +25,7 @@ struct HomeView: View {
     @State private var isUploading = false
     @State private var isProcessing = false
     @State private var didJustSave = false
+    @State private var selectedNote: ThroughlineNote?
     private let maxRecordingSeconds = 300
 
     var body: some View {
@@ -31,12 +40,18 @@ struct HomeView: View {
                         CarryForwardView(items: appState.carriedForwardItems)
                     }
 
+                    let importantItems = mostImportantItems
+                    if !importantItems.isEmpty {
+                        MostImportantView(items: importantItems)
+                    }
+
                     ForEach(appState.latestNotes) { note in
                         CapturedCard(
                             note: note,
                             label: note.type.displayName,
                             feedbackStatus: feedbackStatus[note.id],
-                            onFeedback: { sendFeedback(for: note, agentReady: $0) },
+                            onOpen: { selectedNote = note },
+                            onFeedback: { sendFeedback(for: note, qualityScore: $0) },
                             onDelete: { delete(note: note) }
                         )
                     }
@@ -65,6 +80,24 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingSettings) {
             AccountSettingsView()
+        }
+        .sheet(item: $selectedNote) { note in
+            NoteDetailSheet(
+                note: note,
+                feedbackStatus: feedbackStatus[note.id],
+                onFeedback: { score, issueTypes, correction in
+                    sendFeedback(
+                        for: note,
+                        qualityScore: score,
+                        issueTypes: issueTypes,
+                        correction: correction
+                    )
+                },
+                onDelete: {
+                    delete(note: note)
+                    selectedNote = nil
+                }
+            )
         }
     }
 
@@ -169,6 +202,36 @@ struct HomeView: View {
         return "tap to record"
     }
 
+    private var mostImportantItems: [ImportantItem] {
+        var items: [ImportantItem] = []
+        var seen = Set<String>()
+
+        for note in appState.latestNotes {
+            guard note.processingStatus == "processed" || note.processingStatus == nil else { continue }
+
+            for text in note.displayMostImportant {
+                let key = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !key.isEmpty, !seen.contains(key) else { continue }
+
+                seen.insert(key)
+                items.append(
+                    ImportantItem(
+                        id: "\(note.id)-\(items.count)",
+                        text: text,
+                        noteTitle: note.title,
+                        createdAt: note.createdAt
+                    )
+                )
+
+                if items.count >= 6 {
+                    return items
+                }
+            }
+        }
+
+        return items
+    }
+
     private func stopAndUploadRecording() {
         guard recorder.isRecording, !isFinishingRecording, !isUploading, !isProcessing else { return }
 
@@ -257,7 +320,12 @@ struct HomeView: View {
         await refreshFromBackend()
     }
 
-    private func sendFeedback(for note: ThroughlineNote, agentReady: Bool) {
+    private func sendFeedback(
+        for note: ThroughlineNote,
+        qualityScore: Int,
+        issueTypes: [String] = [],
+        correction: String? = nil
+    ) {
         guard note.id.hasPrefix("rec_") else { return }
 
         feedbackStatus[note.id] = .sending
@@ -265,10 +333,12 @@ struct HomeView: View {
             do {
                 _ = try await UploadClient().sendFeedback(
                     recordingID: note.id,
-                    agentReady: agentReady,
+                    qualityScore: qualityScore,
+                    issueTypes: issueTypes,
+                    correction: correction,
                     shouldRemember: true
                 )
-                feedbackStatus[note.id] = .sent
+                feedbackStatus[note.id] = .sent(qualityScore)
             } catch {
                 feedbackStatus[note.id] = .failed
             }
@@ -314,11 +384,50 @@ private struct CarryForwardView: View {
     }
 }
 
+private struct ImportantItem: Identifiable {
+    let id: String
+    let text: String
+    let noteTitle: String
+    let createdAt: Date
+}
+
+private struct MostImportantView: View {
+    let items: [ImportantItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Eyebrow(text: "most important")
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(items) { item in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.text)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineSpacing(3)
+
+                        Text("\(item.noteTitle) · \(item.createdAt.formatted(.dateTime.hour().minute()))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.leading, 13)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(Theme.blue)
+                            .frame(width: 2)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private struct CapturedCard: View {
     let note: ThroughlineNote
     let label: String
     let feedbackStatus: FeedbackStatus?
-    let onFeedback: (Bool) -> Void
+    let onOpen: () -> Void
+    let onFeedback: (Int) -> Void
     let onDelete: () -> Void
     @State private var isConfirmingDelete = false
 
@@ -349,12 +458,21 @@ private struct CapturedCard: View {
                 .accessibilityLabel("Discard memory")
             }
 
-            Text(note.summary)
+            if let processingText = note.processingText {
+                ProcessingStatusRow(text: processingText, isActive: note.isProcessing)
+            }
+
+            if !note.displayMostImportant.isEmpty {
+                ExtractedSection(title: "most important", items: note.displayMostImportant, limit: 3)
+            }
+
+            Text(note.previewText)
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .lineSpacing(4)
+                .lineLimit(4)
 
-            if !transcriptText.isEmpty {
+            if !transcriptText.isEmpty && transcriptText != note.previewText {
                 VStack(alignment: .leading, spacing: 7) {
                     Eyebrow(text: "transcript")
                     Text(transcriptText)
@@ -375,8 +493,20 @@ private struct CapturedCard: View {
                 }
             }
 
+            Button(action: onOpen) {
+                HStack(spacing: 6) {
+                    Text("Read full note")
+                        .font(.system(size: 13, weight: .medium))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundStyle(Theme.blue)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Read full note")
+
             if note.id.hasPrefix("rec_") {
-                FeedbackPrompt(status: feedbackStatus, onFeedback: onFeedback)
+                ExtractionGradePrompt(status: feedbackStatus, onGrade: onFeedback)
             }
         }
         .padding(18)
@@ -397,47 +527,349 @@ private struct CapturedCard: View {
     }
 }
 
-private struct FeedbackPrompt: View {
-    let status: FeedbackStatus?
-    let onFeedback: (Bool) -> Void
+private struct ProcessingStatusRow: View {
+    let text: String
+    let isActive: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
-            Text("Save recording")
+        HStack(spacing: 9) {
+            if isActive {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Image(systemName: "exclamationmark.circle")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(text)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(Theme.blue.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
 
-            Spacer()
+private struct ExtractedSection: View {
+    let title: String
+    let items: [String]
+    var limit: Int? = nil
 
-            if status == .sent {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Theme.blue)
-                    .accessibilityLabel("Feedback sent")
-            } else {
-                feedbackButton(systemName: "checkmark", label: "Yes", agentReady: true)
-                feedbackButton(systemName: "xmark", label: "No", agentReady: false)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Eyebrow(text: title)
+
+            ForEach(Array(items.prefix(limit ?? items.count)), id: \.self) { item in
+                HStack(alignment: .top, spacing: 8) {
+                    Circle()
+                        .fill(Theme.blue)
+                        .frame(width: 5, height: 5)
+                        .padding(.top, 7)
+
+                    Text(item)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.primary.opacity(0.86))
+                        .lineSpacing(3)
+                }
+            }
+        }
+    }
+}
+
+private struct ExtractionGradePrompt: View {
+    let status: FeedbackStatus?
+    let onGrade: (Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 10) {
+                Text(statusText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                if status?.savedScore != nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Theme.blue)
+                        .accessibilityLabel("Feedback saved")
+                }
+            }
+
+            HStack(spacing: 6) {
+                ForEach(1...5, id: \.self) { score in
+                    gradeButton(score)
+                }
             }
         }
         .padding(.top, 2)
     }
 
-    private func feedbackButton(systemName: String, label: String, agentReady: Bool) -> some View {
+    private var statusText: String {
+        if let score = status?.savedScore {
+            return "Extraction grade saved: \(score)/5"
+        }
+
+        if status == .sending {
+            return "Saving extraction grade"
+        }
+
+        if status == .failed {
+            return "Could not save grade. Try again."
+        }
+
+        return "Grade extraction"
+    }
+
+    private func gradeButton(_ score: Int) -> some View {
         Button {
-            onFeedback(agentReady)
+            onGrade(score)
         } label: {
-            Image(systemName: systemName)
+            Text("\(score)")
                 .font(.system(size: 13, weight: .semibold))
-                .frame(width: 30, height: 30)
+                .frame(width: 32, height: 30)
                 .background(
-                    Circle()
-                        .stroke(Theme.border, lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(status?.savedScore == score ? Theme.blue : Color.clear)
                 )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(Theme.border, lineWidth: 0.5)
+                }
         }
         .buttonStyle(.plain)
-        .foregroundStyle(status == .sending ? .secondary : .primary)
+        .foregroundColor(status?.savedScore == score ? Color.white : status == .sending ? Color.secondary : Color.primary)
         .disabled(status == .sending)
-        .accessibilityLabel(label)
+        .accessibilityLabel("Grade extraction \(score) out of 5")
+    }
+}
+
+private struct NoteDetailSheet: View {
+    let note: ThroughlineNote
+    let feedbackStatus: FeedbackStatus?
+    let onFeedback: (Int, [String], String?) -> Void
+    let onDelete: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Eyebrow(text: "\(note.type.displayName) · \(note.createdAt.formatted(.dateTime.weekday().month().day().hour().minute()))")
+                        Text(note.title)
+                            .font(.system(size: 24, weight: .medium))
+                            .lineSpacing(2)
+                    }
+
+                    if let processingText = note.processingText {
+                        ProcessingStatusRow(text: processingText, isActive: note.isProcessing)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Eyebrow(text: "preview")
+                        Text(note.summary)
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(4)
+                    }
+
+                    if !note.displayMostImportant.isEmpty {
+                        ExtractedSection(title: "most important", items: note.displayMostImportant)
+                    }
+
+                    if !note.todos.isEmpty {
+                        ExtractedSection(title: "to-dos", items: note.todos.map(\.text))
+                    }
+
+                    if !note.intentions.isEmpty {
+                        ExtractedSection(title: "notes", items: note.intentions)
+                    }
+
+                    if !note.accomplishments.isEmpty {
+                        ExtractedSection(title: "accomplishments", items: note.accomplishments)
+                    }
+
+                    let transcriptText = note.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !transcriptText.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Eyebrow(text: "transcript")
+                            Text(transcriptText)
+                                .font(.system(size: 15))
+                                .lineSpacing(5)
+                        }
+                    }
+
+                    if note.id.hasPrefix("rec_") {
+                        DetailedExtractionFeedbackView(
+                            status: feedbackStatus,
+                            onSubmit: onFeedback
+                        )
+                    }
+
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Label("Discard memory", systemImage: "trash")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(24)
+            }
+            .navigationTitle("memory")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct DetailedExtractionFeedbackView: View {
+    let status: FeedbackStatus?
+    let onSubmit: (Int, [String], String?) -> Void
+    @State private var selectedScore: Int?
+    @State private var selectedIssues = Set<String>()
+    @State private var correction = ""
+
+    private let issues: [(id: String, label: String)] = [
+        ("missed_actions", "Missed to-dos"),
+        ("wrong_importance", "Wrong importance"),
+        ("invented_detail", "Invented detail"),
+        ("weak_summary", "Weak summary"),
+        ("transcript_error", "Bad transcript")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Eyebrow(text: "grade extraction")
+
+            Text("Rate the memory extraction. Low scores and corrections become eval candidates.")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+
+            HStack(spacing: 7) {
+                ForEach(1...5, id: \.self) { score in
+                    Button {
+                        selectedScore = score
+                    } label: {
+                        Text("\(score)")
+                            .font(.system(size: 14, weight: .semibold))
+                            .frame(width: 38, height: 34)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(selectedScore == score ? Theme.blue : Color.clear)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(Theme.border, lineWidth: 0.5)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(selectedScore == score ? Color.white : Color.primary)
+                    .accessibilityLabel("Grade extraction \(score) out of 5")
+                }
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 126), spacing: 8)], alignment: .leading, spacing: 8) {
+                ForEach(issues, id: \.id) { issue in
+                    issueButton(issue)
+                }
+            }
+
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $correction)
+                    .font(.system(size: 14))
+                    .frame(minHeight: 88)
+                    .padding(8)
+                    .accessibilityLabel("Correction notes")
+
+                if correction.isEmpty {
+                    Text("What did it miss or get wrong?")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 16)
+                        .padding(.leading, 13)
+                        .allowsHitTesting(false)
+                }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Theme.border, lineWidth: 0.5)
+            }
+
+            Button {
+                guard let selectedScore else { return }
+                let trimmedCorrection = correction.trimmingCharacters(in: .whitespacesAndNewlines)
+                onSubmit(
+                    selectedScore,
+                    Array(selectedIssues).sorted(),
+                    trimmedCorrection.isEmpty ? nil : trimmedCorrection
+                )
+            } label: {
+                Text(buttonText)
+                    .font(.system(size: 15, weight: .medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(selectedScore == nil || status == .sending ? Theme.border : Theme.blue)
+                    .foregroundColor(selectedScore == nil || status == .sending ? Color.secondary : Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedScore == nil || status == .sending)
+        }
+        .onAppear {
+            selectedScore = status?.savedScore
+        }
+    }
+
+    private var buttonText: String {
+        if status == .sending {
+            return "Saving grade"
+        }
+
+        if let score = status?.savedScore {
+            return "Saved \(score)/5"
+        }
+
+        return "Save grade"
+    }
+
+    private func issueButton(_ issue: (id: String, label: String)) -> some View {
+        let isSelected = selectedIssues.contains(issue.id)
+
+        return Button {
+            if isSelected {
+                selectedIssues.remove(issue.id)
+            } else {
+                selectedIssues.insert(issue.id)
+            }
+        } label: {
+            Text(issue.label)
+                .font(.system(size: 13, weight: .medium))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 9)
+                .padding(.horizontal, 10)
+                .background(isSelected ? Theme.blue.opacity(0.12) : Color.clear)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(isSelected ? Theme.blue : Theme.border, lineWidth: 0.7)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 

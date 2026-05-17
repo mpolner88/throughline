@@ -18,6 +18,7 @@ The scorer currently measures the fields most likely to drive useful agent behav
 - `type`
 - `title`
 - `summary`
+- `most_important` (extracted and stored, not yet scored in the default suite)
 - `todos`
 - `priorities`
 - `intentions`
@@ -82,6 +83,14 @@ npm run eval:import-feedback
 ```
 
 This writes to `evals/tmp/feedback-fixtures` by default. Keep raw user feedback out of committed fixtures unless it has been reviewed and sanitized.
+
+Product feedback now stores extraction grades in Supabase through the API feedback endpoint. A useful self-improving loop is:
+
+1. User grades an extraction in the app and optionally adds correction notes.
+2. Low scores or corrections are stored as `needs_review` feedback with the transcript and structured-note snapshot.
+3. A reviewer or agent converts the correction into a sanitized `expected` object.
+4. `npm run eval:import-feedback` turns reviewed feedback into private fixtures.
+5. Prompt or model changes must pass `npm run eval:check` before deploy.
 
 Prediction files should be named `{fixture_id}.json` and contain either the extraction object directly or `{ "actual": { ... } }`.
 

@@ -19,6 +19,7 @@ const OUTPUT_FIELDS = [
   "type",
   "title",
   "summary",
+  "most_important",
   "todos",
   "priorities",
   "intentions",
@@ -32,6 +33,7 @@ const OUTPUT_FIELDS = [
 ];
 const ARRAY_FIELDS = new Set([
   "todos",
+  "most_important",
   "priorities",
   "intentions",
   "accomplishments",
@@ -78,6 +80,7 @@ The user-facing product is simple: a person speaks anything into Throughline, an
 - Preserve named people exactly as spoken when possible.
 - Use concise titles, 80 characters or fewer.
 - Use one or two sentence summaries.
+- most_important must be an array of 1-5 concise strings that capture the highest-signal takeaways, actions, decisions, risks, or reminders for an agent. Each item must be grounded in the transcript.
 - Fill every applicable field. Empty arrays are correct only when the transcript gives no evidence.
 - Use neutral for mood when the note has no clear emotional signal. Use null only when the transcript is too thin to judge mood at all.
 
@@ -128,6 +131,7 @@ Use centers when the note clearly touches that life area. Examples:
 ## Field guidance
 
 - priorities: the main things for the day/week, especially when the user says priority, important, first, first thing, or carry forward.
+- most_important: a short ranked list of the items an agent should notice first. Prefer explicit priorities, high-impact todos, decisions, blockers, and durable context. Do not duplicate near-identical items.
 - intentions: constraints, posture, or how the user wants to approach something. Capture explicit constraints like do not overbuild the dashboard, not perfect it, without explaining too much, or keep it small. Do not invent intentions from generic worry or stress.
 - accomplishments: completed actions only. Example: I called Aaron, I got the outline done, I shipped the beta invite.
 - projects: named workstreams, objects, products, or recurring efforts mentioned directly. Example: Stripe, pricing page, metrics doc, README, dashboard, TestFlight. Avoid generic projects like the app unless no clearer project noun exists.
@@ -142,6 +146,7 @@ Before returning, check:
 - If the transcript names a product, doc, API, feature, or workstream, projects is not empty.
 - If the transcript has clear topics, tags is not empty.
 - If the transcript touches work, health, family/friends, creative work, or values, centers_of_balance is not empty.
+- If the transcript contains actions, decisions, priorities, blockers, or durable context, most_important is not empty.
 - If the transcript says what matters most, priorities is not empty.
 - If the transcript says how to approach the work, intentions is not empty.
 
@@ -381,20 +386,28 @@ async function handleExtractRecording(req: Request, context: RequestContext, id:
 async function handlePostFeedback(req: Request, context: RequestContext, recordingId: string) {
   const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
+  const qualityScore = normalizeQualityScore(body.quality_score);
+  const issueTypes = normalizeStringArray(body.issue_types).slice(0, 8);
+  const correction = nullableString(body.correction);
+  const missing = nullableString(body.missing);
+  const invented = nullableString(body.invented);
   const feedback = {
     id: createFeedbackId(),
     recording_id: recording.id,
     user_id: recording.user_id,
     auth_user_id: recording.auth_user_id ?? context.authUserId,
     created_at: new Date().toISOString(),
-    source: "alpha_feedback",
-    status: body.expected ? "eval_candidate" : "needs_review",
+    source: nullableString(body.source) || "alpha_feedback",
+    status: feedbackStatus(body.expected, qualityScore, issueTypes, correction),
     answers: {
+      quality_score: qualityScore,
+      issue_types: issueTypes,
+      rubric_version: nullableString(body.rubric_version) || "extraction_quality_v1",
       agent_ready: nullableBoolean(body.agent_ready),
       should_remember: nullableBoolean(body.should_remember),
-      missing: nullableString(body.missing),
-      invented: nullableString(body.invented),
-      correction: nullableString(body.correction),
+      missing,
+      invented,
+      correction,
     },
     expected: body.expected && typeof body.expected === "object" ? body.expected : null,
     recording_snapshot: {
@@ -413,6 +426,7 @@ async function handlePostFeedback(req: Request, context: RequestContext, recordi
     id: feedback.id,
     recording_id: recording.id,
     status: feedback.status,
+    quality_score: qualityScore,
     feedback_url: `/feedback/${feedback.id}`,
   });
 }
@@ -778,6 +792,7 @@ function buildExtractionMessages(input: Record<string, unknown>, attempt: number
       "Retry guard:",
       "- Return syntactically valid JSON only.",
       "- Do not include markdown, comments, or trailing text.",
+      "- most_important must be an array of strings.",
       "- tomorrow_todos must be an array of strings, never todo objects.",
       "- Use double quotes for every JSON string and close every string.",
     ].join("\n")
@@ -1102,9 +1117,24 @@ function feedbackSummary(feedback: any) {
     recording_id: feedback.recording_id,
     created_at: feedback.created_at,
     status: feedback.status,
+    quality_score: feedback.answers?.quality_score ?? null,
+    issue_types: feedback.answers?.issue_types ?? [],
     agent_ready: feedback.answers?.agent_ready ?? null,
     should_remember: feedback.answers?.should_remember ?? null,
   };
+}
+
+function feedbackStatus(
+  expected: unknown,
+  qualityScore: number | null,
+  issueTypes: string[],
+  correction: string | null,
+) {
+  if (expected && typeof expected === "object") return "eval_candidate";
+  if (qualityScore !== null && qualityScore <= 3) return "needs_review";
+  if (issueTypes.length || correction) return "needs_review";
+  if (qualityScore !== null) return "graded";
+  return "needs_review";
 }
 
 function normalizeExtraction(raw: any, metadata: Record<string, unknown> = {}) {
@@ -1162,6 +1192,7 @@ function metadataForRecording(recording: any) {
 
 function postprocessExtraction(actual: any, metadata: Record<string, unknown>) {
   deriveTomorrowTodos(actual, metadata);
+  deriveMostImportant(actual);
   return actual;
 }
 
@@ -1235,6 +1266,44 @@ function deriveTomorrowTodos(actual: any, metadata: Record<string, unknown>) {
 
     actual.tomorrow_todos.push(todo.text);
     tomorrowTodoTexts.add(key);
+  }
+}
+
+function deriveMostImportant(actual: any) {
+  const values: string[] = [];
+
+  addUniqueImportant(values, actual.most_important ?? []);
+  addUniqueImportant(values, actual.priorities ?? []);
+  addUniqueImportant(
+    values,
+    (actual.todos ?? [])
+      .filter((todo: any) => todo.priority === "high")
+      .map((todo: any) => todo.text),
+  );
+  addUniqueImportant(values, actual.tomorrow_todos ?? []);
+  addUniqueImportant(values, actual.intentions ?? []);
+  addUniqueImportant(values, actual.accomplishments ?? []);
+  addUniqueImportant(values, (actual.todos ?? []).map((todo: any) => todo.text));
+
+  if (!values.length && actual.summary) {
+    addUniqueImportant(values, [actual.summary]);
+  }
+
+  actual.most_important = values.slice(0, 5);
+}
+
+function addUniqueImportant(values: string[], candidates: unknown[]) {
+  const seen = new Set(values.map(normalizeForComparison));
+
+  for (const candidate of candidates) {
+    const text = nullableString(candidate);
+    if (!text) continue;
+
+    const key = normalizeForComparison(text);
+    if (!key || seen.has(key)) continue;
+
+    values.push(text.slice(0, 180));
+    seen.add(key);
   }
 }
 
@@ -1432,6 +1501,12 @@ function nullableNumber(value: unknown) {
 
 function nullableBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
+}
+
+function normalizeQualityScore(value: unknown) {
+  const number = Number(value);
+  if (!Number.isInteger(number)) return null;
+  return Math.min(5, Math.max(1, number));
 }
 
 function normalizeType(value: unknown) {

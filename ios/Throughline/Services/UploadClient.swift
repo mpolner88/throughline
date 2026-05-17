@@ -128,9 +128,11 @@ struct UploadResponse: Decodable {
             id: id,
             createdAt: Date(),
             type: .freeform,
+            processingStatus: processingStatus,
             title: "voice note captured",
             summary: Self.summary(for: processingStatus),
             transcript: "Recording uploaded. Extraction will replace this placeholder.",
+            mostImportant: [],
             todos: [],
             priorities: [],
             intentions: [],
@@ -190,9 +192,11 @@ struct RecordingPayload: Decodable {
             id: id,
             createdAt: createdAtDate,
             type: structuredNote.type ?? type ?? .freeform,
+            processingStatus: processingStatus,
             title: structuredNote.title,
             summary: structuredNote.summary,
             transcript: transcriptRaw ?? "",
+            mostImportant: structuredNote.mostImportant,
             todos: structuredNote.todos,
             priorities: structuredNote.priorities,
             intentions: structuredNote.intentions,
@@ -220,9 +224,11 @@ struct RecordingPayload: Decodable {
             id: id,
             createdAt: createdAtDate,
             type: type ?? .freeform,
+            processingStatus: status,
             title: "voice note captured",
             summary: UploadResponse.summary(for: status),
             transcript: transcriptRaw ?? "Recording saved. Transcript will appear here after processing.",
+            mostImportant: [],
             todos: [],
             priorities: [],
             intentions: [],
@@ -252,6 +258,7 @@ struct StructuredNotePayload: Decodable {
     let type: RecordingType?
     let title: String
     let summary: String
+    let mostImportant: [String]
     let todos: [Todo]
     let priorities: [String]
     let intentions: [String]
@@ -267,6 +274,7 @@ struct StructuredNotePayload: Decodable {
         case type
         case title
         case summary
+        case mostImportant = "most_important"
         case todos
         case priorities
         case intentions
@@ -277,6 +285,24 @@ struct StructuredNotePayload: Decodable {
         case projects
         case tags
         case centersOfBalance = "centers_of_balance"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        type = try container.decodeIfPresent(RecordingType.self, forKey: .type)
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? "voice note"
+        summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
+        mostImportant = try container.decodeIfPresent([String].self, forKey: .mostImportant) ?? []
+        todos = try container.decodeIfPresent([Todo].self, forKey: .todos) ?? []
+        priorities = try container.decodeIfPresent([String].self, forKey: .priorities) ?? []
+        intentions = try container.decodeIfPresent([String].self, forKey: .intentions) ?? []
+        accomplishments = try container.decodeIfPresent([String].self, forKey: .accomplishments) ?? []
+        tomorrowTodos = try container.decodeIfPresent([String].self, forKey: .tomorrowTodos) ?? []
+        mood = try container.decodeIfPresent(Mood.self, forKey: .mood)
+        people = try container.decodeIfPresent([String].self, forKey: .people) ?? []
+        projects = try container.decodeIfPresent([String].self, forKey: .projects) ?? []
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        centersOfBalance = try container.decodeIfPresent([String].self, forKey: .centersOfBalance) ?? []
     }
 }
 
@@ -434,7 +460,13 @@ struct UploadClient {
         try validate(response: response, data: data)
     }
 
-    func sendFeedback(recordingID: String, agentReady: Bool, shouldRemember: Bool) async throws -> FeedbackResponse {
+    func sendFeedback(
+        recordingID: String,
+        qualityScore: Int,
+        issueTypes: [String] = [],
+        correction: String? = nil,
+        shouldRemember: Bool = true
+    ) async throws -> FeedbackResponse {
         var request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("recordings")
             .appendingPathComponent(recordingID)
@@ -442,7 +474,12 @@ struct UploadClient {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(
-            FeedbackRequest(agentReady: agentReady, shouldRemember: shouldRemember)
+            FeedbackRequest(
+                qualityScore: qualityScore,
+                shouldRemember: shouldRemember,
+                issueTypes: issueTypes,
+                correction: correction
+            )
         )
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -484,12 +521,20 @@ struct UploadClient {
 }
 
 private struct FeedbackRequest: Encodable {
-    let agentReady: Bool
+    let qualityScore: Int
     let shouldRemember: Bool
+    let issueTypes: [String]
+    let correction: String?
+    let source = "ios_extraction_quality"
+    let rubricVersion = "extraction_quality_v1"
 
     enum CodingKeys: String, CodingKey {
-        case agentReady = "agent_ready"
+        case qualityScore = "quality_score"
         case shouldRemember = "should_remember"
+        case issueTypes = "issue_types"
+        case correction
+        case source
+        case rubricVersion = "rubric_version"
     }
 }
 

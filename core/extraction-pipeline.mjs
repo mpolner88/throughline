@@ -4,6 +4,7 @@ export const OUTPUT_FIELDS = [
   "type",
   "title",
   "summary",
+  "most_important",
   "todos",
   "priorities",
   "intentions",
@@ -18,6 +19,7 @@ export const OUTPUT_FIELDS = [
 
 const ARRAY_FIELDS = new Set([
   "todos",
+  "most_important",
   "priorities",
   "intentions",
   "accomplishments",
@@ -126,6 +128,7 @@ export function userLocalDateFromTime(userLocalTime) {
 
 function postprocessExtraction(actual, metadata) {
   deriveTomorrowTodos(actual, metadata);
+  deriveMostImportant(actual);
   return actual;
 }
 
@@ -211,6 +214,44 @@ function deriveTomorrowTodos(actual, metadata) {
 
     actual.tomorrow_todos.push(todo.text);
     tomorrowTodoTexts.add(key);
+  }
+}
+
+function deriveMostImportant(actual) {
+  const values = [];
+
+  addUniqueImportant(values, actual.most_important ?? []);
+  addUniqueImportant(values, actual.priorities ?? []);
+  addUniqueImportant(
+    values,
+    (actual.todos ?? [])
+      .filter((todo) => todo.priority === "high")
+      .map((todo) => todo.text),
+  );
+  addUniqueImportant(values, actual.tomorrow_todos ?? []);
+  addUniqueImportant(values, actual.intentions ?? []);
+  addUniqueImportant(values, actual.accomplishments ?? []);
+  addUniqueImportant(values, (actual.todos ?? []).map((todo) => todo.text));
+
+  if (!values.length && actual.summary) {
+    addUniqueImportant(values, [actual.summary]);
+  }
+
+  actual.most_important = values.slice(0, 5);
+}
+
+function addUniqueImportant(values, candidates) {
+  const seen = new Set(values.map(normalizeForComparison));
+
+  for (const candidate of candidates) {
+    const text = nullableString(candidate);
+    if (!text) continue;
+
+    const key = normalizeForComparison(text);
+    if (!key || seen.has(key)) continue;
+
+    values.push(text.slice(0, 180));
+    seen.add(key);
   }
 }
 

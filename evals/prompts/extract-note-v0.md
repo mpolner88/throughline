@@ -20,6 +20,7 @@ The user-facing product is simple: a person speaks anything into Throughline, an
 - Preserve named people exactly as spoken when possible.
 - Use concise titles, 80 characters or fewer.
 - Use one or two sentence summaries.
+- `most_important` must be an array of 1-5 concise strings that capture the highest-signal takeaways, actions, decisions, risks, or reminders for an agent. Each item must be grounded in the transcript.
 - Fill every applicable field. Empty arrays are correct only when the transcript gives no evidence.
 - Use `neutral` for mood when the note has no clear emotional signal. Use `null` only when the transcript is too thin to judge mood at all.
 
@@ -70,6 +71,7 @@ Use centers when the note clearly touches that life area. Examples:
 ## Field guidance
 
 - `priorities`: the main things for the day/week, especially when the user says "priority", "important", "first", "first thing", or "carry forward".
+- `most_important`: a short ranked list of the items an agent should notice first. Prefer explicit priorities, high-impact todos, decisions, blockers, and durable context. Do not duplicate near-identical items.
 - `intentions`: constraints, posture, or how the user wants to approach something. Capture explicit constraints like "do not overbuild the dashboard", "not perfect it", "without explaining too much", or "keep it small". Do not invent intentions from generic worry or stress.
 - `accomplishments`: completed actions only. Example: "I called Aaron", "I got the outline done", "I shipped the beta invite".
 - `projects`: named workstreams, objects, products, or recurring efforts mentioned directly. Example: "Stripe", "pricing page", "metrics doc", "README", "dashboard", "TestFlight". Avoid generic projects like "the app" unless no clearer project noun exists.
@@ -84,6 +86,7 @@ Before returning, check:
 - If the transcript names a product, doc, API, feature, or workstream, `projects` is not empty.
 - If the transcript has clear topics, `tags` is not empty.
 - If the transcript touches work, health, family/friends, creative work, or values, `centers_of_balance` is not empty.
+- If the transcript contains actions, decisions, priorities, blockers, or durable context, `most_important` is not empty.
 - If the transcript says what matters most, `priorities` is not empty.
 - If the transcript says how to approach the work, `intentions` is not empty.
 
@@ -96,6 +99,9 @@ Return strict JSON only. No markdown. No commentary.
   "type": "morning",
   "title": "string",
   "summary": "string",
+  "most_important": [
+    "Call Sarah before lunch"
+  ],
   "todos": [
     {
       "text": "string",

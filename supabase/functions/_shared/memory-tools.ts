@@ -485,6 +485,7 @@ function searchableText(recording: any) {
     recording.transcript_raw,
     note.title,
     note.summary,
+    ...(note.most_important ?? []),
     ...(note.todos ?? []).map((todo: any) => todo.text),
     ...(note.priorities ?? []),
     ...(note.intentions ?? []),
@@ -500,6 +501,7 @@ function searchableText(recording: any) {
 function matchedExcerpt(recording: any, queryTokens: string[]) {
   const candidates = [
     recording.structured_note?.summary,
+    ...(recording.structured_note?.most_important ?? []),
     recording.transcript_raw,
     ...(recording.structured_note?.todos ?? []).map((todo: any) => todo.text),
     ...(recording.structured_note?.intentions ?? []),
