@@ -364,3 +364,72 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         centersOfBalance: ["purpose", "profession"]
     )
 }
+
+struct NoteEditDraft: Equatable {
+    var title: String
+    var summary: String
+    var transcript: String
+    var mostImportantText: String
+    var todosText: String
+
+    init(
+        title: String = "",
+        summary: String = "",
+        transcript: String = "",
+        mostImportantText: String = "",
+        todosText: String = ""
+    ) {
+        self.title = title
+        self.summary = summary
+        self.transcript = transcript
+        self.mostImportantText = mostImportantText
+        self.todosText = todosText
+    }
+
+    init(note: ThroughlineNote) {
+        title = note.title
+        summary = note.summary
+        transcript = note.transcript
+        mostImportantText = note.displayMostImportant.joined(separator: "\n")
+        todosText = note.todos.map(\.text).joined(separator: "\n")
+    }
+
+    var trimmedTitle: String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedSummary: String {
+        summary.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedTranscript: String {
+        transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var mostImportant: [String] {
+        Self.lines(from: mostImportantText)
+    }
+
+    var todos: [String] {
+        Self.lines(from: todosText)
+    }
+
+    var canSave: Bool {
+        !trimmedTitle.isEmpty
+    }
+
+    private static func lines(from text: String) -> [String] {
+        var seen = Set<String>()
+        var values: [String] = []
+
+        for line in text.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = trimmed.lowercased()
+            guard !trimmed.isEmpty, !seen.contains(key) else { continue }
+            seen.insert(key)
+            values.append(trimmed)
+        }
+
+        return values
+    }
+}

@@ -36,7 +36,7 @@ function sendJson(res, statusCode, payload) {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Throughline-Api-Key, X-Throughline-Duration-Seconds, X-Throughline-User-Local-Time, X-Throughline-Timezone, X-Throughline-Recording-Type, X-Throughline-Processing-Mode",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   });
   res.end(`${JSON.stringify(payload, null, 2)}\n`);
 }
@@ -351,6 +351,29 @@ async function handlePostFeedback(req, res, recordingId) {
   });
 }
 
+async function handlePatchRecording(req, res, recordingId) {
+  let recording;
+  try {
+    recording = await readRecording(recordingId);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      sendError(res, 404, "Recording not found");
+      return;
+    }
+    throw error;
+  }
+
+  try {
+    applyRecordingEdits(recording, parseJsonBody(await readBody(req)));
+  } catch (error) {
+    sendError(res, 400, error instanceof Error ? error.message : "Invalid recording edit");
+    return;
+  }
+
+  await persistRecording(recording);
+  sendJson(res, 200, { recording });
+}
+
 async function handleMemoryTool(req, res, toolName) {
   const input = parseJsonBody(await readBody(req));
   try {
@@ -371,6 +394,191 @@ function createFeedbackId() {
 
 function nullableBoolean(value) {
   return typeof value === "boolean" ? value : null;
+}
+
+function applyRecordingEdits(recording, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("Recording edit body must be an object");
+  }
+
+  recording.structured_note = recording.structured_note || emptyStructuredNote(recording);
+  const note = recording.structured_note;
+
+  if (Object.hasOwn(body, "transcript") || Object.hasOwn(body, "transcript_raw")) {
+    recording.transcript_raw = editString(body.transcript ?? body.transcript_raw, "Transcript");
+  }
+
+  if (Object.hasOwn(body, "title")) {
+    const title = editString(body.title, "Title").slice(0, 80);
+    if (!title) throw new Error("Title cannot be empty");
+    note.title = title;
+  }
+
+  if (Object.hasOwn(body, "summary")) {
+    note.summary = editString(body.summary, "Summary");
+  }
+
+  if (Object.hasOwn(body, "type")) {
+    const type = normalizeType(body.type);
+    if (!type) throw new Error("Recording type is invalid");
+    recording.type = type;
+    note.type = type;
+  }
+
+  const shouldRefreshActionItems = Object.hasOwn(body, "most_important") || Object.hasOwn(body, "todos");
+
+  if (Object.hasOwn(body, "most_important")) {
+    note.most_important = normalizeEditedStrings(body.most_important, "Most important").slice(0, 5);
+  }
+
+  if (Object.hasOwn(body, "todos")) {
+    note.todos = normalizeEditedTodos(body.todos, note.todos ?? []);
+  }
+
+  if (Object.hasOwn(body, "tomorrow_todos")) {
+    note.tomorrow_todos = normalizeEditedStrings(body.tomorrow_todos, "Tomorrow todos");
+  } else if (Object.hasOwn(body, "todos")) {
+    note.tomorrow_todos = [];
+  }
+
+  if (shouldRefreshActionItems) {
+    refreshActionItems(note);
+  }
+
+  const editedAt = new Date().toISOString();
+  note.edited_at = editedAt;
+  recording.edited_at = editedAt;
+  recording.processing_status = recording.structured_note ? "processed" : recording.processing_status;
+}
+
+function emptyStructuredNote(recording) {
+  return {
+    type: recording.type || "freeform",
+    title: "voice note",
+    summary: "",
+    most_important: [],
+    action_items: [],
+    todos: [],
+    priorities: [],
+    intentions: [],
+    accomplishments: [],
+    tomorrow_todos: [],
+    mood: null,
+    people: [],
+    projects: [],
+    tags: [],
+    centers_of_balance: [],
+  };
+}
+
+function editString(value, label) {
+  if (typeof value !== "string") {
+    throw new Error(`${label} must be a string`);
+  }
+
+  return value.trim();
+}
+
+function normalizeEditedStrings(value, label) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  const values = [];
+  const seen = new Set();
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const text = item.trim();
+    const key = normalizeForComparison(text);
+    if (!text || !key || seen.has(key)) continue;
+    values.push(text.slice(0, 180));
+    seen.add(key);
+  }
+  return values;
+}
+
+function normalizeEditedTodos(value, previousTodos) {
+  if (!Array.isArray(value)) {
+    throw new Error("Todos must be an array");
+  }
+
+  const previousByText = new Map((previousTodos ?? []).map((todo) => [normalizeForComparison(todo.text), todo]));
+  const todos = [];
+  const seen = new Set();
+
+  for (const item of value) {
+    const text = typeof item === "string" ? item.trim() : nullableString(item?.text);
+    const key = normalizeForComparison(text);
+    if (!text || !key || seen.has(key)) continue;
+
+    const previous = previousByText.get(key);
+    const status = normalizeCompletionStatus(item?.status ?? previous?.status);
+    todos.push({
+      text,
+      status,
+      priority: normalizeTodoPriority(item?.priority ?? previous?.priority),
+      due: nullableString(item?.due ?? previous?.due),
+      for_date: nullableString(item?.for_date ?? previous?.for_date),
+      context: nullableString(item?.context ?? previous?.context) || "manual_edit",
+      completed_at: status === "completed" ? nullableString(item?.completed_at ?? previous?.completed_at) : null,
+    });
+    seen.add(key);
+  }
+
+  return todos;
+}
+
+function refreshActionItems(note) {
+  const previousByText = new Map((note.action_items ?? []).map((item) => [normalizeForComparison(item.text), item]));
+  const items = [];
+
+  for (const todo of note.todos ?? []) {
+    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at, previousByText);
+  }
+
+  for (const text of note.most_important ?? []) {
+    addActionItem(items, text, "most_important", null, null, previousByText);
+  }
+
+  note.action_items = items;
+}
+
+function addActionItem(items, candidate, source, status = null, completedAt = null, previousByText = new Map()) {
+  const text = nullableString(candidate);
+  if (!text) return;
+
+  const key = normalizeForComparison(text);
+  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
+
+  const previous = previousByText.get(key);
+  const normalizedStatus = normalizeCompletionStatus(status ?? previous?.status);
+  items.push({
+    id: previous?.id || stableActionItemId(text),
+    text,
+    status: normalizedStatus,
+    source,
+    completed_at: normalizedStatus === "completed" ? nullableString(completedAt ?? previous?.completed_at) : null,
+  });
+}
+
+function normalizeCompletionStatus(value) {
+  return value === "completed" || value === "done" ? "completed" : "open";
+}
+
+function normalizeTodoPriority(value) {
+  return ["high", "medium", "low"].includes(value) ? value : null;
+}
+
+function normalizeForComparison(text) {
+  return String(text ?? "").trim().toLowerCase();
+}
+
+function stableActionItemId(text) {
+  const normalized = normalizeForComparison(text)
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `act_${normalized.slice(0, 80) || crypto.randomBytes(4).toString("hex")}`;
 }
 
 async function handleRequest(req, res) {
@@ -423,6 +631,12 @@ async function handleRequest(req, res) {
   const feedbackForRecordingMatch = pathname.match(/^\/recordings\/([^/]+)\/feedback$/);
   if (req.method === "POST" && feedbackForRecordingMatch) {
     await handlePostFeedback(req, res, feedbackForRecordingMatch[1]);
+    return;
+  }
+
+  const patchRecordingMatch = pathname.match(/^\/recordings\/([^/]+)$/);
+  if (req.method === "PATCH" && patchRecordingMatch) {
+    await handlePatchRecording(req, res, patchRecordingMatch[1]);
     return;
   }
 

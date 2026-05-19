@@ -474,6 +474,19 @@ struct UploadClient {
         return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
     }
 
+    func updateRecording(recordingID: String, draft: NoteEditDraft) async throws -> RecordingPayload {
+        var request = try await authorizedRequest(url: baseURL
+            .appendingPathComponent("recordings")
+            .appendingPathComponent(recordingID))
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(RecordingEditRequest(draft: draft))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+    }
+
     func deleteAccount() async throws {
         var request = try await authorizedRequest(url: baseURL.appendingPathComponent("account"))
         request.httpMethod = "DELETE"
@@ -563,6 +576,30 @@ private struct FeedbackRequest: Encodable {
 private struct ActionItemUpdateRequest: Encodable {
     let text: String
     let completed: Bool
+}
+
+private struct RecordingEditRequest: Encodable {
+    let title: String
+    let summary: String
+    let transcript: String
+    let mostImportant: [String]
+    let todos: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case summary
+        case transcript
+        case mostImportant = "most_important"
+        case todos
+    }
+
+    init(draft: NoteEditDraft) {
+        title = draft.trimmedTitle
+        summary = draft.trimmedSummary
+        transcript = draft.trimmedTranscript
+        mostImportant = draft.mostImportant
+        todos = draft.todos
+    }
 }
 
 struct FeedbackResponse: Decodable {

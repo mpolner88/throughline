@@ -251,6 +251,11 @@ async function handleRequest(req: Request) {
     return handlePatchActionItem(req, context, decodeURIComponent(actionItemsMatch[1]));
   }
 
+  const patchRecordingMatch = pathname.match(/^\/recordings\/([^/]+)$/);
+  if (req.method === "PATCH" && patchRecordingMatch) {
+    return handlePatchRecording(req, context, decodeURIComponent(patchRecordingMatch[1]));
+  }
+
   if (req.method === "GET" && pathname === "/recordings") {
     const recordings = await listRecordings(context);
     return jsonResponse(200, { recordings, count: recordings.length });
@@ -455,6 +460,16 @@ async function handlePatchActionItem(req: Request, context: RequestContext, reco
   }
 
   updateActionItemCompletion(recording.structured_note, text, completed);
+  await persistRecording(recording);
+
+  return jsonResponse(200, { recording });
+}
+
+async function handlePatchRecording(req: Request, context: RequestContext, recordingId: string) {
+  const recording = await readRecording(recordingId, context);
+  const body = await parseJsonRequest(req);
+
+  applyRecordingEdits(recording, body);
   await persistRecording(recording);
 
   return jsonResponse(200, { recording });
@@ -1409,6 +1424,186 @@ function updateActionItemCompletion(note: any, text: string, completed: boolean)
     todo.status = completed ? "completed" : "open";
     todo.completed_at = completedAt;
   }
+}
+
+function applyRecordingEdits(recording: any, body: any) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new HttpError(400, "Recording edit body must be an object");
+  }
+
+  recording.structured_note = recording.structured_note || emptyStructuredNote(recording);
+  const note = recording.structured_note;
+
+  if (Object.hasOwn(body, "transcript") || Object.hasOwn(body, "transcript_raw")) {
+    recording.transcript_raw = editString(body.transcript ?? body.transcript_raw, "Transcript");
+  }
+
+  if (Object.hasOwn(body, "title")) {
+    const title = editString(body.title, "Title").slice(0, 80);
+    if (!title) throw new HttpError(400, "Title cannot be empty");
+    note.title = title;
+  }
+
+  if (Object.hasOwn(body, "summary")) {
+    note.summary = editString(body.summary, "Summary");
+  }
+
+  if (Object.hasOwn(body, "type")) {
+    const type = normalizeType(body.type);
+    if (!type) throw new HttpError(400, "Recording type is invalid");
+    recording.type = type;
+    note.type = type;
+  }
+
+  const shouldRefreshActionItems = Object.hasOwn(body, "most_important") || Object.hasOwn(body, "todos");
+
+  if (Object.hasOwn(body, "most_important")) {
+    note.most_important = normalizeEditedStrings(body.most_important, "Most important").slice(0, 5);
+  }
+
+  if (Object.hasOwn(body, "todos")) {
+    note.todos = normalizeEditedTodos(body.todos, note.todos ?? []);
+  }
+
+  if (Object.hasOwn(body, "tomorrow_todos")) {
+    note.tomorrow_todos = normalizeEditedStrings(body.tomorrow_todos, "Tomorrow todos");
+  } else if (Object.hasOwn(body, "todos")) {
+    note.tomorrow_todos = [];
+  }
+
+  if (shouldRefreshActionItems) {
+    refreshActionItems(note);
+  }
+
+  const editedAt = new Date().toISOString();
+  note.edited_at = editedAt;
+  recording.edited_at = editedAt;
+  recording.processing_status = recording.structured_note ? "processed" : recording.processing_status;
+}
+
+function emptyStructuredNote(recording: any) {
+  return {
+    type: recording.type || "freeform",
+    title: "voice note",
+    summary: "",
+    most_important: [],
+    action_items: [],
+    todos: [],
+    priorities: [],
+    intentions: [],
+    accomplishments: [],
+    tomorrow_todos: [],
+    mood: null,
+    people: [],
+    projects: [],
+    tags: [],
+    centers_of_balance: [],
+  };
+}
+
+function editString(value: unknown, label: string) {
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${label} must be a string`);
+  }
+
+  return value.trim();
+}
+
+function normalizeEditedStrings(value: unknown, label: string) {
+  if (!Array.isArray(value)) {
+    throw new HttpError(400, `${label} must be an array`);
+  }
+
+  const values: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const text = item.trim();
+    const key = normalizeForComparison(text);
+    if (!text || !key || seen.has(key)) continue;
+    values.push(text.slice(0, 180));
+    seen.add(key);
+  }
+  return values;
+}
+
+function normalizeEditedTodos(value: unknown, previousTodos: any[]) {
+  if (!Array.isArray(value)) {
+    throw new HttpError(400, "Todos must be an array");
+  }
+
+  const previousByText = new Map((previousTodos ?? []).map((todo: any) => [normalizeForComparison(todo.text), todo]));
+  const todos: any[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const text = typeof item === "string" ? item.trim() : nullableString(item?.text);
+    const key = normalizeForComparison(text);
+    if (!text || !key || seen.has(key)) continue;
+
+    const previous = previousByText.get(key);
+    const status = normalizeCompletionStatus(item?.status ?? previous?.status);
+    todos.push({
+      text,
+      status,
+      priority: normalizeTodoPriority(item?.priority ?? previous?.priority),
+      due: nullableString(item?.due ?? previous?.due),
+      for_date: nullableString(item?.for_date ?? previous?.for_date),
+      context: nullableString(item?.context ?? previous?.context) || "manual_edit",
+      completed_at: status === "completed" ? nullableString(item?.completed_at ?? previous?.completed_at) : null,
+    });
+    seen.add(key);
+  }
+
+  return todos;
+}
+
+function refreshActionItems(note: any) {
+  const previousByText = new Map((note.action_items ?? []).map((item: any) => [normalizeForComparison(item.text), item]));
+  const items: any[] = [];
+
+  for (const todo of note.todos ?? []) {
+    addEditedActionItem(items, todo.text, "todo", todo.status, todo.completed_at, previousByText);
+  }
+
+  for (const text of note.most_important ?? []) {
+    addEditedActionItem(items, text, "most_important", null, null, previousByText);
+  }
+
+  note.action_items = items;
+}
+
+function addEditedActionItem(
+  items: any[],
+  candidate: unknown,
+  source: string,
+  status: unknown = null,
+  completedAt: unknown = null,
+  previousByText = new Map<string, any>(),
+) {
+  const text = nullableString(candidate);
+  if (!text) return;
+
+  const key = normalizeForComparison(text);
+  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
+
+  const previous = previousByText.get(key);
+  const normalizedStatus = normalizeCompletionStatus(status ?? previous?.status);
+  items.push({
+    id: previous?.id || stableActionItemId(text),
+    text,
+    status: normalizedStatus,
+    source,
+    completed_at: normalizedStatus === "completed" ? nullableString(completedAt ?? previous?.completed_at) : null,
+  });
+}
+
+function normalizeCompletionStatus(value: unknown) {
+  return value === "completed" || value === "done" ? "completed" : "open";
+}
+
+function normalizeTodoPriority(value: unknown) {
+  return typeof value === "string" && VALID_PRIORITIES.has(value) ? value : null;
 }
 
 function stableActionItemId(text: string) {

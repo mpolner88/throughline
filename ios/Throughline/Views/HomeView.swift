@@ -124,6 +124,9 @@ struct HomeView: View {
                         correction: correction
                     )
                 },
+                onSaveEdits: { draft in
+                    try await saveEdits(for: note, draft: draft)
+                },
                 onDelete: {
                     delete(note: note)
                     selectedNote = nil
@@ -398,6 +401,17 @@ struct HomeView: View {
                 feedbackStatus[note.id] = .failed
             }
         }
+    }
+
+    private func saveEdits(for note: ThroughlineNote, draft: NoteEditDraft) async throws -> ThroughlineNote {
+        let recording = try await UploadClient().updateRecording(recordingID: note.id, draft: draft)
+        let updatedNote = recording.displayNote()
+        appState.addUploadedNote(updatedNote)
+        if selectedNote?.id == updatedNote.id {
+            selectedNote = updatedNote
+        }
+        uploadError = nil
+        return updatedNote
     }
 
     private func delete(note: ThroughlineNote) {
@@ -811,77 +825,43 @@ private struct NoteDetailSheet: View {
     let feedbackStatus: FeedbackStatus?
     let onToggleImportant: (ActionItem, Bool) -> Void
     let onFeedback: (Int, [String], String?) -> Void
+    let onSaveEdits: (NoteEditDraft) async throws -> ThroughlineNote
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var currentNote: ThroughlineNote
+    @State private var draft: NoteEditDraft
+    @State private var isEditing = false
+    @State private var isSaving = false
+    @State private var editError: String?
+
+    init(
+        note: ThroughlineNote,
+        feedbackStatus: FeedbackStatus?,
+        onToggleImportant: @escaping (ActionItem, Bool) -> Void,
+        onFeedback: @escaping (Int, [String], String?) -> Void,
+        onSaveEdits: @escaping (NoteEditDraft) async throws -> ThroughlineNote,
+        onDelete: @escaping () -> Void
+    ) {
+        self.note = note
+        self.feedbackStatus = feedbackStatus
+        self.onToggleImportant = onToggleImportant
+        self.onFeedback = onFeedback
+        self.onSaveEdits = onSaveEdits
+        self.onDelete = onDelete
+        _currentNote = State(initialValue: note)
+        _draft = State(initialValue: NoteEditDraft(note: note))
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Eyebrow(text: "\(note.type.displayName) · \(note.createdAt.formatted(.dateTime.weekday().month().day().hour().minute()))")
-                        Text(note.title)
-                            .font(.system(size: 24, weight: .medium))
-                            .lineSpacing(2)
+                    if isEditing {
+                        NoteEditForm(draft: $draft, error: editError)
+                            .disabled(isSaving)
+                    } else {
+                        readOnlyContent
                     }
-
-                    if let processingText = note.processingText {
-                        ProcessingStatusRow(text: processingText, isActive: note.isProcessing)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Eyebrow(text: "preview")
-                        Text(note.summary)
-                            .font(.system(size: 15))
-                            .foregroundStyle(.secondary)
-                            .lineSpacing(4)
-                    }
-
-                    if !note.displayMostImportant.isEmpty {
-                        ImportantActionSection(
-                            title: "most important",
-                            items: note.displayImportantActionItems,
-                            onToggle: onToggleImportant
-                        )
-                    }
-
-                    if !note.todos.isEmpty {
-                        ExtractedSection(title: "to-dos", items: note.todos.map(\.text))
-                    }
-
-                    if !note.intentions.isEmpty {
-                        ExtractedSection(title: "notes", items: note.intentions)
-                    }
-
-                    if !note.accomplishments.isEmpty {
-                        ExtractedSection(title: "accomplishments", items: note.accomplishments)
-                    }
-
-                    let transcriptText = note.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !transcriptText.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Eyebrow(text: "transcript")
-                            Text(transcriptText)
-                                .font(.system(size: 15))
-                                .lineSpacing(5)
-                        }
-                    }
-
-                    if note.id.hasPrefix("rec_") {
-                        DetailedExtractionFeedbackView(
-                            status: feedbackStatus,
-                            onSubmit: onFeedback
-                        )
-                    }
-
-                    Button(role: .destructive) {
-                        onDelete()
-                    } label: {
-                        Label("Discard memory", systemImage: "trash")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 4)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(24)
@@ -889,12 +869,203 @@ private struct NoteDetailSheet: View {
             .navigationTitle("memory")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if currentNote.id.hasPrefix("rec_") {
+                        Button(isEditing ? "Cancel" : "Edit") {
+                            if isEditing {
+                                cancelEditing()
+                            } else {
+                                draft = NoteEditDraft(note: currentNote)
+                                editError = nil
+                                isEditing = true
+                            }
+                        }
+                        .disabled(isSaving)
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                    if isEditing {
+                        Button {
+                            saveDraft()
+                        } label: {
+                            if isSaving {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Text("Save")
+                            }
+                        }
+                        .disabled(isSaving || !draft.canSave)
+                    } else {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }
+        }
+        .onChange(of: note) { _, newNote in
+            currentNote = newNote
+            if !isEditing {
+                draft = NoteEditDraft(note: newNote)
+            }
+        }
+    }
+
+    private var readOnlyContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Eyebrow(text: "\(currentNote.type.displayName) · \(currentNote.createdAt.formatted(.dateTime.weekday().month().day().hour().minute()))")
+                Text(currentNote.title)
+                    .font(.system(size: 24, weight: .medium))
+                    .lineSpacing(2)
+            }
+
+            if let processingText = currentNote.processingText {
+                ProcessingStatusRow(text: processingText, isActive: currentNote.isProcessing)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Eyebrow(text: "preview")
+                Text(currentNote.summary)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(4)
+            }
+
+            if !currentNote.displayMostImportant.isEmpty {
+                ImportantActionSection(
+                    title: "most important",
+                    items: currentNote.displayImportantActionItems,
+                    onToggle: onToggleImportant
+                )
+            }
+
+            if !currentNote.todos.isEmpty {
+                ExtractedSection(title: "to-dos", items: currentNote.todos.map(\.text))
+            }
+
+            if !currentNote.intentions.isEmpty {
+                ExtractedSection(title: "notes", items: currentNote.intentions)
+            }
+
+            if !currentNote.accomplishments.isEmpty {
+                ExtractedSection(title: "accomplishments", items: currentNote.accomplishments)
+            }
+
+            let transcriptText = currentNote.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !transcriptText.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Eyebrow(text: "transcript")
+                    Text(transcriptText)
+                        .font(.system(size: 15))
+                        .lineSpacing(5)
+                }
+            }
+
+            if currentNote.id.hasPrefix("rec_") {
+                DetailedExtractionFeedbackView(
+                    status: feedbackStatus,
+                    onSubmit: onFeedback
+                )
+            }
+
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Discard memory", systemImage: "trash")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+        }
+    }
+
+    private func cancelEditing() {
+        draft = NoteEditDraft(note: currentNote)
+        editError = nil
+        isEditing = false
+    }
+
+    private func saveDraft() {
+        guard !isSaving, draft.canSave else { return }
+
+        isSaving = true
+        editError = nil
+        Task {
+            do {
+                let updatedNote = try await onSaveEdits(draft)
+                currentNote = updatedNote
+                draft = NoteEditDraft(note: updatedNote)
+                isEditing = false
+            } catch {
+                editError = error.localizedDescription
+            }
+            isSaving = false
+        }
+    }
+}
+
+private struct NoteEditForm: View {
+    @Binding var draft: NoteEditDraft
+    let error: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            EditTextField(title: "title", text: $draft.title)
+            EditTextEditor(title: "summary", text: $draft.summary, minHeight: 110)
+            EditTextEditor(title: "most important", text: $draft.mostImportantText, minHeight: 128)
+            EditTextEditor(title: "to-dos", text: $draft.todosText, minHeight: 112)
+            EditTextEditor(title: "transcript", text: $draft.transcript, minHeight: 220)
+
+            if let error {
+                Text(error)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.red)
+                    .lineSpacing(3)
+            }
+        }
+    }
+}
+
+private struct EditTextField: View {
+    let title: String
+    @Binding var text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Eyebrow(text: title)
+            TextField(title, text: $text, axis: .vertical)
+                .font(.system(size: 17, weight: .medium))
+                .textFieldStyle(.plain)
+                .padding(12)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Theme.border, lineWidth: 0.5)
+                }
+        }
+    }
+}
+
+private struct EditTextEditor: View {
+    let title: String
+    @Binding var text: String
+    let minHeight: CGFloat
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Eyebrow(text: title)
+            TextEditor(text: $text)
+                .font(.system(size: 15))
+                .lineSpacing(4)
+                .scrollContentBackground(.hidden)
+                .padding(8)
+                .frame(minHeight: minHeight, alignment: .topLeading)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Theme.border, lineWidth: 0.5)
+                }
         }
     }
 }
