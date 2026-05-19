@@ -129,7 +129,11 @@ The deployed `mcp` Edge Function exposes the same read-only memory tools as the 
 - `get_energy_patterns`
 - `get_balance_snapshot`
 
-It accepts MCP-style JSON-RPC over HTTP. Agents that support remote MCP with custom bearer headers can use the deployed endpoint. Agents that do not yet support authenticated remote MCP can still use:
+It accepts MCP-style JSON-RPC over HTTP. Agents that support remote MCP with custom bearer headers can use the deployed endpoint. The iOS app exposes this as `settings -> connect an agent`, where the user can mint a read-only MCP token and copy a Claude Code or Codex CLI setup command.
+
+See [agent-connect.md](agent-connect.md) for copy-paste setup commands and the starter agent prompt.
+
+Agents that do not yet support authenticated remote MCP can still use:
 
 ```bash
 npm run mcp:stdio

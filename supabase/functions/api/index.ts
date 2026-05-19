@@ -1036,6 +1036,7 @@ async function listMcpTokens(context: RequestContext) {
       "/throughline_mcp_tokens",
       "?select=id,name,created_at,last_used_at,revoked_at",
       `&user_id=eq.${encodeURIComponent(authUserId)}`,
+      "&revoked_at=is.null",
       "&order=created_at.desc",
       "&limit=100",
     ].join(""),

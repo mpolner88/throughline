@@ -357,6 +357,41 @@ struct RecordingDetailResponse: Decodable {
     let recording: RecordingPayload
 }
 
+struct AgentTokenSummary: Identifiable, Decodable {
+    let id: String
+    let name: String
+    let createdAt: String?
+    let lastUsedAt: String?
+    let revokedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case createdAt = "created_at"
+        case lastUsedAt = "last_used_at"
+        case revokedAt = "revoked_at"
+    }
+}
+
+struct AgentTokenListResponse: Decodable {
+    let tokens: [AgentTokenSummary]
+    let count: Int
+}
+
+struct AgentTokenCreateResponse: Decodable {
+    let id: String?
+    let name: String
+    let token: String
+    let createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case token
+        case createdAt = "created_at"
+    }
+}
+
 enum RecordingProcessingMode: String {
     case sync
     case async
@@ -495,6 +530,39 @@ struct UploadClient {
         try validate(response: response, data: data)
     }
 
+    func listAgentTokens() async throws -> [AgentTokenSummary] {
+        let request = try await authorizedRequest(url: baseURL
+            .appendingPathComponent("agent")
+            .appendingPathComponent("tokens"))
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(AgentTokenListResponse.self, from: data).tokens
+    }
+
+    func createAgentToken(name: String) async throws -> AgentTokenCreateResponse {
+        var request = try await authorizedRequest(url: baseURL
+            .appendingPathComponent("agent")
+            .appendingPathComponent("tokens"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(CreateAgentTokenRequest(name: name))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(AgentTokenCreateResponse.self, from: data)
+    }
+
+    func revokeAgentToken(id: String) async throws {
+        var request = try await authorizedRequest(url: baseURL
+            .appendingPathComponent("agent")
+            .appendingPathComponent("tokens")
+            .appendingPathComponent(id))
+        request.httpMethod = "DELETE"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+    }
+
     func sendFeedback(
         recordingID: String,
         qualityScore: Int,
@@ -576,6 +644,10 @@ private struct FeedbackRequest: Encodable {
 private struct ActionItemUpdateRequest: Encodable {
     let text: String
     let completed: Bool
+}
+
+private struct CreateAgentTokenRequest: Encodable {
+    let name: String
 }
 
 private struct RecordingEditRequest: Encodable {

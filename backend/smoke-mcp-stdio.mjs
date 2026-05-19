@@ -40,12 +40,25 @@ try {
   });
   assert.equal(initialize.protocolVersion, "2025-06-18");
   assert.ok(initialize.capabilities.tools);
+  assert.ok(initialize.capabilities.prompts);
 
   client.notify("notifications/initialized", {});
 
   const tools = await client.request("tools/list", {});
   assert.ok(tools.tools.some((tool) => tool.name === "search" && tool.annotations.readOnlyHint));
   assert.ok(tools.tools.some((tool) => tool.name === "get_daily_loop"));
+
+  const prompts = await client.request("prompts/list", {});
+  assert.ok(prompts.prompts.some((prompt) => prompt.name === "read_throughline"));
+
+  const prompt = await client.request("prompts/get", {
+    name: "read_throughline",
+    arguments: {
+      question: "What should I do today?",
+    },
+  });
+  assert.match(prompt.messages[0].content.text, /get_today/);
+  assert.match(prompt.messages[0].content.text, /What should I do today/);
 
   const search = await client.request("tools/call", {
     name: "search",
