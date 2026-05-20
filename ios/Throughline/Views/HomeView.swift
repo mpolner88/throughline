@@ -437,7 +437,7 @@ private struct CarryForwardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Eyebrow(text: "carried forward · last night")
+            Eyebrow(text: "unfinished from last night")
             ForEach(items, id: \.self) { item in
                 Text(item)
                     .font(.system(size: 15))
@@ -485,6 +485,9 @@ private struct SwipeCompleteRow: View {
     @State private var horizontalOffset: CGFloat = 0
 
     private let completeThreshold: CGFloat = 76
+    private var isShowingSwipeAction: Bool {
+        horizontalOffset > 0.5
+    }
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -500,6 +503,7 @@ private struct SwipeCompleteRow: View {
             .frame(maxWidth: .infinity, minHeight: 58)
             .background(item.isCompleted ? Color.secondary : Theme.blue)
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .opacity(isShowingSwipeAction ? 1 : 0)
 
             HStack(alignment: .top, spacing: 10) {
                 Button {
@@ -533,7 +537,7 @@ private struct SwipeCompleteRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Theme.border, lineWidth: 0.5)
+                    .strokeBorder(Theme.border, lineWidth: 0.7)
             }
             .offset(x: max(0, horizontalOffset))
             .gesture(
