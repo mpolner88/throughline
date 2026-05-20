@@ -650,7 +650,7 @@ struct RecordButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 7) {
+            VStack(spacing: 2) {
                 ZStack {
                     if isBusy {
                         ProgressView()
@@ -663,16 +663,21 @@ struct RecordButton: View {
                         )
                     }
                 }
-                .frame(width: 132, height: 38)
+                .frame(width: 188, height: 56)
 
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.white)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: max(74, size + 18))
-            .background(Theme.blue)
+            .frame(height: max(92, size + 36))
+            .background(recordingBackground)
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+            }
             .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            .shadow(color: Theme.blue.opacity(isRecording ? 0.24 : 0.14), radius: isRecording ? 18 : 10, y: 6)
             .padding(.horizontal, 24)
         }
         .buttonStyle(.plain)
@@ -686,6 +691,17 @@ struct RecordButton: View {
         .onChange(of: isBusy) { _, _ in
             syncAnimation(animated: true)
         }
+    }
+
+    private var recordingBackground: some ShapeStyle {
+        LinearGradient(
+            colors: [
+                isRecording ? Theme.liftedBlue : Theme.blue,
+                Theme.blue
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private var title: String {

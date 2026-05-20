@@ -183,10 +183,12 @@ struct HomeView: View {
             }
             .disabled(isFinishingRecording || isUploading || isProcessing)
 
-            Text(recorderStatusText)
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
+            if !recorderStatusText.isEmpty {
+                Text(recorderStatusText)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
         }
         .padding(.top, 12)
         .padding(.bottom, 22)
@@ -233,7 +235,7 @@ struct HomeView: View {
             return "saved"
         }
 
-        return "tap to record"
+        return ""
     }
 
     private var mostImportantItems: [ImportantItem] {
