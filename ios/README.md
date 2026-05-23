@@ -12,6 +12,7 @@ Included:
 - Upload client for the Supabase Edge Function backend.
 - Configurable backend URL for Supabase dogfood or local development.
 - Pull-to-refresh memory sync from the backend.
+- Supabase Auth sign-up, sign-in, token refresh, and in-app account deletion.
 
 Deliberately not included in v0:
 
@@ -19,7 +20,6 @@ Deliberately not included in v0:
 - Live Activity.
 - Dynamic Island.
 - AirPods stem-tap stop.
-- Real auth.
 - App Store/TestFlight distribution.
 
 ## Local Run
@@ -42,7 +42,7 @@ Or build from the command line:
 npm run ios:build
 ```
 
-Paste the dogfood API token in `connect →`, then tap `check`.
+Sign in or create an account before recording. Debug builds keep local backend settings available for development.
 
 For local backend development, start the Node stub:
 
@@ -75,7 +75,8 @@ In Xcode:
 3. Select your iPhone as the run destination.
 4. In Signing & Capabilities, select your team if Xcode asks.
 5. Run the app.
-6. Open `backend` or `connect →`, confirm the Supabase URL and token, and tap `check`.
+6. Sign in or create an account.
+7. Record a short note.
 
 When recording works, the flow is:
 

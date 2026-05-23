@@ -13,6 +13,8 @@ const DEFAULT_MAX_RETRIES = 3;
 const MAX_BODY_BYTES = Number(Deno.env.get("THROUGHLINE_MAX_BODY_BYTES") || 60 * 1024 * 1024);
 const DEMO_MAX_BODY_BYTES = Number(Deno.env.get("THROUGHLINE_DEMO_MAX_BODY_BYTES") || 8 * 1024 * 1024);
 const DEMO_MAX_DURATION_SECONDS = Number(Deno.env.get("THROUGHLINE_DEMO_MAX_DURATION_SECONDS") || 30);
+const AUDIO_RETENTION_DAYS = positiveNumberEnv("THROUGHLINE_AUDIO_RETENTION_DAYS", 30);
+const AUDIO_RETENTION_BATCH_LIMIT = positiveNumberEnv("THROUGHLINE_AUDIO_RETENTION_BATCH_LIMIT", 500);
 
 const RECORDING_TYPES = new Set(["morning", "evening", "weekly_review", "freeform"]);
 const OUTPUT_FIELDS = [
@@ -203,6 +205,11 @@ async function handleRequest(req: Request) {
   const context = await requestContext(req);
   if (!context) {
     return jsonResponse(401, { error: "Unauthorized" });
+  }
+
+  if (req.method === "POST" && pathname === "/maintenance/audio-retention") {
+    requireServiceContext(context);
+    return jsonResponse(200, await expireStoredAudio());
   }
 
   if (req.method === "GET" && pathname === "/agent/tools") {
@@ -942,16 +949,7 @@ async function deleteRecording(id: string, context: RequestContext) {
   const recording = await readRecording(id, context);
 
   if (recording.audio?.storage === "supabase" && recording.audio?.object_path) {
-    try {
-      await storageRequest(
-        `/object/${audioBucket()}/${recording.audio.object_path}`,
-        { method: "DELETE" },
-      );
-    } catch (error) {
-      if (!String(error instanceof Error ? error.message : error).includes("(404)")) {
-        throw error;
-      }
-    }
+    await deleteStoredAudioObject(recording.audio);
   }
 
   await restRequest(
@@ -961,6 +959,97 @@ async function deleteRecording(id: string, context: RequestContext) {
       recordingScopeQuery(context),
     ].join(""),
     { method: "DELETE" },
+  );
+}
+
+async function expireStoredAudio() {
+  const retentionDays = Math.max(1, AUDIO_RETENTION_DAYS);
+  const batchLimit = Math.max(1, Math.min(1000, AUDIO_RETENTION_BATCH_LIMIT));
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
+  const rows = await restRequest(
+    [
+      "/throughline_recordings",
+      "?select=id,created_at,audio,recording",
+      `&created_at=lt.${encodeURIComponent(cutoff)}`,
+      "&order=created_at.asc",
+      `&limit=${batchLimit}`,
+    ].join(""),
+  );
+
+  let expired = 0;
+  let skipped = 0;
+  const errors = [];
+  const expiredAt = new Date().toISOString();
+
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (row?.audio?.storage !== "supabase" || !row.audio.object_path) {
+      skipped += 1;
+      continue;
+    }
+
+    try {
+      await deleteStoredAudioObject(row.audio);
+      await markRecordingAudioExpired(row, expiredAt, retentionDays);
+      expired += 1;
+    } catch (error) {
+      errors.push({
+        id: row?.id ?? null,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return {
+    retention_days: retentionDays,
+    cutoff,
+    scanned: Array.isArray(rows) ? rows.length : 0,
+    expired,
+    skipped,
+    errors,
+  };
+}
+
+async function deleteStoredAudioObject(audio: any) {
+  try {
+    await storageRequest(
+      `/object/${audioBucket()}/${audio.object_path}`,
+      { method: "DELETE" },
+    );
+  } catch (error) {
+    if (!String(error instanceof Error ? error.message : error).includes("(404)")) {
+      throw error;
+    }
+  }
+}
+
+async function markRecordingAudioExpired(row: any, expiredAt: string, retentionDays: number) {
+  const previousAudio = row.audio ?? {};
+  const expiredAudio = {
+    stored: false,
+    storage: "expired",
+    bucket: previousAudio.bucket ?? audioBucket(),
+    mime_type: previousAudio.mime_type ?? null,
+    bytes: previousAudio.bytes ?? null,
+    expired_at: expiredAt,
+    retention_days: retentionDays,
+  };
+  const recording = row.recording && typeof row.recording === "object" ? row.recording : {};
+  recording.audio = expiredAudio;
+  recording.audio_retention = {
+    status: "expired",
+    expired_at: expiredAt,
+    retention_days: retentionDays,
+  };
+
+  await restRequest(
+    `/throughline_recordings?id=eq.${encodeURIComponent(row.id)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ audio: expiredAudio, recording }),
+    },
   );
 }
 
@@ -1639,12 +1728,18 @@ async function requestContext(req: Request): Promise<RequestContext | null> {
 
 function hasServiceApiToken(req: Request) {
   const expectedTokens = apiTokens();
-  if (!expectedTokens.length) return true;
+  if (!expectedTokens.length) return false;
 
   const headerToken = req.headers.get("x-throughline-api-key") || "";
   return [bearerToken(req), headerToken].some((candidate) =>
     expectedTokens.some((expected) => safeTokenEqual(candidate, expected))
   );
+}
+
+function requireServiceContext(context: RequestContext) {
+  if (context.kind !== "service") {
+    throw new HttpError(403, "A service token is required");
+  }
 }
 
 function bearerToken(req: Request) {
@@ -1914,6 +2009,11 @@ function storagePathSegment(value: string) {
 
 function audioBucket() {
   return Deno.env.get("THROUGHLINE_AUDIO_BUCKET") || Deno.env.get("SUPABASE_AUDIO_BUCKET") || DEFAULT_AUDIO_BUCKET;
+}
+
+function positiveNumberEnv(name: string, fallback: number) {
+  const value = Number(Deno.env.get(name) || fallback);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function supabaseClientApiKey() {

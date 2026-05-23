@@ -46,8 +46,11 @@ supabase secrets set \
   GROQ_API_KEY=... \
   THROUGHLINE_API_TOKEN=... \
   THROUGHLINE_AUDIO_BUCKET=throughline-audio \
+  THROUGHLINE_AUDIO_RETENTION_DAYS=30 \
   THROUGHLINE_USER_ID=dev-user
 ```
+
+`THROUGHLINE_API_TOKEN` is a backend service token for maintenance and dogfood scripts. Release iOS builds do not include it.
 
 Optional MCP-specific token:
 
@@ -59,7 +62,7 @@ If `THROUGHLINE_MCP_TOKEN` is absent, the MCP endpoint uses `THROUGHLINE_API_TOK
 
 ## Deploy Functions
 
-The current iOS client sends a Throughline bearer token, not a Supabase Auth JWT, so deploy with Supabase JWT verification disabled and let the function check `THROUGHLINE_API_TOKEN`.
+The iOS client sends a Supabase Auth JWT after sign-in. We still deploy with Supabase JWT verification disabled because the function validates the JWT itself and also accepts the separate service token for maintenance scripts.
 
 ```bash
 supabase functions deploy api --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv
@@ -109,11 +112,10 @@ curl \
 
 Open Throughline:
 
-1. Tap `connect ->`.
-2. Use `https://ywsenspsfyrdhgyxgcrv.supabase.co/functions/v1/api`.
-3. Paste the `THROUGHLINE_API_TOKEN`.
-4. Tap `check`.
-5. Record a short note.
+1. Sign up or sign in.
+2. Record a short note.
+3. Wait for the transcript and note preview.
+4. Open settings only when you want to connect an agent or manage the account.
 
 ## MCP Setup
 
@@ -141,6 +143,18 @@ npm run mcp:stdio
 
 That local MCP server reads the same Supabase data when `.env.local` points at Supabase.
 
+## Audio Retention
+
+Audio objects are retained separately from transcripts and structured notes. To enforce the 30-day audio retention posture before App Store submission, schedule the protected maintenance endpoint:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $THROUGHLINE_API_TOKEN" \
+  https://ywsenspsfyrdhgyxgcrv.supabase.co/functions/v1/api/maintenance/audio-retention
+```
+
+The endpoint deletes stored audio objects older than `THROUGHLINE_AUDIO_RETENTION_DAYS` and marks their recording audio metadata as expired. Transcripts and structured notes remain available to the app and MCP tools.
+
 ## App Store Direction
 
-`THROUGHLINE_API_TOKEN` is a dogfood shortcut. Before App Store release, replace it with Supabase Auth so each user signs in and the Edge Function derives the user id from the Supabase JWT. The backend stays Supabase either way.
+The Release iOS config leaves `THROUGHLINE_API_TOKEN` empty. Users authenticate with Supabase Auth, and the Edge Function derives the user id from the Supabase JWT. Keep the service token only for backend maintenance and dogfood scripts.

@@ -36,7 +36,7 @@ The iOS app points at the Supabase Edge Function by default:
 https://ywsenspsfyrdhgyxgcrv.supabase.co/functions/v1/api
 ```
 
-Use the in-app `backend` / `connect →` settings to paste the dogfood API token or switch to a local backend.
+Release builds use Supabase Auth. Debug builds keep the backend panel available for local backend work and dogfood token checks.
 
 For real voice notes:
 
@@ -44,7 +44,7 @@ For real voice notes:
 THROUGHLINE_TRANSCRIBER=groq THROUGHLINE_EXTRACTOR_COMMAND=./evals/adapters/groq-extract.mjs npm run stub:dev
 ```
 
-Run `ios/Throughline.xcodeproj` from Xcode on your iPhone and tap `check` before recording.
+Run `ios/Throughline.xcodeproj` from Xcode on your iPhone, sign in, and record.
 
 ## Supabase backend
 
@@ -54,4 +54,4 @@ Supabase is the hosted backend for dogfood:
 - `supabase/functions/mcp` exposes read-only agent memory tools over MCP-style JSON-RPC.
 - `supabase/migrations` owns the Postgres and Storage setup.
 
-See [docs/hosted-backend.md](/Users/mikepolner/Documents/Throughline/docs/hosted-backend.md) for deploy commands and environment variables.
+See [docs/hosted-backend.md](/Users/mikepolner/Documents/Throughline/docs/hosted-backend.md) for deploy commands and environment variables. See [docs/app-store-readiness.md](/Users/mikepolner/Documents/Throughline/docs/app-store-readiness.md) for TestFlight/App Store packaging status.
