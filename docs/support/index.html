@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Throughline Support</title>
+    <meta name="description" content="Support for Throughline.">
+    <style>
+      :root {
+        color-scheme: light dark;
+        --blue: #2563eb;
+        --text: #111827;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --bg: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --text: #f9fafb;
+          --muted: #9ca3af;
+          --line: #374151;
+          --bg: #030712;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(720px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 56px 0 72px;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 48px;
+      }
+
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .wordmark {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(34px, 7vw, 56px);
+        line-height: 1.02;
+        font-weight: 500;
+      }
+
+      h2 {
+        margin: 36px 0 10px;
+        font-size: 20px;
+        line-height: 1.25;
+        font-weight: 500;
+      }
+
+      p {
+        margin: 0 0 16px;
+      }
+
+      .meta {
+        color: var(--muted);
+        margin-bottom: 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav>
+        <a class="wordmark" href="../">throughline</a>
+        <a href="../privacy/">privacy</a>
+      </nav>
+
+      <h1>Support</h1>
+      <p class="meta">Help for Throughline.</p>
+
+      <h2>Account and data</h2>
+      <p>You can sign out, revoke agent tokens, and delete your account from settings in the app. Deleting your account removes your Throughline account, memories, recordings, feedback, and agent tokens.</p>
+
+      <h2>Privacy requests</h2>
+      <p>For privacy questions, account deletion issues, or data requests, open a support request through the project issue tracker: <a href="https://github.com/mpolner88/throughline/issues">github.com/mpolner88/throughline/issues</a>.</p>
+
+      <h2>App review</h2>
+      <p>Reviewers can use the test account provided in App Store Connect review notes and follow the suggested path there.</p>
+    </main>
+  </body>
+</html>

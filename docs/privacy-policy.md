@@ -1,10 +1,8 @@
-# Throughline Privacy Policy Draft
+# Throughline Privacy Policy
 
-Effective date: May 23, 2026
+Effective date: May 24, 2026
 
 Throughline is a voice note app. You record a note, Throughline turns it into a transcript and structured note, and you can make that note readable by an agent through your personal MCP connection.
-
-This draft is written for App Store preparation. Publish it at a public URL before submitting the app.
 
 ## Data We Collect
 
@@ -34,9 +32,9 @@ When you delete your account, Throughline deletes your account, saved memories, 
 
 ## Storage and Processors
 
-Throughline uses Supabase for account authentication, database storage, file storage, and Edge Functions. Throughline may use a transcription or extraction provider to process voice notes into text and structured note fields.
+Throughline uses Supabase for account authentication, database storage, file storage, and Edge Functions. The production Supabase project is configured in the United States region `us-west-2`.
 
-Before publishing this policy, confirm the production Supabase project region and list the final service providers used for transcription and extraction.
+Throughline may use Groq or another transcription and extraction provider to process voice notes into text and structured note fields.
 
 ## MCP Access
 
@@ -53,4 +51,4 @@ You can:
 
 ## Contact
 
-For privacy or support requests, use the support email and URL configured in App Store Connect.
+For privacy or support requests, visit the Throughline support page: `https://mpolner88.github.io/throughline/support/`.

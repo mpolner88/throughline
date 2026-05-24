@@ -55,3 +55,8 @@ Supabase is the hosted backend for dogfood:
 - `supabase/migrations` owns the Postgres and Storage setup.
 
 See [docs/hosted-backend.md](/Users/mikepolner/Documents/Throughline/docs/hosted-backend.md) for deploy commands and environment variables. See [docs/app-store-readiness.md](/Users/mikepolner/Documents/Throughline/docs/app-store-readiness.md) for TestFlight/App Store packaging status.
+
+Public app links:
+
+- Privacy policy: `https://mpolner88.github.io/throughline/privacy/`
+- Support: `https://mpolner88.github.io/throughline/support/`

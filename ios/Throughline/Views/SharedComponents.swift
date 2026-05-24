@@ -68,6 +68,9 @@ struct AccountSettingsView: View {
     @State private var isDeleting = false
     @State private var deleteError: String?
 
+    private let privacyURL = URL(string: "https://mpolner88.github.io/throughline/privacy/")!
+    private let supportURL = URL(string: "https://mpolner88.github.io/throughline/support/")!
+
     var body: some View {
         NavigationStack {
             Form {
@@ -108,6 +111,16 @@ struct AccountSettingsView: View {
                         Text("Sign in before creating an agent token.")
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("legal") {
+                    Link(destination: privacyURL) {
+                        Label("privacy policy", systemImage: "hand.raised")
+                    }
+
+                    Link(destination: supportURL) {
+                        Label("support", systemImage: "questionmark.circle")
                     }
                 }
 

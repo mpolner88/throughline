@@ -1,6 +1,6 @@
 # Throughline App Store Readiness
 
-Last updated: May 23, 2026
+Last updated: May 24, 2026
 
 ## Current Release State
 
@@ -16,6 +16,8 @@ Last updated: May 23, 2026
 - App icon asset catalog: `ios/Throughline/Assets.xcassets/AppIcon.appiconset`; generated icons are RGB PNGs with no alpha channel.
 - Accent color asset: `ios/Throughline/Assets.xcassets/AccentColor.colorset`
 - Privacy manifest: `ios/Throughline/PrivacyInfo.xcprivacy`
+- Public privacy URL: `https://mpolner88.github.io/throughline/privacy/`
+- Public support URL: `https://mpolner88.github.io/throughline/support/`
 - Release config keeps `THROUGHLINE_API_TOKEN` empty and uses Supabase Auth for users.
 - In-app account deletion exists in settings.
 - Protected backend maintenance route exists for audio retention: `POST /maintenance/audio-retention`
@@ -54,7 +56,8 @@ Suggested review path:
 
 ## Required Before Public Submission
 
-- Publish `docs/privacy-policy.md` at a public URL and enter that URL in App Store Connect.
+- Enter `https://mpolner88.github.io/throughline/privacy/` as the Privacy Policy URL in App Store Connect.
+- Enter `https://mpolner88.github.io/throughline/support/` as the Support URL in App Store Connect.
 - Create an App Store Connect app record for `app.throughline.ios`.
 - Create a reviewer account and include credentials in review notes.
 - Configure production email sending in Supabase Auth so review sign-in is not blocked by rate limits.
