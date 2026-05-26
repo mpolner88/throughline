@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 128" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline logo</title>
+  <desc id="desc">The lowercase word throughline with a single electric-blue underline.</desc>
+  <text
+    x="24"
+    y="78"
+    fill="#0A0A0A"
+    font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    font-size="56"
+    font-weight="500"
+    letter-spacing="0"
+  >throughline</text>
+  <path
+    d="M28 94 H334"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="8"
+    stroke-linecap="round"
+  />
+</svg>

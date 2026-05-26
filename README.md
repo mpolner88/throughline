@@ -56,6 +56,15 @@ Supabase is the hosted backend for dogfood:
 
 See [docs/hosted-backend.md](/Users/mikepolner/Documents/Throughline/docs/hosted-backend.md) for deploy commands and environment variables. See [docs/app-store-readiness.md](/Users/mikepolner/Documents/Throughline/docs/app-store-readiness.md) for TestFlight/App Store packaging status.
 
+## Brand assets
+
+The canonical logo assets live in `assets/brand/`:
+
+- `throughline-mark.svg` — electric-blue standalone mark
+- `throughline-mark-white.svg` — white standalone mark for blue/dark surfaces
+- `throughline-lockup.svg` — underlined lowercase wordmark
+- `throughline-app-icon.svg` — source reference for the generated iOS line icon
+
 Public app links:
 
 - Privacy policy: `https://mpolner88.github.io/throughline/privacy/`

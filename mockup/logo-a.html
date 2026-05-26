@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Throughline Logo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --blue: #2563eb;
+        --blue-2: #3b82f6;
+        --ink: #0a0a0a;
+        --muted: #777b84;
+        --line: #e6e7eb;
+        --paper: #ffffff;
+        --wash: #f6f7f9;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--wash);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      main {
+        width: min(1120px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 42px 0 56px;
+      }
+
+      header {
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        margin: 0 0 9px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(34px, 5vw, 68px);
+        font-weight: 560;
+        letter-spacing: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 18px;
+      }
+
+      .card {
+        min-height: 220px;
+        padding: 28px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .hero-card {
+        display: grid;
+        align-items: center;
+        min-height: 360px;
+      }
+
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .mark {
+        width: 190px;
+        height: auto;
+        overflow: visible;
+      }
+
+      .word {
+        font-size: clamp(42px, 7vw, 82px);
+        font-weight: 560;
+        letter-spacing: 0;
+      }
+
+      .note {
+        max-width: 610px;
+        margin: 22px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.48;
+      }
+
+      .tile {
+        display: grid;
+        place-items: center;
+        aspect-ratio: 1;
+        border-radius: 36px;
+        background:
+          radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.24), transparent 34%),
+          linear-gradient(145deg, var(--blue-2), var(--blue));
+        box-shadow: 0 22px 50px rgba(37, 99, 235, 0.22);
+      }
+
+      .tile .mark {
+        width: 74%;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .row:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .small-lockup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 22px;
+        font-weight: 560;
+      }
+
+      .small-lockup .mark {
+        width: 76px;
+      }
+
+      .motion {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .motion-step {
+        min-height: 150px;
+        padding: 18px;
+        background: #fbfbfc;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .motion-step svg {
+        width: 100%;
+        height: 86px;
+      }
+
+      .motion-step p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      svg {
+        display: block;
+      }
+
+      @media (max-width: 760px) {
+        main {
+          width: min(100vw - 28px, 520px);
+          padding-top: 28px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .card {
+          padding: 22px;
+        }
+
+        .lockup {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .mark {
+          width: 150px;
+        }
+
+        .motion {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">final logo system</p>
+        <h1>Throughline mark</h1>
+      </header>
+
+      <section class="grid">
+        <article class="card hero-card">
+          <div>
+            <div class="lockup">
+              <svg class="mark" viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <div class="word">throughline</div>
+            </div>
+            <p class="note">A voice note enters as one uninterrupted line, forms a full connected circle, crosses through the middle, and exits as a clean throughline. Voice first, memory underneath.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="tile">
+            <svg class="mark" viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="row">
+            <span class="label">app header</span>
+            <div class="small-lockup">
+              <svg class="mark" viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>throughline</span>
+            </div>
+          </div>
+          <div class="row">
+            <span class="label">monochrome</span>
+            <div class="small-lockup">
+              <svg class="mark" viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#0a0a0a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>throughline</span>
+            </div>
+          </div>
+          <div class="row">
+            <span class="label">micro</span>
+            <svg class="mark" style="width: 44px" viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#2563EB" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <p class="eyebrow">why it works</p>
+          <p class="note" style="margin-top: 0">The mark is one literal throughline. The full circle gives the note a stronger memory object, while the middle connection keeps the line readable from voice to agent. Production SVGs live in <code>assets/brand/</code>.</p>
+        </article>
+
+        <article class="card full">
+          <p class="eyebrow">construction</p>
+          <div class="motion">
+            <div class="motion-step">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M28 48 L164 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round"/>
+              </svg>
+              <p>voice note: one line enters</p>
+            </div>
+            <div class="motion-step">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M28 48 L82 48 C82 33 94 21 109 21 C124 21 136 33 136 48 C136 63 124 75 109 75 C94 75 82 63 82 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p>translation: line begins to resolve</p>
+            </div>
+            <div class="motion-step">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p>memory: full circle with middle connection</p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 96" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline mark</title>
+  <desc id="desc">One continuous line that enters from voice, forms a full connected circle, crosses through the middle, and exits as a throughline.</desc>
+  <path
+    d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

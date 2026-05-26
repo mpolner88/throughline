@@ -18,10 +18,9 @@ const iconSpecs = [
 ];
 
 const colors = {
-  background: [248, 250, 252, 255],
-  ink: [15, 23, 42, 255],
   blue: [37, 99, 235, 255],
   liftedBlue: [59, 130, 246, 255],
+  deepBlue: [29, 78, 216, 255],
   white: [255, 255, 255, 255],
 };
 
@@ -47,36 +46,13 @@ function main() {
 
 function makeIcon(size) {
   const scale = Math.max(3, Math.ceil(1024 / size));
-  const canvas = new Canvas(size * scale, size * scale, colors.background);
+  const canvas = new Canvas(size * scale, size * scale, colors.blue);
   const w = canvas.width;
   const h = canvas.height;
   const u = w / 1024;
 
-  roundRect(canvas, 0, 0, w, h, 220 * u, colors.background);
-  roundRect(canvas, 0, 650 * u, w, 374 * u, 0, colors.blue);
-
-  const stroke = Math.max(8 * u, 92 * u);
-  drawPolyline(canvas, [
-    [150 * u, 472 * u],
-    [388 * u, 472 * u],
-  ], stroke, colors.blue);
-  drawCubic(canvas, [388 * u, 472 * u], [388 * u, 302 * u], [525 * u, 170 * u], [688 * u, 208 * u], stroke, colors.blue);
-  drawCubic(canvas, [688 * u, 208 * u], [848 * u, 246 * u], [884 * u, 444 * u], [760 * u, 556 * u], stroke, colors.blue);
-  drawCubic(canvas, [760 * u, 556 * u], [625 * u, 678 * u], [388 * u, 610 * u], [388 * u, 472 * u], stroke, colors.blue);
-  drawPolyline(canvas, [
-    [388 * u, 472 * u],
-    [874 * u, 472 * u],
-  ], stroke, colors.blue);
-
-  drawPolyline(canvas, [
-    [152 * u, 768 * u],
-    [410 * u, 768 * u],
-  ], stroke * 0.8, colors.white);
-  drawCubic(canvas, [410 * u, 768 * u], [530 * u, 646 * u], [688 * u, 646 * u], [806 * u, 768 * u], stroke * 0.8, colors.white);
-  drawPolyline(canvas, [
-    [806 * u, 768 * u],
-    [874 * u, 768 * u],
-  ], stroke * 0.8, colors.white);
+  fillLinearGradient(canvas, colors.liftedBlue, colors.blue, colors.deepBlue);
+  drawLine(canvas, [238 * u, 512 * u], [786 * u, 512 * u], 96 * u, colors.white);
 
   const output = new Canvas(size, size, [0, 0, 0, 0]);
   downsample(canvas, output, scale);
@@ -97,40 +73,17 @@ class Canvas {
   }
 }
 
-function roundRect(canvas, x, y, width, height, radius, color) {
-  const x0 = Math.max(0, Math.floor(x));
-  const y0 = Math.max(0, Math.floor(y));
-  const x1 = Math.min(canvas.width, Math.ceil(x + width));
-  const y1 = Math.min(canvas.height, Math.ceil(y + height));
-  const r = Math.max(0, radius);
+function fillLinearGradient(canvas, startColor, midColor, endColor) {
+  const denominator = Math.max(1, canvas.width + canvas.height);
 
-  for (let py = y0; py < y1; py++) {
-    for (let px = x0; px < x1; px++) {
-      const cx = px < x + r ? x + r : px >= x + width - r ? x + width - r : px;
-      const cy = py < y + r ? y + r : py >= y + height - r ? y + height - r : py;
-      const inside = r === 0 || (px - cx) ** 2 + (py - cy) ** 2 <= r ** 2;
-      if (inside) setPixel(canvas, px, py, color);
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const t = (x + y) / denominator;
+      const color = t < 0.62
+        ? mixColor(startColor, midColor, t / 0.62)
+        : mixColor(midColor, endColor, (t - 0.62) / 0.38);
+      setPixel(canvas, x, y, color);
     }
-  }
-}
-
-function drawPolyline(canvas, points, width, color) {
-  for (let i = 0; i < points.length - 1; i++) {
-    drawLine(canvas, points[i], points[i + 1], width, color);
-  }
-}
-
-function drawCubic(canvas, p0, p1, p2, p3, width, color) {
-  const steps = 180;
-  let previous = p0;
-  for (let i = 1; i <= steps; i++) {
-    const t = i / steps;
-    const point = [
-      cubic(p0[0], p1[0], p2[0], p3[0], t),
-      cubic(p0[1], p1[1], p2[1], p3[1], t),
-    ];
-    drawLine(canvas, previous, point, width, color);
-    previous = point;
   }
 }
 
@@ -156,9 +109,14 @@ function drawLine(canvas, a, b, width, color) {
   }
 }
 
-function cubic(a, b, c, d, t) {
-  const mt = 1 - t;
-  return mt ** 3 * a + 3 * mt ** 2 * t * b + 3 * mt * t ** 2 * c + t ** 3 * d;
+function mixColor(a, b, t) {
+  const clamped = Math.max(0, Math.min(1, t));
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * clamped),
+    Math.round(a[1] + (b[1] - a[1]) * clamped),
+    Math.round(a[2] + (b[2] - a[2]) * clamped),
+    Math.round(a[3] + (b[3] - a[3]) * clamped),
+  ];
 }
 
 function setPixel(canvas, x, y, color) {

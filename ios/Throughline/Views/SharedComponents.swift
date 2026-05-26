@@ -5,9 +5,18 @@ import UIKit
 
 struct Wordmark: View {
     var body: some View {
-        Text("throughline")
-            .font(.system(size: 17, weight: .medium))
-            .tracking(0)
+        VStack(alignment: .leading, spacing: 1) {
+            Text("throughline")
+                .font(.system(size: 17, weight: .medium))
+                .tracking(0)
+
+            Capsule()
+                .fill(Theme.blue)
+                .frame(width: 74, height: 3)
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("throughline")
     }
 }
 

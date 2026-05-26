@@ -104,7 +104,7 @@ Each decision should explain the call that was made, the alternatives considered
 
 ---
 
-## 2026-04-30 — Wordmark, lockup, and standalone mark
+## 2026-04-30 — Wordmark, lockup, and standalone mark [SUPERSEDED by 2026-05-24 entry below]
 
 **Decision:** Three brand mark formats. Clean wordmark `throughline` (lowercase, no embellishment) for app chrome, body, settings. Lockup `throughline →` (trailing arrow in electric blue) for splash, marketing, login, App Store, social profiles. Standalone mark `→` (electric blue) for app icon, favicon, social avatar, loading states, empty-state mark.
 
@@ -116,11 +116,37 @@ Each decision should explain the call that was made, the alternatives considered
 
 **Revisit when:** App Store rejects the icon, the trailing-arrow lockup tests as confusing in marketing, or a fourth mark format becomes useful.
 
+## 2026-05-24 — Continuous-line logo mark [SUPERSEDED by 2026-05-25 entry below]
+
+**Decision:** Supersede the arrow-only standalone mark with a continuous-line mark: one line enters from the left, forms a full connected circle, crosses through the center, and exits to the right. The lockup is the mark plus lowercase `throughline`; the app icon is the mark alone in white on an electric-blue tile.
+
+**Context:** The arrow communicated "voice to agent" in copy, but it was too generic as an app icon and did not carry the voice-note-to-memory metaphor strongly enough. The user steered the mark toward a literal throughline: not disconnected parts, not a loose curl, but a full circle connected in the middle.
+
+**Alternatives considered:** Keep the trailing arrow as the icon. Use the wordmark alone. Use a disconnected loop plus entry and exit lines. Use a partial curl that suggests a thread but never becomes a full memory object.
+
+**Reasoning:** A continuous mark gives Throughline a distinctive ownable shape while preserving the original metaphor. The circle reads as the saved memory object; the center line keeps the motion from voice to agent readable. Keeping the arrow only in text-level transitions protects `voice → agent` without making the whole brand depend on a generic glyph.
+
+**Revisit when:** The mark becomes illegible at App Store/home-screen sizes, user testing reads the circle as unrelated to voice notes, or a future visual system needs a simpler single-glyph fallback.
+
+## 2026-05-25 — Underlined wordmark logo
+
+**Decision:** Supersede the circle/loop mark with the K direction from the radical logo exploration: the primary logo is lowercase `throughline` with a single electric-blue underline. The standalone app icon is the underline reduced to one solid horizontal white line on the electric-blue tile.
+
+**Context:** After exploring larger departures from the loop family, the underlined wordmark felt stronger: quieter, simpler, more ownable, and less like a generic startup icon. It makes the name itself carry the identity instead of attaching a separate symbol beside it.
+
+**Alternatives considered:** Keep the circle mark. Use a single line beside the word. Use a waveform/signal mark. Use a solid rail icon. Use a cursor-like agent mark.
+
+**Reasoning:** Throughline should feel like the shortest path from voice to usable memory. The underline says that with almost no visual machinery. It also scales cleanly across app chrome, App Store assets, and marketing surfaces without forcing a metaphor-heavy symbol into every view.
+
+**Revisit when:** The app icon feels too minimal in a crowded home screen, users fail to associate the line icon with Throughline after seeing the wordmark, or the underline starts being confused with a generic text emphasis treatment.
+
 ---
 
-## 2026-04-30 — The arrow rule
+## 2026-04-30 — The arrow rule [UPDATED by 2026-05-25 underlined wordmark logo]
 
 **Decision:** The arrow `→` is reserved for moments of actual transition or connection: the tagline `voice → agent`, the lockup, forward-action buttons (`save and continue →`), navigation chevrons on cards, transitions between states. It is never used for list bullets, decoration, or repeated UI patterns where it has no destination.
+
+**Update:** The arrow is no longer the logo lockup or standalone mark. It remains reserved for text-level transitions and explicit forward actions.
 
 **Context:** Early designs used the arrow as a list bullet on extracted items in the magic moment screen. It was visually consistent and reinforced the brand metaphor — but it diluted the arrow's meaning by making it ambient.
 

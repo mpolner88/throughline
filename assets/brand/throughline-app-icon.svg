@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline app icon</title>
+  <desc id="desc">Electric blue app icon with a single white horizontal line.</desc>
+  <defs>
+    <linearGradient id="blue" x1="176" y1="120" x2="892" y2="948" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="0.65" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#blue)"/>
+  <path
+    d="M238 512 H786"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="96"
+    stroke-linecap="round"
+  />
+</svg>

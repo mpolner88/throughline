@@ -15,9 +15,11 @@ Canonical reference for design and engineering. Updated as decisions are made.
 
 | Mark | Form | Where it lives |
 |---|---|---|
-| Lockup | `throughline →` (trailing arrow, electric blue) | Splash, marketing, login, App Store, social profiles |
-| Wordmark | `throughline` (lowercase, no embellishment) | App chrome, settings, footer, body |
-| Mark alone | `→` (electric blue) | App icon, favicon, avatar, loading, empty-state |
+| Lockup | Underlined `throughline` | Splash, marketing, login, App Store, social profiles |
+| Wordmark | Underlined `throughline` at brand moments; plain lowercase `throughline` when space is tight | App chrome, settings, footer, body |
+| Mark alone | One solid horizontal line | App icon, favicon, avatar, loading, empty-state |
+
+The logo is the word becoming the line. The underline is not decoration; it is the product promise in its most reduced form: the shortest path from what was said to what remains usable.
 
 ## Color
 
@@ -30,17 +32,19 @@ The brand color is electric blue. Used sparingly but boldly.
 
 Neutrals follow standard light/dark mode conventions. Text is near-black on white in light mode, near-white on near-black in dark mode. All borders are 0.5px.
 
-## The arrow rule
+## The underline rule
 
-The arrow `→` is the brand's central element. Treat it as scarce.
+The underline is the brand's central element. Treat it as scarce.
 
-**Used for:** the tagline, the lockup, forward-action buttons ("save and continue →"), navigation chevrons on cards, transitions between states.
+**Used for:** the app icon, lockup, loading, recording transitions, and moments where Throughline itself is being named.
 
-**Never used for:** list bullets, decoration, repeated UI patterns where it has no destination.
+**Never used for:** list bullets, decoration, dividers, repeated UI patterns, or generic emphasis.
+
+The arrow `→` remains a text-level transition mark for the tagline (`voice → agent`) and explicit forward actions. It is no longer the standalone logo.
 
 ## Typography
 
-- **Display:** refined sans (Inter Display, Söhne, Geist). Letter-spacing -0.5px on headlines.
+- **Display:** refined sans (Inter Display, Söhne, Geist). Letter-spacing 0 on headlines.
 - **Body:** same family, regular weight, line-height ~1.5.
 - **Mono:** for MCP URLs, IDs, technical content.
 - **Weights:** 400 regular, 500 medium. Never 600/700.
