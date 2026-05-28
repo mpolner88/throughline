@@ -18,6 +18,7 @@ Last updated: May 24, 2026
 - Privacy manifest: `ios/Throughline/PrivacyInfo.xcprivacy`
 - Public privacy URL: `https://mpolner88.github.io/throughline/privacy/`
 - Public support URL: `https://mpolner88.github.io/throughline/support/`
+- App Store screenshot set: `app-store/screenshots/iphone-6.9/`; generated with `npm run appstore:screenshots`
 - Release config keeps `THROUGHLINE_API_TOKEN` empty and uses Supabase Auth for users.
 - In-app account deletion exists in settings.
 - Protected backend maintenance route exists for audio retention: `POST /maintenance/audio-retention`
@@ -65,6 +66,23 @@ Suggested review path:
 - Schedule `POST /maintenance/audio-retention` with a service token, or remove the 30-day audio-retention claim from the published policy.
 - Archive and upload a signed Release build from Xcode.
 - Add screenshots, description, keywords, support URL, age rating, and export-compliance answers in App Store Connect.
+
+## Screenshot Upload Order
+
+Upload the generated 6.9" iPhone screenshots in this order:
+
+1. `app-store/screenshots/iphone-6.9/01-voice-to-agent.png`
+2. `app-store/screenshots/iphone-6.9/02-capture-voice.png`
+3. `app-store/screenshots/iphone-6.9/03-voice-to-memory.png`
+4. `app-store/screenshots/iphone-6.9/04-most-important.png`
+5. `app-store/screenshots/iphone-6.9/05-agent-ready.png`
+6. `app-store/screenshots/iphone-6.9/06-private-control.png`
+
+Regenerate with:
+
+```bash
+npm run appstore:screenshots
+```
 
 ## Retention Endpoint
 
