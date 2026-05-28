@@ -18,7 +18,7 @@ Last updated: May 24, 2026
 - Privacy manifest: `ios/Throughline/PrivacyInfo.xcprivacy`
 - Public privacy URL: `https://mpolner88.github.io/throughline/privacy/`
 - Public support URL: `https://mpolner88.github.io/throughline/support/`
-- App Store screenshot set: `app-store/screenshots/iphone-6.9/`; generated with `npm run appstore:screenshots`
+- App Store screenshot set: `app-store/screenshots/iphone-6.9/`; generated with `npm run appstore:screenshots` at `1284 x 2778`
 - Release config keeps `THROUGHLINE_API_TOKEN` empty and uses Supabase Auth for users.
 - In-app account deletion exists in settings.
 - Protected backend maintenance route exists for audio retention: `POST /maintenance/audio-retention`
@@ -69,7 +69,7 @@ Suggested review path:
 
 ## Screenshot Upload Order
 
-Upload the generated 6.9" iPhone screenshots in this order:
+Upload the generated iPhone screenshots in this order:
 
 1. `app-store/screenshots/iphone-6.9/01-voice-to-agent.png`
 2. `app-store/screenshots/iphone-6.9/02-capture-voice.png`
