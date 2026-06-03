@@ -32,6 +32,8 @@ struct Eyebrow: View {
 }
 
 struct PrimaryButton: View {
+    @Environment(\.isEnabled) private var isEnabled
+
     let title: String
     let action: () -> Void
 
@@ -41,8 +43,8 @@ struct PrimaryButton: View {
                 .font(.system(size: 16, weight: .medium))
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(Theme.blue)
-                .foregroundStyle(.white)
+                .background(Theme.blue.opacity(isEnabled ? 1 : 0.36))
+                .foregroundStyle(.white.opacity(isEnabled ? 1 : 0.82))
                 .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)

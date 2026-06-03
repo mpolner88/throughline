@@ -253,6 +253,7 @@ struct OnboardingView: View {
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
@@ -269,11 +270,12 @@ struct OnboardingView: View {
                 }
 
                 VStack(spacing: 10) {
-                    TextField("email", text: $authEmail)
+                    TextField("email address", text: $authEmail)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .submitLabel(.next)
                         .font(.system(size: 16))
                         .padding(.horizontal, 14)
                         .frame(height: 48)
@@ -284,6 +286,12 @@ struct OnboardingView: View {
 
                     SecureField("password", text: $authPassword)
                         .textContentType(authMode == .createAccount ? .newPassword : .password)
+                        .submitLabel(.go)
+                        .onSubmit {
+                            if canSubmitAuth {
+                                authenticate()
+                            }
+                        }
                         .font(.system(size: 16))
                         .padding(.horizontal, 14)
                         .frame(height: 48)
@@ -296,7 +304,7 @@ struct OnboardingView: View {
                 PrimaryButton(title: isAuthenticating ? "working" : authMode.primaryTitle) {
                     authenticate()
                 }
-                .disabled(isAuthenticating || authEmail.isEmpty || authPassword.count < 6)
+                .disabled(isAuthenticating || !canSubmitAuth)
 
                 Button(authMode.switchTitle) {
                     authMode = authMode == .createAccount ? .signIn : .createAccount
@@ -309,17 +317,11 @@ struct OnboardingView: View {
                 .frame(height: 44)
 
                 if let authNotice {
-                    Text(authNotice)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    AuthMessage(text: authNotice, tone: .notice)
                 }
 
                 if let authError {
-                    Text(authError)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
+                    AuthMessage(text: authError, tone: .error)
                 }
             }
         }
@@ -370,6 +372,10 @@ struct OnboardingView: View {
         return .idle
     }
 
+    private var canSubmitAuth: Bool {
+        !authEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && authPassword.count >= 6
+    }
+
     private func stopAndUploadRecording() {
         guard recorder.isRecording, !isUploading, !isFinishingRecording else { return }
 
@@ -415,6 +421,12 @@ struct OnboardingView: View {
             do {
                 let client = AuthClient()
                 let email = authEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !email.isEmpty, authPassword.count >= 6 else {
+                    authNotice = nil
+                    authError = "Enter the email address and password for this account."
+                    return
+                }
+
                 let session: AuthSession
                 if authMode == .createAccount {
                     session = try await client.signUp(email: email, password: authPassword)
@@ -426,16 +438,38 @@ struct OnboardingView: View {
                 authNotice = nil
                 finishOnboarding()
             } catch {
-                if let authClientError = error as? AuthClientError,
-                   case .emailConfirmationRequired = authClientError {
-                    authMode = .signIn
-                    authError = nil
-                    authNotice = "Check your email to confirm your account, then sign in here."
-                } else {
-                    authNotice = nil
-                    authError = error.localizedDescription
-                }
+                handleAuthenticationError(error)
             }
+        }
+    }
+
+    private func handleAuthenticationError(_ error: Error) {
+        guard let authClientError = error as? AuthClientError else {
+            authNotice = nil
+            authError = error.localizedDescription
+            return
+        }
+
+        switch authClientError {
+        case .emailConfirmationRequired:
+            authMode = .signIn
+            authError = nil
+            authNotice = "We sent a confirmation email. Open it, then come back here to sign in."
+        case let .serverError(_, message):
+            let normalized = message.lowercased()
+            if normalized.contains("email not confirmed") {
+                authError = nil
+                authNotice = "This email still needs confirmation. Open the confirmation email, then sign in."
+            } else if normalized.contains("invalid login credentials") {
+                authNotice = nil
+                authError = "We couldn't sign you in. Check the email and password, or create a new account."
+            } else {
+                authNotice = nil
+                authError = message
+            }
+        case .missingAnonKey, .invalidResponse:
+            authNotice = nil
+            authError = authClientError.localizedDescription
         }
     }
 
@@ -475,9 +509,9 @@ private enum AuthMode {
     var supportingText: String {
         switch self {
         case .createAccount:
-            "Create an account so new notes are saved to your private Throughline memory."
+            "Create an account to save voice notes and agent-ready memory."
         case .signIn:
-            "Use the email and password you confirmed to open your private Throughline memory."
+            "Use the email and password for your Throughline account."
         }
     }
 
@@ -490,9 +524,47 @@ private enum AuthMode {
 
     var switchTitle: String {
         switch self {
-        case .createAccount: "Already confirmed? Sign in"
-        case .signIn: "Need an account? Create one"
+        case .createAccount: "Already have an account? Sign in"
+        case .signIn: "Create a new account"
         }
+    }
+}
+
+private struct AuthMessage: View {
+    enum Tone {
+        case notice
+        case error
+
+        var foreground: Color {
+            switch self {
+            case .notice: Theme.pillText
+            case .error: Color.red
+            }
+        }
+
+        var background: Color {
+            switch self {
+            case .notice: Theme.pillBackground
+            case .error: Color.red.opacity(0.08)
+            }
+        }
+    }
+
+    let text: String
+    let tone: Tone
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 13, weight: .medium))
+            .lineSpacing(3)
+            .foregroundStyle(tone.foreground)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(tone.background)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
