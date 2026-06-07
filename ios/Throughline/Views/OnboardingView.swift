@@ -306,6 +306,14 @@ struct OnboardingView: View {
                 }
                 .disabled(isAuthenticating || !canSubmitAuth)
 
+                if !canSubmitAuth {
+                    Text("Enter both email address and password to continue.")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+
                 Button(authMode.switchTitle) {
                     authMode = authMode == .createAccount ? .signIn : .createAccount
                     authError = nil

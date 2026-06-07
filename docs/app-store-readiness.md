@@ -6,7 +6,7 @@ Last updated: May 24, 2026
 
 - Bundle ID: `app.throughline.ios`
 - Category: Productivity
-- Version/build: `1.0` / `1`
+- Version/build: `1.0` / `2026060601`
 - Backend: Supabase Edge Functions
 - Auth: Throughline email/password through Supabase Auth
 - Agent access: user-created MCP tokens
@@ -44,8 +44,10 @@ Use review notes like this:
 Throughline lets a user record voice notes, transcribe them, save them as notes, and optionally create an MCP agent token so their own agent can read saved notes.
 
 Test account:
-Email: [create reviewer email before submission]
-Password: [create reviewer password before submission]
+Email: app-review@throughline.app
+Password: [paste the current App Review password from the private handoff]
+
+Important: enter both the email address and password before tapping sign in. The reviewer account is already confirmed and does not require opening an email confirmation link.
 
 Suggested review path:
 1. Sign in with the test account.
