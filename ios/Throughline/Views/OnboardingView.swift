@@ -14,7 +14,10 @@ struct OnboardingView: View {
     @State private var authMode: AuthMode = .createAccount
     @State private var authError: String?
     @State private var authNotice: String?
+    @State private var pendingConfirmationEmail: String?
     @State private var isAuthenticating = false
+    @State private var isResendingConfirmation = false
+    @State private var suppressAuthModeReset = false
     #if DEBUG
     private let debugStep: Int?
     #endif
@@ -249,7 +252,7 @@ struct OnboardingView: View {
                 Eyebrow(text: authMode.eyebrow)
                 Text(authMode.heading)
                     .font(.throughlineHeading)
-                Text(authMode.supportingText)
+                Text(authSupportingText)
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
@@ -265,8 +268,15 @@ struct OnboardingView: View {
                 }
                 .pickerStyle(.segmented)
                 .onChange(of: authMode) { _, _ in
+                    if suppressAuthModeReset {
+                        suppressAuthModeReset = false
+                        return
+                    }
+
                     authError = nil
                     authNotice = nil
+                    pendingConfirmationEmail = nil
+                    isResendingConfirmation = false
                 }
 
                 VStack(spacing: 10) {
@@ -301,6 +311,25 @@ struct OnboardingView: View {
                         }
                 }
 
+                if let authNotice {
+                    AuthMessage(text: authNotice, tone: .notice)
+                }
+
+                if let authError {
+                    AuthMessage(text: authError, tone: .error)
+                }
+
+                if pendingConfirmationEmail != nil {
+                    Button(isResendingConfirmation ? "sending confirmation" : "resend confirmation email") {
+                        resendConfirmationEmail()
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+                    .disabled(isResendingConfirmation)
+                }
+
                 PrimaryButton(title: isAuthenticating ? "working" : authMode.primaryTitle) {
                     authenticate()
                 }
@@ -323,14 +352,6 @@ struct OnboardingView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
-
-                if let authNotice {
-                    AuthMessage(text: authNotice, tone: .notice)
-                }
-
-                if let authError {
-                    AuthMessage(text: authError, tone: .error)
-                }
             }
         }
         .padding(24)
@@ -382,6 +403,14 @@ struct OnboardingView: View {
 
     private var canSubmitAuth: Bool {
         !authEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && authPassword.count >= 6
+    }
+
+    private var authSupportingText: String {
+        if let pendingConfirmationEmail {
+            return "Check \(pendingConfirmationEmail) for the confirmation email. After you confirm it, enter your password here and sign in."
+        }
+
+        return authMode.supportingText
     }
 
     private func stopAndUploadRecording() {
@@ -444,10 +473,51 @@ struct OnboardingView: View {
                 appState.setSession(session)
                 authError = nil
                 authNotice = nil
+                pendingConfirmationEmail = nil
+                isResendingConfirmation = false
                 finishOnboarding()
             } catch {
                 handleAuthenticationError(error)
             }
+        }
+    }
+
+    private func resendConfirmationEmail() {
+        guard let email = pendingConfirmationEmail, !isResendingConfirmation else { return }
+
+        Task {
+            isResendingConfirmation = true
+            defer { isResendingConfirmation = false }
+
+            do {
+                try await AuthClient().resendSignUpConfirmation(email: email)
+                authError = nil
+                authNotice = "We sent another confirmation email to \(email)."
+            } catch {
+                handleConfirmationResendError(error)
+            }
+        }
+    }
+
+    private func handleConfirmationResendError(_ error: Error) {
+        guard let authClientError = error as? AuthClientError else {
+            authNotice = nil
+            authError = error.localizedDescription
+            return
+        }
+
+        switch authClientError {
+        case let .serverError(_, message):
+            let normalized = message.lowercased()
+            authNotice = nil
+            if normalized.contains("rate") || normalized.contains("too many") {
+                authError = "A confirmation email was sent recently. Check your inbox, or try again in a few minutes."
+            } else {
+                authError = message
+            }
+        case .missingAnonKey, .invalidResponse, .emailConfirmationRequired:
+            authNotice = nil
+            authError = authClientError.localizedDescription
         }
     }
 
@@ -460,25 +530,40 @@ struct OnboardingView: View {
 
         switch authClientError {
         case .emailConfirmationRequired:
-            authMode = .signIn
+            let email = authEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+            switchToSignInPreservingAuthMessage()
+            pendingConfirmationEmail = email.isEmpty ? nil : email
+            authPassword = ""
             authError = nil
-            authNotice = "We sent a confirmation email. Open it, then come back here to sign in."
+            authNotice = "We sent a confirmation email. Open it, then return to Throughline and sign in."
         case let .serverError(_, message):
             let normalized = message.lowercased()
             if normalized.contains("email not confirmed") {
+                let email = authEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+                switchToSignInPreservingAuthMessage()
+                pendingConfirmationEmail = email.isEmpty ? pendingConfirmationEmail : email
                 authError = nil
-                authNotice = "This email still needs confirmation. Open the confirmation email, then sign in."
+                authNotice = "This email still needs confirmation. Open the confirmation email, then return here and sign in."
             } else if normalized.contains("invalid login credentials") {
                 authNotice = nil
-                authError = "We couldn't sign you in. Check the email and password, or create a new account."
+                pendingConfirmationEmail = nil
+                authError = "That email and password did not match. Check both fields, or create a new account."
             } else {
                 authNotice = nil
+                pendingConfirmationEmail = nil
                 authError = message
             }
         case .missingAnonKey, .invalidResponse:
             authNotice = nil
+            pendingConfirmationEmail = nil
             authError = authClientError.localizedDescription
         }
+    }
+
+    private func switchToSignInPreservingAuthMessage() {
+        guard authMode != .signIn else { return }
+        suppressAuthModeReset = true
+        authMode = .signIn
     }
 
     #if DEBUG

@@ -6,7 +6,7 @@ Last updated: May 24, 2026
 
 - Bundle ID: `app.throughline.ios`
 - Category: Productivity
-- Version/build: `1.0` / `2026060601`
+- Version/build: `1.0` / `2026060602`
 - Backend: Supabase Edge Functions
 - Auth: Throughline email/password through Supabase Auth
 - Agent access: user-created MCP tokens
@@ -47,7 +47,7 @@ Test account:
 Email: app-review@throughline.app
 Password: [paste the current App Review password from the private handoff]
 
-Important: enter both the email address and password before tapping sign in. The reviewer account is already confirmed and does not require opening an email confirmation link.
+Important: choose "sign in", not "create", then enter both the email address and password before tapping sign in. The reviewer account is already confirmed and does not require opening an email confirmation link.
 
 Suggested review path:
 1. Sign in with the test account.

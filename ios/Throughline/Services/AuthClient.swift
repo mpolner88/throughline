@@ -167,6 +167,14 @@ struct AuthClient: Sendable {
         return try response.session()
     }
 
+    func resendSignUpConfirmation(email: String) async throws {
+        let _: AuthEmptyResponse = try await request(
+            path: "auth/v1/resend",
+            method: "POST",
+            body: AuthResendRequest(type: "signup", email: email)
+        )
+    }
+
     func refreshSession(refreshToken: String) async throws -> AuthSession {
         let response: AuthResponse = try await request(
             path: "auth/v1/token",
@@ -233,6 +241,13 @@ private struct AuthRefreshRequest: Encodable {
         case refreshToken = "refresh_token"
     }
 }
+
+private struct AuthResendRequest: Encodable {
+    let type: String
+    let email: String
+}
+
+private struct AuthEmptyResponse: Decodable {}
 
 private struct AuthResponse: Decodable {
     let accessToken: String?
