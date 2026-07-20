@@ -6,7 +6,7 @@ Last updated: May 24, 2026
 
 - Bundle ID: `app.throughline.ios`
 - Category: Productivity
-- Version/build: `1.0` / `2026060602`
+- Version/build: `1.0` / `2026071901`
 - Backend: Supabase Edge Functions
 - Auth: Throughline email/password through Supabase Auth
 - Agent access: user-created MCP tokens
