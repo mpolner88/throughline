@@ -41,9 +41,7 @@
 		</dict>
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Throughline records voice notes so your AI agent can use them.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Throughline may transcribe your voice notes on device.</string>
+	<string>Throughline records audio you choose. With your permission, it is sent to Supabase and Groq for transcription and note creation.</string>
 	<key>ThroughlineBackendAPIToken</key>
 	<string>$(THROUGHLINE_API_TOKEN)</string>
 	<key>ThroughlineSupabaseAnonKey</key>

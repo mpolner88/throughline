@@ -16,12 +16,15 @@ private enum FeedbackStatus: Equatable {
 
 struct HomeView: View {
     @EnvironmentObject private var appState: AppState
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @StateObject private var recorder = AudioRecorder()
     @State private var uploadError: String?
     @State private var feedbackStatus: [String: FeedbackStatus] = [:]
     @State private var showingSettings = false
+    @State private var showingAIProcessingConsent = false
     @State private var isRefreshing = false
     @State private var isFinishingRecording = false
+    @State private var isPreparingRecording = false
     @State private var isUploading = false
     @State private var isProcessing = false
     @State private var didJustSave = false
@@ -88,7 +91,6 @@ struct HomeView: View {
             bottomRecorder
         }
         .task {
-            await recorder.requestPermissionIfNeeded()
             await refreshFromBackend()
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
@@ -98,6 +100,17 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingSettings) {
             AccountSettingsView()
+        }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView(isCurrentlyAllowed: hasAIProcessingPermission) { allowed in
+                hasAIProcessingPermission = allowed
+                if allowed {
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(250))
+                        startRecording()
+                    }
+                }
+            }
         }
         .sheet(item: $selectedNote) { note in
             NoteDetailSheet(
@@ -176,12 +189,12 @@ struct HomeView: View {
 
             RecordButton(
                 isRecording: recorder.isRecording,
-                isBusy: isFinishingRecording || isUploading || isProcessing,
+                isBusy: isPreparingRecording || isFinishingRecording || isUploading || isProcessing,
                 size: 56
             ) {
                 handleRecordTap()
             }
-            .disabled(isFinishingRecording || isUploading || isProcessing)
+            .disabled(isPreparingRecording || isFinishingRecording || isUploading || isProcessing)
 
             if !recorderStatusText.isEmpty {
                 Text(recorderStatusText)
@@ -201,9 +214,27 @@ struct HomeView: View {
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
+            guard hasAIProcessingPermission else {
+                showingAIProcessingConsent = true
+                return
+            }
+
+            startRecording()
+        }
+    }
+
+    private func startRecording() {
+        guard !isPreparingRecording, !recorder.isRecording else { return }
+
+        Task {
+            isPreparingRecording = true
+            defer { isPreparingRecording = false }
+
+            await recorder.requestPermissionIfNeeded()
             do {
                 didJustSave = false
                 try recorder.start(limitSeconds: nil)
+                uploadError = nil
             } catch {
                 uploadError = error.localizedDescription
             }
@@ -211,6 +242,10 @@ struct HomeView: View {
     }
 
     private var recorderStatusText: String {
+        if isPreparingRecording {
+            return "requesting microphone access"
+        }
+
         if recorder.isRecording {
             return "\(recorder.elapsedText) / 5:00"
         }
@@ -303,6 +338,13 @@ struct HomeView: View {
                 let fileURL = try await recorder.stop()
 
                 isFinishingRecording = false
+
+                guard hasAIProcessingPermission else {
+                    try? FileManager.default.removeItem(at: fileURL)
+                    uploadError = "Allow AI processing before sending a recording to Supabase and Groq."
+                    return
+                }
+
                 isUploading = true
 
                 let response = try await UploadClient().uploadRecording(

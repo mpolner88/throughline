@@ -1,6 +1,6 @@
 # Throughline App Store Readiness
 
-Last updated: May 24, 2026
+Last updated: August 2, 2026
 
 ## Current Release State
 
@@ -22,6 +22,39 @@ Last updated: May 24, 2026
 - Release config keeps `THROUGHLINE_API_TOKEN` empty and uses Supabase Auth for users.
 - In-app account deletion exists in settings.
 - Protected backend maintenance route exists for audio retention: `POST /maintenance/audio-retention`
+- Before the first recording is sent, the app identifies the data being sent, names Supabase and Groq as recipients, explains the purpose, and requires an affirmative choice.
+- Declining AI processing leaves recording disabled and does not request microphone access.
+- AI processing permission can be reviewed or withdrawn later in Settings.
+- The microphone permission text names Supabase and Groq and matches the in-app disclosure.
+- Account creation explains that email confirmation is required and offers an in-app resend action.
+
+## Rejection Resolution Status
+
+### Privacy disclosure and consent — resolved in the new build
+
+Verified in an isolated Release build on an iPhone 17 Pro simulator:
+
+1. Tapping **Start recording** opens Throughline's AI processing disclosure before the iOS microphone prompt.
+2. The disclosure identifies audio, transcript, and derived text; names Supabase and Groq; and explains transcription and structured-note creation.
+3. Tapping **Not now** returns to the recording screen without requesting microphone access or uploading data.
+4. Tapping **Allow AI processing** dismisses the disclosure, then shows the iOS microphone prompt.
+5. Granting microphone access starts recording.
+
+The updated privacy policy source is in `docs/privacy-policy.md` and `docs/privacy/index.html`. GitHub Pages publishes the `/docs` directory from `main`; verify the updated processor wording is live before resubmission.
+
+### Confirmation email — production SMTP still required
+
+Production Supabase Auth currently requires email confirmation, but the project does not have a custom SMTP provider configured. Supabase's built-in sender is a development-only service that refuses delivery to addresses outside the project's authorized team and has a very low rate limit. This matches the reviewer's report that a newly created account received no email.
+
+Before resubmission:
+
+1. Configure a production SMTP provider in Supabase Auth.
+2. Keep email confirmation enabled.
+3. Create a brand-new account using an external inbox that is not a Supabase team member.
+4. Confirm the first email arrives, its link completes confirmation, sign-in works, and the in-app resend action delivers a second email when requested.
+5. Record the provider, sender address, test inbox, and test timestamp here.
+
+Official setup reference: https://supabase.com/docs/guides/auth/auth-smtp
 
 ## App Privacy Labels To Enter
 
@@ -51,10 +84,13 @@ Important: choose "sign in", not "create", then enter both the email address and
 
 Suggested review path:
 1. Sign in with the test account.
-2. Record a short voice note.
-3. Wait for the transcript/note preview to appear.
-4. Open the note to review the transcript and important items.
-5. Open settings to see agent token management and account deletion.
+2. Tap Start recording. Throughline first shows an AI processing disclosure that identifies the audio/transcript data, Supabase and Groq as recipients, and the transcription/note-creation purpose.
+3. Tap Allow AI processing, then allow microphone access in the iOS prompt.
+4. Record a short voice note and wait for the transcript/note preview to appear.
+5. Open the note to review the transcript and important items.
+6. Open settings to review or withdraw AI processing permission and to see agent token management and account deletion.
+
+Declining AI processing is supported: tapping Not now returns to the recording screen without requesting microphone permission or sending a recording.
 ```
 
 ## Required Before Public Submission
@@ -63,7 +99,8 @@ Suggested review path:
 - Enter `https://mpolner88.github.io/throughline/support/` as the Support URL in App Store Connect.
 - Create an App Store Connect app record for `app.throughline.ios`.
 - Create a reviewer account and include credentials in review notes.
-- Configure production email sending in Supabase Auth so review sign-in is not blocked by rate limits.
+- Configure and externally verify production email sending in Supabase Auth.
+- Verify the updated privacy policy is live before uploading the new build.
 - Deploy the latest Supabase functions before uploading the release archive.
 - Schedule `POST /maintenance/audio-retention` with a service token, or remove the 30-day audio-retention claim from the published policy.
 - Archive and upload a signed Release build from Xcode.

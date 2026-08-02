@@ -2,13 +2,16 @@ import SwiftUI
 
 struct OnboardingView: View {
     @EnvironmentObject private var appState: AppState
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @StateObject private var recorder = AudioRecorder()
     @State private var step: Int
     @State private var capturedNote: ThroughlineNote?
     @State private var uploadError: String?
     @State private var showingBackendSettings = false
+    @State private var showingAIProcessingConsent = false
     @State private var isUploading = false
     @State private var isFinishingRecording = false
+    @State private var isPreparingRecording = false
     @State private var authEmail = ""
     @State private var authPassword = ""
     @State private var authMode: AuthMode = .createAccount
@@ -49,7 +52,6 @@ struct OnboardingView: View {
             pageIndicator
         }
         .task {
-            await recorder.requestPermissionIfNeeded()
             #if DEBUG
             if let debugStep {
                 step = debugStep
@@ -63,6 +65,17 @@ struct OnboardingView: View {
         }
         .sheet(isPresented: $showingBackendSettings) {
             BackendSettingsView()
+        }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView(isCurrentlyAllowed: hasAIProcessingPermission) { allowed in
+                hasAIProcessingPermission = allowed
+                if allowed {
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(250))
+                        startRecording()
+                    }
+                }
+            }
         }
     }
 
@@ -140,7 +153,7 @@ struct OnboardingView: View {
                 Eyebrow(text: "demo recording")
                 Text("say what's on your mind")
                     .font(.throughlineHeading)
-                Text("Speak for up to 30 seconds. Say anything and Throughline will capture it.")
+                Text("Before anything is sent, Throughline asks permission to send your audio to Supabase and Groq for transcription and note creation.")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
@@ -153,7 +166,7 @@ struct OnboardingView: View {
                 OnboardingRecordButton(phase: recordButtonPhase) {
                     handleRecordTap()
                 }
-                .disabled(isUploading || isFinishingRecording)
+                .disabled(isUploading || isFinishingRecording || isPreparingRecording)
 
                 Text("\(recorder.elapsedText) / 0:30")
                     .font(.system(size: 36, weight: .regular, design: .monospaced))
@@ -361,8 +374,26 @@ struct OnboardingView: View {
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
+            guard hasAIProcessingPermission else {
+                showingAIProcessingConsent = true
+                return
+            }
+
+            startRecording()
+        }
+    }
+
+    private func startRecording() {
+        guard !isPreparingRecording, !recorder.isRecording else { return }
+
+        Task {
+            isPreparingRecording = true
+            defer { isPreparingRecording = false }
+
+            await recorder.requestPermissionIfNeeded()
             do {
                 try recorder.start(limitSeconds: nil)
+                uploadError = nil
             } catch {
                 uploadError = error.localizedDescription
             }
@@ -370,6 +401,10 @@ struct OnboardingView: View {
     }
 
     private var recordingStatusText: String {
+        if isPreparingRecording {
+            return "requesting microphone access"
+        }
+
         if isUploading {
             return "capturing"
         }
@@ -407,7 +442,7 @@ struct OnboardingView: View {
 
     private var authSupportingText: String {
         if let pendingConfirmationEmail {
-            return "Check \(pendingConfirmationEmail) for the confirmation email. After you confirm it, enter your password here and sign in."
+            return "Check \(pendingConfirmationEmail), including spam, for the confirmation link. After confirming, return here and sign in."
         }
 
         return authMode.supportingText
@@ -424,6 +459,12 @@ struct OnboardingView: View {
 
                 try await Task.sleep(for: .milliseconds(520))
                 isFinishingRecording = false
+
+                guard hasAIProcessingPermission else {
+                    try? FileManager.default.removeItem(at: fileURL)
+                    uploadError = "Allow AI processing before sending a recording to Supabase and Groq."
+                    return
+                }
 
                 isUploading = true
                 defer { isUploading = false }
@@ -535,7 +576,7 @@ struct OnboardingView: View {
             pendingConfirmationEmail = email.isEmpty ? nil : email
             authPassword = ""
             authError = nil
-            authNotice = "We sent a confirmation email. Open it, then return to Throughline and sign in."
+            authNotice = "We sent a confirmation link. Open it, then return to Throughline and sign in."
         case let .serverError(_, message):
             let normalized = message.lowercased()
             if normalized.contains("email not confirmed") {
@@ -602,7 +643,7 @@ private enum AuthMode {
     var supportingText: String {
         switch self {
         case .createAccount:
-            "Create an account to save voice notes and agent-ready memory."
+            "Create an account to save voice notes. We’ll email a confirmation link before the first sign-in."
         case .signIn:
             "Use the email and password for your Throughline account."
         }
@@ -610,7 +651,7 @@ private enum AuthMode {
 
     var primaryTitle: String {
         switch self {
-        case .createAccount: "send confirmation email"
+        case .createAccount: "create account"
         case .signIn: "sign in"
         }
     }

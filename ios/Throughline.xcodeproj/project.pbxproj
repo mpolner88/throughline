@@ -309,8 +309,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_KEY_CFBundleDisplayName = Throughline;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline records voice notes so your AI agent can use them.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Throughline may transcribe your voice notes on device.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline records audio you choose. With your permission, it is sent to Supabase and Groq for transcription and note creation.";
 				INFOPLIST_KEY_ThroughlineBackendAPIToken = "$(THROUGHLINE_API_TOKEN)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -347,8 +346,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_KEY_CFBundleDisplayName = Throughline;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline records voice notes so your AI agent can use them.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Throughline may transcribe your voice notes on device.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline records audio you choose. With your permission, it is sent to Supabase and Groq for transcription and note creation.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

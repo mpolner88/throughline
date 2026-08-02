@@ -70,11 +70,109 @@ struct SecondaryButton: View {
     }
 }
 
+struct AIProcessingConsentView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let isCurrentlyAllowed: Bool
+    let onDecision: (Bool) -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Eyebrow(text: "your choice")
+                        Text("AI voice processing")
+                            .font(.throughlineHeading)
+                        Text("Throughline will not send a recording until you allow this.")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(4)
+                    }
+
+                    consentSection(
+                        title: "What is sent",
+                        text: "The audio recording you choose to create, plus the transcript and text derived from it."
+                    )
+
+                    consentSection(
+                        title: "Who receives it",
+                        text: "Throughline’s Supabase backend and Groq, our third-party AI processor."
+                    )
+
+                    consentSection(
+                        title: "Why",
+                        text: "Groq transcribes the audio and helps create the summary, tasks, and other structured note fields saved in Throughline."
+                    )
+
+                    consentSection(
+                        title: "Retention and control",
+                        text: "Throughline stores audio in Supabase for up to 30 days and keeps transcripts and notes until you delete them or your account. Groq does not use API inputs or outputs to train models and may temporarily retain them for service reliability or abuse monitoring for up to 30 days. You can withdraw permission here later; that stops future recordings from being sent."
+                    )
+
+                    Link(destination: AIProcessingPermission.privacyURL) {
+                        Label("read the privacy policy", systemImage: "hand.raised")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                }
+                .padding(24)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 12) {
+                    PrimaryButton(
+                        title: isCurrentlyAllowed ? "keep AI processing allowed" : "allow AI processing"
+                    ) {
+                        onDecision(true)
+                        dismiss()
+                    }
+
+                    SecondaryButton(
+                        title: isCurrentlyAllowed ? "withdraw permission" : "not now"
+                    ) {
+                        onDecision(false)
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+                .background(.regularMaterial)
+                .overlay(alignment: .top) {
+                    Divider()
+                }
+            }
+            .navigationTitle("privacy")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func consentSection(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+            Text(text)
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 struct AccountSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var showingBackendSettings = false
     @State private var showingAgentConnection = false
+    @State private var showingAIProcessingConsent = false
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String?
@@ -135,6 +233,21 @@ struct AccountSettingsView: View {
                     }
                 }
 
+                Section("AI processing") {
+                    LabeledContent("permission") {
+                        Text(hasAIProcessingPermission ? "allowed" : "not allowed")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button("review AI processing") {
+                        showingAIProcessingConsent = true
+                    }
+
+                    Text("With permission, recordings are sent to Supabase and Groq for transcription and structured note creation.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+
                 #if DEBUG
                 Section("developer") {
                     Button("backend") {
@@ -167,6 +280,11 @@ struct AccountSettingsView: View {
         }
         .sheet(isPresented: $showingAgentConnection) {
             AgentConnectionView()
+        }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView(isCurrentlyAllowed: hasAIProcessingPermission) {
+                hasAIProcessingPermission = $0
+            }
         }
     }
 

@@ -1,5 +1,10 @@
 import Foundation
 
+enum AIProcessingPermission {
+    static let storageKey = "throughline.aiProcessingPermissionGranted"
+    static let privacyURL = URL(string: "https://mpolner88.github.io/throughline/privacy/")!
+}
+
 @MainActor
 final class AppState: ObservableObject {
     private static let notesStorageKey = "throughline.cachedNotes"

@@ -1,6 +1,6 @@
 # Throughline Privacy Policy
 
-Effective date: May 24, 2026
+Effective date: August 2, 2026
 
 Throughline is a voice note app. You record a note, Throughline turns it into a transcript and structured note, and you can make that note readable by an agent through your personal MCP connection.
 
@@ -34,7 +34,20 @@ When you delete your account, Throughline deletes your account, saved memories, 
 
 Throughline uses Supabase for account authentication, database storage, file storage, and Edge Functions. The production Supabase project is configured in the United States region `us-west-2`.
 
-Throughline may use Groq or another transcription and extraction provider to process voice notes into text and structured note fields.
+After you explicitly allow AI processing, each audio recording you choose to create is sent through Throughline's Supabase Edge Function to Groq, our third-party AI processor. Groq receives:
+
+- The audio recording, to create a transcript.
+- The transcript and text derived from it, to create summaries, tasks, and other structured note fields.
+
+Throughline uses Groq only to provide these transcription and note-creation features. Groq states that it does not use API inputs or outputs to train its models. Groq does not retain inference customer data by default, but may temporarily retain inputs and outputs for service reliability or abuse monitoring for up to 30 days unless zero-data-retention controls apply. See [Your Data in GroqCloud](https://console.groq.com/docs/your-data) and [Groq's privacy and service notices](https://console.groq.com/docs/legal).
+
+Supabase and Groq process data on Throughline's behalf under their service terms and security commitments. Throughline does not sell this data or permit either processor to use it for third-party advertising.
+
+## AI Processing Permission
+
+Before the app starts the first recording, it identifies the data sent to Supabase and Groq, explains why it is sent, and asks whether you allow AI processing. If you choose "not now," no recording is created or sent.
+
+You can review or withdraw this permission in Settings. Withdrawing permission prevents future recordings from being sent. Delete individual notes or your account to remove data Throughline has already stored, subject to the retention periods described above.
 
 ## MCP Access
 
@@ -45,6 +58,7 @@ Agent access is opt-in. Creating an agent token allows an MCP client to read you
 You can:
 
 - Stop creating new recordings at any time.
+- Decline or withdraw AI processing permission.
 - Revoke agent tokens.
 - Sign out of the app.
 - Delete your account and associated data from settings.
