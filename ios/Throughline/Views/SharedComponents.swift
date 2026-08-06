@@ -173,6 +173,7 @@ struct AccountSettingsView: View {
     @State private var showingBackendSettings = false
     @State private var showingAgentConnection = false
     @State private var showingAIProcessingConsent = false
+    @State private var showingProductFeedback = false
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String?
@@ -221,6 +222,19 @@ struct AccountSettingsView: View {
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                     }
+                }
+
+                Section("feedback") {
+                    Button {
+                        showingProductFeedback = true
+                    } label: {
+                        Label("share feedback", systemImage: "bubble.left.and.bubble.right")
+                    }
+                    .disabled(!appState.isSignedIn || isDeleting)
+
+                    Text("Tell us what you love, what feels difficult, or what would make Throughline more useful.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("legal") {
@@ -286,6 +300,9 @@ struct AccountSettingsView: View {
                 hasAIProcessingPermission = $0
             }
         }
+        .sheet(isPresented: $showingProductFeedback) {
+            ProductFeedbackView()
+        }
     }
 
     private func deleteAccount() async {
@@ -300,6 +317,138 @@ struct AccountSettingsView: View {
             dismiss()
         } catch {
             deleteError = error.localizedDescription
+        }
+    }
+}
+
+struct ProductFeedbackView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var category: ProductFeedbackCategory = .general
+    @State private var message = ""
+    @State private var contactAllowed = false
+    @State private var isSending = false
+    @State private var didSend = false
+    @State private var errorMessage: String?
+
+    private var trimmedMessage: String {
+        message.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if didSend {
+                    Section {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Label("Thank you", systemImage: "checkmark.circle.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Theme.blue)
+
+                            Text("Your feedback is in the product backlog. We’ll use it alongside product usage and other user feedback.")
+                                .font(.system(size: 15))
+                                .foregroundStyle(.secondary)
+                                .lineSpacing(4)
+                        }
+                        .padding(.vertical, 8)
+                    }
+                } else {
+                    Section("what kind of feedback?") {
+                        Picker("type", selection: $category) {
+                            ForEach(ProductFeedbackCategory.allCases) { category in
+                                Text(category.label).tag(category)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+
+                    Section("tell us more") {
+                        ZStack(alignment: .topLeading) {
+                            TextEditor(text: $message)
+                                .font(.system(size: 15))
+                                .frame(minHeight: 150)
+                                .accessibilityLabel("Feedback")
+
+                            if message.isEmpty {
+                                Text("What should we understand or improve?")
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 5)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+
+                        Text("\(trimmedMessage.count) / 4000")
+                            .font(.system(size: 12))
+                            .foregroundStyle(trimmedMessage.count > 4000 ? Color.red : Color.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+
+                    Section {
+                        Toggle("You may email me about this feedback", isOn: $contactAllowed)
+
+                        Text("Your message is stored with your account and app version. Throughline never attaches recordings, transcripts, or note content.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let errorMessage {
+                        Section {
+                            Text(errorMessage)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.red)
+                        }
+                    }
+
+                    Section {
+                        Button(isSending ? "sending" : "send feedback") {
+                            submit()
+                        }
+                        .disabled(isSending || trimmedMessage.isEmpty || trimmedMessage.count > 4000)
+                    }
+                }
+            }
+            .navigationTitle("feedback")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(didSend ? "done" : "close") {
+                        dismiss()
+                    }
+                    .disabled(isSending)
+                }
+            }
+        }
+        .onAppear {
+            ProductAnalytics.track("feedback_opened", properties: ["surface": "settings"])
+        }
+    }
+
+    private func submit() {
+        guard !isSending, !trimmedMessage.isEmpty, trimmedMessage.count <= 4000 else { return }
+
+        isSending = true
+        errorMessage = nil
+        Task {
+            do {
+                _ = try await UploadClient().sendProductFeedback(
+                    category: category,
+                    message: trimmedMessage,
+                    contactAllowed: contactAllowed
+                )
+                ProductAnalytics.track(
+                    "feedback_submitted",
+                    properties: [
+                        "surface": "product_feedback",
+                        "category": category.rawValue,
+                        "contact_allowed": contactAllowed ? "true" : "false"
+                    ]
+                )
+                didSend = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isSending = false
         }
     }
 }

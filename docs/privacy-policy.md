@@ -1,6 +1,6 @@
 # Throughline Privacy Policy
 
-Effective date: August 2, 2026
+Effective date: August 5, 2026
 
 Throughline is a voice note app. You record a note, Throughline turns it into a transcript and structured note, and you can make that note readable by an agent through your personal MCP connection.
 
@@ -10,7 +10,8 @@ Throughline is a voice note app. You record a note, Throughline turns it into a 
 - Voice notes: audio recordings that you choose to create.
 - Note content: transcripts, summaries, extracted tasks, important items, tags, and edits you make.
 - Agent connection data: MCP access tokens you create or revoke.
-- Feedback: extraction quality ratings and corrections you choose to submit.
+- Feedback: extraction quality ratings, corrections, and product feedback you choose to submit.
+- Product usage: basic events such as app launches, onboarding progress, screens and features used, recording-processing outcomes, app version, build number, and a random identifier that lasts only for the current app session.
 
 We do not sell personal data. We do not use this data for third-party advertising or tracking.
 
@@ -21,14 +22,17 @@ We use your data to:
 - Create, transcribe, summarize, and save your voice notes.
 - Show your notes, tasks, and important items in the app.
 - Make your saved notes available to your connected MCP client when you create an agent token.
-- Improve extraction quality using the feedback you intentionally submit.
+- Understand where the product experience succeeds or breaks down and improve it using basic product-usage events.
+- Improve extraction quality and the broader product experience using feedback you intentionally submit.
 - Maintain account security and support account deletion.
+
+Product-usage events do not contain recordings, transcripts, note text, extracted tasks, names, email addresses, or the text of product feedback. Events created while you are signed in are associated with your account. Events created before sign-in use only a random identifier for the current app session. Throughline does not use a persistent advertising or device identifier.
 
 ## Audio and Transcript Retention
 
 Audio recordings are retained only as long as needed for the product experience and are configured for a 30-day retention window. Transcripts and structured notes persist so your saved memories remain available in the app and through your MCP connection.
 
-When you delete your account, Throughline deletes your account, saved memories, recordings, feedback, and agent tokens.
+When you delete your account, Throughline deletes your account, saved memories, recordings, feedback, associated product-usage events, and agent tokens.
 
 ## Storage and Processors
 

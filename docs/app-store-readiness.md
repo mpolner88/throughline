@@ -1,15 +1,16 @@
 # Throughline App Store Readiness
 
-Last updated: August 2, 2026
+Last updated: August 6, 2026
 
 ## Current Release State
 
 - Bundle ID: `app.throughline.ios`
 - Category: Productivity
-- Version/build: `1.0` / `2026071901`
+- Release target: `1.0.1` / `2026080601`
 - Backend: Supabase Edge Functions
 - Auth: Throughline email/password through Supabase Auth
 - Agent access: user-created MCP tokens
+- App Store Connect: version 1.0 is live; version 1.0.1 is being prepared.
 
 ## Completed In Repo
 
@@ -27,6 +28,13 @@ Last updated: August 2, 2026
 - AI processing permission can be reviewed or withdrawn later in Settings.
 - The microphone permission text names Supabase and Groq and matches the in-app disclosure.
 - Account creation explains that email confirmation is required and offers an in-app resend action.
+- Settings includes a general product-feedback channel with optional permission for email follow-up.
+- First-party product events measure the activation funnel without attaching recordings, transcripts, note content, names, email addresses, or persistent device identifiers.
+- Product feedback and events are removed with account deletion.
+
+## What's New for 1.0.1
+
+Share feedback directly from Settings. This update also helps us understand where Throughline succeeds or gets stuck—without attaching recordings, transcripts, or note content.
 
 ## Rejection Resolution Status
 
@@ -42,17 +50,28 @@ Verified in an isolated Release build on an iPhone 17 Pro simulator:
 
 The updated privacy policy source is in `docs/privacy-policy.md` and `docs/privacy/index.html`. GitHub Pages publishes the `/docs` directory from `main`; verify the updated processor wording is live before resubmission.
 
-### Confirmation email — production SMTP still required
+### Confirmation email — resolved and externally verified
 
-Production Supabase Auth currently requires email confirmation, but the project does not have a custom SMTP provider configured. Supabase's built-in sender is a development-only service that refuses delivery to addresses outside the project's authorized team and has a very low rate limit. This matches the reviewer's report that a newly created account received no email.
+Production Supabase Auth now uses Resend through the verified
+`throughline.igneouslabs.ai` sending domain:
 
-Before resubmission:
+- Provider: Resend custom SMTP
+- Sender: `Throughline <no-reply@throughline.igneouslabs.ai>`
+- Email confirmation: enabled
+- Auth email rate limit: 30 messages per hour, Supabase's documented custom-SMTP default
+- App Review account: `mpolner88+throughline-app-review@gmail.com`
 
-1. Configure a production SMTP provider in Supabase Auth.
-2. Keep email confirmation enabled.
-3. Create a brand-new account using an external inbox that is not a Supabase team member.
-4. Confirm the first email arrives, its link completes confirmation, sign-in works, and the in-app resend action delivers a second email when requested.
-5. Record the provider, sender address, test inbox, and test timestamp here.
+Production verification on August 2, 2026:
+
+1. A brand-new external reviewer account was created successfully.
+2. Gmail received its confirmation email at `2026-08-02 23:23:47 UTC`.
+3. Supabase recorded the account as confirmed at `2026-08-02 23:24:15 UTC`.
+4. The exact username and password saved in App Store Connect returned a production access token and refresh token.
+5. A separate unconfirmed external test account received its first email at `2026-08-02 23:32:50 UTC`.
+6. After Supabase's 60-second safety interval, the same `POST /auth/v1/resend` request used by the iOS app returned `200` and Gmail received a distinct second message at `2026-08-02 23:34:05 UTC`.
+7. The disposable resend-test account was deleted after verification; the confirmed App Review account remains active.
+
+App Store Connect is saved with the confirmed reviewer email and updated review notes describing both the sign-in and privacy-consent paths.
 
 Official setup reference: https://supabase.com/docs/guides/auth/auth-smtp
 
@@ -63,11 +82,12 @@ Use these as the initial App Store Connect privacy answers. Re-check them whenev
 | Data type | Linked to user | Used for tracking | Purpose |
 | --- | --- | --- | --- |
 | Email address | Yes | No | App functionality |
-| User ID | Yes | No | App functionality |
+| User ID | Yes | No | App functionality, analytics |
 | Audio data | Yes | No | App functionality |
 | Other user content | Yes | No | App functionality, analytics |
+| Product interaction | Yes | No | Analytics |
 
-Other user content includes transcripts, summaries, tasks, important items, note edits, and extraction feedback. Analytics here means first-party extraction-quality review from intentional user feedback, not third-party advertising or tracking.
+Other user content includes transcripts, summaries, tasks, important items, note edits, extraction feedback, and product feedback. Product interaction includes first-party events such as app launches, onboarding steps, screen and feature use, and recording-processing outcomes. These events never include recordings, transcripts, or note content. Analytics means first-party product and extraction-quality improvement, not third-party advertising or tracking.
 
 ## Review Notes
 
@@ -77,7 +97,7 @@ Use review notes like this:
 Throughline lets a user record voice notes, transcribe them, save them as notes, and optionally create an MCP agent token so their own agent can read saved notes.
 
 Test account:
-Email: app-review@throughline.app
+Email: mpolner88+throughline-app-review@gmail.com
 Password: [paste the current App Review password from the private handoff]
 
 Important: choose "sign in", not "create", then enter both the email address and password before tapping sign in. The reviewer account is already confirmed and does not require opening an email confirmation link.
@@ -98,12 +118,13 @@ Declining AI processing is supported: tapping Not now returns to the recording s
 - Enter `https://mpolner88.github.io/throughline/privacy/` as the Privacy Policy URL in App Store Connect.
 - Enter `https://mpolner88.github.io/throughline/support/` as the Support URL in App Store Connect.
 - Create an App Store Connect app record for `app.throughline.ios`.
-- Create a reviewer account and include credentials in review notes.
-- Configure and externally verify production email sending in Supabase Auth.
-- Verify the updated privacy policy is live before uploading the new build.
+- Reviewer account and credentials are saved in App Store Connect and production sign-in is verified.
+- Production email sending and the in-app resend path are externally verified.
+- Updated privacy policy is live at `https://mpolner88.github.io/throughline/privacy/`.
 - Deploy the latest Supabase functions before uploading the release archive.
 - Schedule `POST /maintenance/audio-retention` with a service token, or remove the 30-day audio-retention claim from the published policy.
-- Archive and upload a signed Release build from Xcode.
+- Previous signed Release build `2026071901` was archived, uploaded, processed, and released as version 1.0.
+- Archive, upload, process, and select signed Release build `2026080601` for version 1.0.1.
 - Add screenshots, description, keywords, support URL, age rating, and export-compliance answers in App Store Connect.
 
 ## Screenshot Upload Order

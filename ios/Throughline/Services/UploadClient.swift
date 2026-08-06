@@ -397,6 +397,136 @@ enum RecordingProcessingMode: String {
     case async
 }
 
+enum ProductFeedbackCategory: String, CaseIterable, Identifiable {
+    case general
+    case idea
+    case problem
+    case praise
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .general: "General"
+        case .idea: "Idea"
+        case .problem: "Something’s wrong"
+        case .praise: "Something I love"
+        }
+    }
+}
+
+struct ProductFeedbackResponse: Decodable {
+    let id: String
+    let status: String
+}
+
+struct ProductEvent: Codable, Identifiable {
+    let id: String
+    let eventName: String
+    let sessionID: String
+    let occurredAt: String
+    let appVersion: String?
+    let buildNumber: String?
+    let properties: [String: String]
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case eventName = "event_name"
+        case sessionID = "session_id"
+        case occurredAt = "occurred_at"
+        case appVersion = "app_version"
+        case buildNumber = "build_number"
+        case properties
+    }
+}
+
+enum ProductAnalytics {
+    static func track(_ eventName: String, properties: [String: String] = [:]) {
+        Task {
+            await ProductEventQueue.shared.enqueue(eventName: eventName, properties: properties)
+        }
+    }
+
+    static func flush() {
+        Task {
+            await ProductEventQueue.shared.flush()
+        }
+    }
+}
+
+private actor ProductEventQueue {
+    static let shared = ProductEventQueue()
+
+    private static let storageKey = "throughline.pendingProductEvents"
+    private static let sessionID = UUID().uuidString.lowercased()
+    private var pendingEvents: [ProductEvent]
+    private var isFlushing = false
+
+    init() {
+        if let data = UserDefaults.standard.data(forKey: Self.storageKey),
+           let events = try? JSONDecoder().decode([ProductEvent].self, from: data) {
+            pendingEvents = events
+        } else {
+            pendingEvents = []
+        }
+    }
+
+    func enqueue(eventName: String, properties: [String: String]) async {
+        pendingEvents.append(
+            ProductEvent(
+                id: "evt_\(UUID().uuidString.lowercased())",
+                eventName: eventName,
+                sessionID: Self.sessionID,
+                occurredAt: Self.timestamp(),
+                appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+                buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+                properties: properties
+            )
+        )
+
+        if pendingEvents.count > 200 {
+            pendingEvents.removeFirst(pendingEvents.count - 200)
+        }
+        persist()
+        await flush()
+    }
+
+    func flush() async {
+        guard !isFlushing, !pendingEvents.isEmpty else { return }
+        isFlushing = true
+        defer { isFlushing = false }
+
+        while !pendingEvents.isEmpty {
+            let batch = Array(pendingEvents.prefix(25))
+            do {
+                try await UploadClient().sendProductEvents(batch)
+                let sentIDs = Set(batch.map(\.id))
+                pendingEvents.removeAll { sentIDs.contains($0.id) }
+                persist()
+            } catch let UploadClientError.serverError(status, _)
+                where (400..<500).contains(status) && ![401, 403, 429].contains(status) {
+                // A malformed or obsolete event should not block newer events forever.
+                let rejectedIDs = Set(batch.map(\.id))
+                pendingEvents.removeAll { rejectedIDs.contains($0.id) }
+                persist()
+            } catch {
+                return
+            }
+        }
+    }
+
+    private func persist() {
+        guard let data = try? JSONEncoder().encode(pendingEvents) else { return }
+        UserDefaults.standard.set(data, forKey: Self.storageKey)
+    }
+
+    private static func timestamp() -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: Date())
+    }
+}
+
 struct UploadClient {
     var baseURL = BackendConfiguration.currentBaseURL
     var apiToken = BackendConfiguration.currentAPIToken
@@ -590,6 +720,42 @@ struct UploadClient {
         return try JSONDecoder().decode(FeedbackResponse.self, from: data)
     }
 
+    func sendProductEvents(_ events: [ProductEvent]) async throws {
+        guard !events.isEmpty else { return }
+
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("events"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(ProductEventBatchRequest(events: events))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+    }
+
+    func sendProductFeedback(
+        category: ProductFeedbackCategory,
+        message: String,
+        contactAllowed: Bool
+    ) async throws -> ProductFeedbackResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("product-feedback"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            ProductFeedbackRequest(
+                category: category.rawValue,
+                message: message,
+                contactAllowed: contactAllowed,
+                appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+                buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+                context: ["surface": "settings"]
+            )
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(ProductFeedbackResponse.self, from: data)
+    }
+
     private func authorizedRequest(url: URL) async throws -> URLRequest {
         var request = URLRequest(url: url)
         if let session = try await AuthSessionRefresher.shared.validSession() {
@@ -638,6 +804,28 @@ private struct FeedbackRequest: Encodable {
         case correction
         case source
         case rubricVersion = "rubric_version"
+    }
+}
+
+private struct ProductEventBatchRequest: Encodable {
+    let events: [ProductEvent]
+}
+
+private struct ProductFeedbackRequest: Encodable {
+    let category: String
+    let message: String
+    let contactAllowed: Bool
+    let appVersion: String?
+    let buildNumber: String?
+    let context: [String: String]
+
+    enum CodingKeys: String, CodingKey {
+        case category
+        case message
+        case contactAllowed = "contact_allowed"
+        case appVersion = "app_version"
+        case buildNumber = "build_number"
+        case context
     }
 }
 

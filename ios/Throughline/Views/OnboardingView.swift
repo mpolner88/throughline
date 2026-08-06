@@ -57,6 +57,10 @@ struct OnboardingView: View {
                 step = debugStep
             }
             #endif
+            trackOnboardingStep(step)
+        }
+        .onChange(of: step) { _, newStep in
+            trackOnboardingStep(newStep)
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= 30 {
@@ -141,6 +145,7 @@ struct OnboardingView: View {
                 .padding(.bottom, 22)
 
             PrimaryButton(title: "try it") {
+                ProductAnalytics.track("onboarding_started")
                 step = 1
             }
         }
@@ -393,6 +398,7 @@ struct OnboardingView: View {
             await recorder.requestPermissionIfNeeded()
             do {
                 try recorder.start(limitSeconds: nil)
+                ProductAnalytics.track("demo_recording_started")
                 uploadError = nil
             } catch {
                 uploadError = error.localizedDescription
@@ -475,11 +481,19 @@ struct OnboardingView: View {
                     type: .freeform
                 )
                 capturedNote = response.displayNote
+                ProductAnalytics.track(
+                    "demo_recording_completed",
+                    properties: ["processing_status": response.processingStatus]
+                )
                 uploadError = nil
                 step = 2
             } catch {
                 isFinishingRecording = false
                 isUploading = false
+                ProductAnalytics.track(
+                    "recording_failed",
+                    properties: ["surface": "onboarding", "stage": "demo_upload"]
+                )
                 uploadError = error.localizedDescription
             }
         }
@@ -505,6 +519,10 @@ struct OnboardingView: View {
                     return
                 }
 
+                ProductAnalytics.track(
+                    "auth_started",
+                    properties: ["mode": authMode.analyticsValue]
+                )
                 let session: AuthSession
                 if authMode == .createAccount {
                     session = try await client.signUp(email: email, password: authPassword)
@@ -516,8 +534,22 @@ struct OnboardingView: View {
                 authNotice = nil
                 pendingConfirmationEmail = nil
                 isResendingConfirmation = false
+                ProductAnalytics.track(
+                    "auth_succeeded",
+                    properties: ["mode": authMode.analyticsValue]
+                )
                 finishOnboarding()
             } catch {
+                let failureReason = authenticationFailureReason(error)
+                if failureReason != "confirmation_required" {
+                    ProductAnalytics.track(
+                        "auth_failed",
+                        properties: [
+                            "mode": authMode.analyticsValue,
+                            "reason": failureReason
+                        ]
+                    )
+                }
                 handleAuthenticationError(error)
             }
         }
@@ -572,6 +604,10 @@ struct OnboardingView: View {
         switch authClientError {
         case .emailConfirmationRequired:
             let email = authEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+            ProductAnalytics.track(
+                "auth_confirmation_required",
+                properties: ["mode": AuthMode.createAccount.analyticsValue]
+            )
             switchToSignInPreservingAuthMessage()
             pendingConfirmationEmail = email.isEmpty ? nil : email
             authPassword = ""
@@ -605,6 +641,32 @@ struct OnboardingView: View {
         guard authMode != .signIn else { return }
         suppressAuthModeReset = true
         authMode = .signIn
+    }
+
+    private func trackOnboardingStep(_ step: Int) {
+        ProductAnalytics.track(
+            "onboarding_step_viewed",
+            properties: ["step": String(step + 1)]
+        )
+    }
+
+    private func authenticationFailureReason(_ error: Error) -> String {
+        guard let authError = error as? AuthClientError else { return "unknown" }
+
+        switch authError {
+        case .emailConfirmationRequired:
+            return "confirmation_required"
+        case let .serverError(_, message):
+            let normalized = message.lowercased()
+            if normalized.contains("email not confirmed") { return "confirmation_required" }
+            if normalized.contains("invalid login credentials") { return "invalid_credentials" }
+            if normalized.contains("rate") || normalized.contains("too many") { return "rate_limited" }
+            return "server_error"
+        case .missingAnonKey:
+            return "configuration"
+        case .invalidResponse:
+            return "invalid_response"
+        }
     }
 
     #if DEBUG
@@ -660,6 +722,13 @@ private enum AuthMode {
         switch self {
         case .createAccount: "Already have an account? Sign in"
         case .signIn: "Create a new account"
+        }
+    }
+
+    var analyticsValue: String {
+        switch self {
+        case .createAccount: "create_account"
+        case .signIn: "sign_in"
         }
     }
 }

@@ -2,6 +2,10 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 
 import { listMemoryTools, runMemoryTool } from "../_shared/memory-tools.ts";
 
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
 const FUNCTION_NAME = "api";
 const DEFAULT_AUDIO_BUCKET = "throughline-audio";
 const DEFAULT_USER_ID = "dev-user";
@@ -13,10 +17,34 @@ const DEFAULT_MAX_RETRIES = 3;
 const MAX_BODY_BYTES = Number(Deno.env.get("THROUGHLINE_MAX_BODY_BYTES") || 60 * 1024 * 1024);
 const DEMO_MAX_BODY_BYTES = Number(Deno.env.get("THROUGHLINE_DEMO_MAX_BODY_BYTES") || 8 * 1024 * 1024);
 const DEMO_MAX_DURATION_SECONDS = Number(Deno.env.get("THROUGHLINE_DEMO_MAX_DURATION_SECONDS") || 30);
+const PRODUCT_EVENT_MAX_BODY_BYTES = 64 * 1024;
+const PRODUCT_FEEDBACK_MAX_BODY_BYTES = 16 * 1024;
 const AUDIO_RETENTION_DAYS = positiveNumberEnv("THROUGHLINE_AUDIO_RETENTION_DAYS", 30);
 const AUDIO_RETENTION_BATCH_LIMIT = positiveNumberEnv("THROUGHLINE_AUDIO_RETENTION_BATCH_LIMIT", 500);
 
 const RECORDING_TYPES = new Set(["morning", "evening", "weekly_review", "freeform"]);
+const PRODUCT_EVENT_NAMES = new Set([
+  "app_opened",
+  "onboarding_step_viewed",
+  "onboarding_started",
+  "demo_recording_started",
+  "demo_recording_completed",
+  "auth_started",
+  "auth_confirmation_required",
+  "auth_succeeded",
+  "auth_failed",
+  "home_viewed",
+  "settings_opened",
+  "recording_started",
+  "recording_uploaded",
+  "recording_processed",
+  "recording_failed",
+  "note_opened",
+  "action_item_toggled",
+  "feedback_opened",
+  "feedback_submitted",
+]);
+const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
 const OUTPUT_FIELDS = [
   "type",
   "title",
@@ -202,6 +230,10 @@ async function handleRequest(req: Request) {
     return handlePostDemoRecording(req);
   }
 
+  if (req.method === "POST" && pathname === "/events") {
+    return handlePostProductEvents(req, await requestContext(req));
+  }
+
   const context = await requestContext(req);
   if (!context) {
     return jsonResponse(401, { error: "Unauthorized" });
@@ -273,6 +305,16 @@ async function handleRequest(req: Request) {
     return jsonResponse(200, { feedback, count: feedback.length });
   }
 
+  if (req.method === "POST" && pathname === "/product-feedback") {
+    return handlePostProductFeedback(req, context);
+  }
+
+  if (req.method === "GET" && pathname === "/product-feedback") {
+    requireServiceContext(context);
+    const feedback = await listProductFeedback();
+    return jsonResponse(200, { feedback, count: feedback.length });
+  }
+
   if (req.method === "DELETE" && pathname === "/account") {
     return handleDeleteAccount(context);
   }
@@ -296,6 +338,82 @@ async function handleRequest(req: Request) {
   return jsonResponse(404, { error: "Not found" });
 }
 
+async function handlePostProductEvents(req: Request, context: RequestContext | null) {
+  const body = await parseJsonRequest(req, PRODUCT_EVENT_MAX_BODY_BYTES);
+  const candidates: unknown[] = Array.isArray(body.events) ? body.events : [body];
+  if (!candidates.length || candidates.length > 50) {
+    throw new HttpError(400, "Submit between 1 and 50 product events");
+  }
+
+  const rows = candidates.map((candidate) => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+      throw new HttpError(400, "Each product event must be an object");
+    }
+
+    const event = candidate as Record<string, unknown>;
+    const id = normalizedIdentifier(event.id, "evt_", 128);
+    const eventName = nullableString(event.event_name);
+    const sessionId = normalizedUuid(event.session_id);
+    const occurredAt = normalizedClientTimestamp(event.occurred_at);
+
+    if (!id || !eventName || !PRODUCT_EVENT_NAMES.has(eventName)) {
+      throw new HttpError(400, "Unknown or invalid product event");
+    }
+
+    if (!sessionId || !occurredAt) {
+      throw new HttpError(400, "Product events require valid session and timestamp values");
+    }
+
+    return {
+      id,
+      auth_user_id: context?.authUserId ?? null,
+      session_id: sessionId,
+      occurred_at: occurredAt,
+      event_name: eventName,
+      platform: "ios",
+      app_version: limitedString(event.app_version, 40),
+      build_number: limitedString(event.build_number, 40),
+      properties: normalizedEventProperties(event.properties),
+    };
+  });
+
+  await insertManyIgnoringDuplicates("throughline_product_events", rows);
+  return jsonResponse(202, { accepted: rows.length });
+}
+
+async function handlePostProductFeedback(req: Request, context: RequestContext) {
+  const authUserId = requireAuthUser(context);
+  const body = await parseJsonRequest(req, PRODUCT_FEEDBACK_MAX_BODY_BYTES);
+  const category = nullableString(body.category);
+  const message = nullableString(body.message);
+
+  if (!category || !PRODUCT_FEEDBACK_CATEGORIES.has(category)) {
+    throw new HttpError(400, "Choose a valid feedback category");
+  }
+
+  if (!message || message.length > 4000) {
+    throw new HttpError(400, "Feedback must be between 1 and 4000 characters");
+  }
+
+  const row = await insert("throughline_product_feedback", {
+    id: createProductFeedbackId(),
+    auth_user_id: authUserId,
+    source: "ios",
+    category,
+    message,
+    contact_allowed: nullableBoolean(body.contact_allowed) ?? false,
+    status: "new",
+    app_version: limitedString(body.app_version, 40),
+    build_number: limitedString(body.build_number, 40),
+    context: normalizedEventProperties(body.context),
+  });
+
+  return jsonResponse(201, {
+    id: row?.id,
+    status: row?.status ?? "new",
+  });
+}
+
 async function handlePostRecording(req: Request, context: RequestContext) {
   const bytes = new Uint8Array(await req.arrayBuffer());
   if (bytes.byteLength > MAX_BODY_BYTES) {
@@ -315,7 +433,7 @@ async function handlePostRecording(req: Request, context: RequestContext) {
       id: recording.id,
       status: recording.status,
       processing_status: recording.processing_status,
-      has_note: Boolean(recording.structured_note),
+      has_note: hasStructuredNote(recording),
       recording_url: `/recordings/${recording.id}`,
       recording,
     });
@@ -327,7 +445,7 @@ async function handlePostRecording(req: Request, context: RequestContext) {
     id: recording.id,
     status: recording.status,
     processing_status: recording.processing_status,
-    has_note: Boolean(recording.structured_note),
+    has_note: hasStructuredNote(recording),
     recording_url: `/recordings/${recording.id}`,
     recording,
   });
@@ -491,6 +609,8 @@ async function handleDeleteAccount(context: RequestContext) {
   }
 
   await deleteRows("throughline_feedback", `auth_user_id=eq.${encodeURIComponent(authUserId)}`);
+  await deleteRows("throughline_product_feedback", `auth_user_id=eq.${encodeURIComponent(authUserId)}`);
+  await deleteRows("throughline_product_events", `auth_user_id=eq.${encodeURIComponent(authUserId)}`);
   await deleteRows("throughline_mcp_tokens", `user_id=eq.${encodeURIComponent(authUserId)}`);
   await deleteRows("throughline_profiles", `id=eq.${encodeURIComponent(authUserId)}`);
   await deleteAuthUser(authUserId);
@@ -670,7 +790,7 @@ async function transcribeWithGroq(recording: any, audioBytes: Uint8Array) {
     form.append("response_format", "json");
     form.append(
       "file",
-      new Blob([audioBytes], { type: recording.audio?.mime_type || "application/octet-stream" }),
+      new Blob([arrayBufferFromBytes(audioBytes)], { type: recording.audio?.mime_type || "application/octet-stream" }),
       fileName,
     );
 
@@ -882,7 +1002,7 @@ async function storeAudio(
       "Content-Type": mimeType || "application/octet-stream",
       "x-upsert": "true",
     },
-    body: bytes,
+    body: arrayBufferFromBytes(bytes),
   });
 
   return {
@@ -1118,6 +1238,18 @@ async function listFeedback(context: RequestContext) {
   return Array.isArray(rows) ? rows.map((row) => feedbackSummary(row.feedback)) : [];
 }
 
+async function listProductFeedback() {
+  const rows = await restRequest(
+    [
+      "/throughline_product_feedback",
+      "?select=id,auth_user_id,created_at,source,category,message,contact_allowed,status,app_version,build_number,context",
+      "&order=created_at.desc",
+      "&limit=1000",
+    ].join(""),
+  );
+  return Array.isArray(rows) ? rows : [];
+}
+
 async function listMcpTokens(context: RequestContext) {
   const authUserId = requireAuthUser(context);
   const rows = await restRequest(
@@ -1206,6 +1338,17 @@ async function insert(table: string, payload: Record<string, unknown>) {
   });
 
   return Array.isArray(rows) ? rows[0] ?? null : null;
+}
+
+async function insertManyIgnoringDuplicates(table: string, payloads: Record<string, unknown>[]) {
+  await restRequest(`/${table}?on_conflict=id`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "resolution=ignore-duplicates,return=minimal",
+    },
+    body: JSON.stringify(payloads),
+  });
 }
 
 async function restRequest(pathname: string, options: RequestInit = {}) {
@@ -1649,7 +1792,11 @@ function normalizeEditedTodos(value: unknown, previousTodos: any[]) {
 }
 
 function refreshActionItems(note: any) {
-  const previousByText = new Map((note.action_items ?? []).map((item: any) => [normalizeForComparison(item.text), item]));
+  const previousByText = new Map<string, any>(
+    (note.action_items ?? []).map(
+      (item: any): [string, any] => [normalizeForComparison(item.text), item],
+    ),
+  );
   const items: any[] = [];
 
   for (const todo of note.todos ?? []) {
@@ -1803,8 +1950,11 @@ function safeTokenEqual(candidate: string, expected: string) {
   return diff === 0;
 }
 
-async function parseJsonRequest(req: Request) {
+async function parseJsonRequest(req: Request, maxBytes?: number) {
   const text = await req.text();
+  if (maxBytes && new TextEncoder().encode(text).byteLength > maxBytes) {
+    throw new HttpError(413, `Request body exceeds ${maxBytes} bytes`);
+  }
   if (!text.trim()) return {};
   try {
     return JSON.parse(text);
@@ -1832,6 +1982,72 @@ function createDemoRecordingId() {
 
 function createFeedbackId() {
   return `fb_${Date.now().toString(36)}_${randomHex(6)}`;
+}
+
+function createProductFeedbackId() {
+  return `pfb_${Date.now().toString(36)}_${randomHex(6)}`;
+}
+
+function hasStructuredNote(recording: object) {
+  return "structured_note" in recording && Boolean(recording.structured_note);
+}
+
+function arrayBufferFromBytes(bytes: Uint8Array) {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
+function normalizedIdentifier(value: unknown, prefix: string, maxLength: number) {
+  const candidate = limitedString(value, maxLength);
+  if (!candidate || !candidate.startsWith(prefix)) return null;
+  return /^[a-z0-9_-]+$/i.test(candidate) ? candidate : null;
+}
+
+function normalizedUuid(value: unknown) {
+  const candidate = nullableString(value)?.toLowerCase() ?? null;
+  if (!candidate) return null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(candidate)
+    ? candidate
+    : null;
+}
+
+function normalizedClientTimestamp(value: unknown) {
+  const candidate = nullableString(value);
+  if (!candidate) return null;
+
+  const milliseconds = Date.parse(candidate);
+  if (!Number.isFinite(milliseconds)) return null;
+
+  const now = Date.now();
+  const earliest = now - 90 * 24 * 60 * 60 * 1000;
+  const latest = now + 10 * 60 * 1000;
+  if (milliseconds < earliest || milliseconds > latest) return null;
+  return new Date(milliseconds).toISOString();
+}
+
+function limitedString(value: unknown, maxLength: number) {
+  const candidate = nullableString(value);
+  return candidate ? candidate.slice(0, maxLength) : null;
+}
+
+function normalizedEventProperties(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  const output: Record<string, string | number | boolean> = {};
+  for (const [rawKey, rawValue] of Object.entries(value).slice(0, 24)) {
+    const key = rawKey.trim().slice(0, 64);
+    if (!/^[a-z][a-z0-9_]*$/i.test(key)) continue;
+
+    if (typeof rawValue === "string") {
+      output[key] = rawValue.slice(0, 256);
+    } else if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+      output[key] = rawValue;
+    } else if (typeof rawValue === "boolean") {
+      output[key] = rawValue;
+    }
+  }
+  return output;
 }
 
 function randomHex(byteCount: number) {

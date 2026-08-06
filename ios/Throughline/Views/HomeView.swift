@@ -58,7 +58,10 @@ struct HomeView: View {
                             note: note,
                             label: note.type.displayName,
                             feedbackStatus: feedbackStatus[note.id],
-                            onOpen: { selectedNote = note },
+                            onOpen: {
+                                ProductAnalytics.track("note_opened")
+                                selectedNote = note
+                            },
                             onToggleImportant: { actionItem, isCompleted in
                                 setActionItem(
                                     ImportantItem(
@@ -91,6 +94,7 @@ struct HomeView: View {
             bottomRecorder
         }
         .task {
+            ProductAnalytics.track("home_viewed")
             await refreshFromBackend()
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
@@ -154,6 +158,7 @@ struct HomeView: View {
             Spacer()
 
             Button {
+                ProductAnalytics.track("settings_opened")
                 showingSettings = true
             } label: {
                 Image(systemName: "gearshape")
@@ -234,6 +239,7 @@ struct HomeView: View {
             do {
                 didJustSave = false
                 try recorder.start(limitSeconds: nil)
+                ProductAnalytics.track("recording_started", properties: ["surface": "home"])
                 uploadError = nil
             } catch {
                 uploadError = error.localizedDescription
@@ -320,6 +326,10 @@ struct HomeView: View {
                 if selectedNote?.id == updatedNote.id {
                     selectedNote = updatedNote
                 }
+                ProductAnalytics.track(
+                    "action_item_toggled",
+                    properties: ["completed": isCompleted ? "true" : "false"]
+                )
                 uploadError = nil
             } catch {
                 uploadError = error.localizedDescription
@@ -355,18 +365,38 @@ struct HomeView: View {
                 )
 
                 isUploading = false
+                ProductAnalytics.track(
+                    "recording_uploaded",
+                    properties: ["duration_bucket": recordingDurationBucket(duration)]
+                )
                 appState.addUploadedNote(response.displayNote)
                 uploadError = nil
                 didJustSave = true
                 isProcessing = true
                 await refreshRecordingUntilSettled(id: response.id)
                 await refreshFromBackend()
+                let finalStatus = appState.notes.first { $0.id == response.id }?.processingStatus ?? "unknown"
+                if finalStatus == "processed" {
+                    ProductAnalytics.track(
+                        "recording_processed",
+                        properties: ["processing_status": finalStatus]
+                    )
+                } else if Self.failedProcessingStatuses.contains(finalStatus) {
+                    ProductAnalytics.track(
+                        "recording_failed",
+                        properties: ["processing_status": finalStatus, "stage": "processing"]
+                    )
+                }
                 isProcessing = false
             } catch {
                 isFinishingRecording = false
                 isUploading = false
                 isProcessing = false
                 didJustSave = false
+                ProductAnalytics.track(
+                    "recording_failed",
+                    properties: ["surface": "home", "stage": "upload_or_processing"]
+                )
                 uploadError = error.localizedDescription
                 await refreshFromBackend()
             }
@@ -441,6 +471,13 @@ struct HomeView: View {
                     shouldRemember: true
                 )
                 feedbackStatus[note.id] = .sent(qualityScore)
+                ProductAnalytics.track(
+                    "feedback_submitted",
+                    properties: [
+                        "surface": "extraction_quality",
+                        "score": String(qualityScore)
+                    ]
+                )
             } catch {
                 feedbackStatus[note.id] = .failed
             }
@@ -474,6 +511,23 @@ struct HomeView: View {
             }
         }
     }
+
+    private func recordingDurationBucket(_ seconds: Int) -> String {
+        switch seconds {
+        case ..<15: "under_15_seconds"
+        case 15..<60: "15_to_59_seconds"
+        case 60..<180: "1_to_2_minutes"
+        default: "3_to_5_minutes"
+        }
+    }
+
+    private static let failedProcessingStatuses = Set([
+        "needs_transcript",
+        "needs_extractor",
+        "transcription_failed",
+        "extraction_failed",
+        "processing_failed"
+    ])
 }
 
 private struct CarryForwardView: View {

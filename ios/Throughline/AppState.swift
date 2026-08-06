@@ -10,7 +10,7 @@ final class AppState: ObservableObject {
     private static let notesStorageKey = "throughline.cachedNotes"
     private static let hasFinishedOnboardingKey = "throughline.hasFinishedOnboarding"
 
-    enum Route {
+    enum Route: Equatable {
         case onboarding
         case home
     }
@@ -42,6 +42,20 @@ final class AppState: ObservableObject {
 
     init() {
         notes = Self.loadCachedNotes()
+
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--throughline-preview-home") {
+            session = AuthSession(
+                accessToken: "preview",
+                refreshToken: "preview",
+                expiresAt: Date().addingTimeInterval(3600),
+                user: AuthUser(id: "preview", email: "preview@throughline.app")
+            )
+            route = .home
+            return
+        }
+        #endif
+
         let restoredSession = AuthSessionStore.currentSession
         session = restoredSession
         let hasFinishedOnboarding = UserDefaults.standard.bool(forKey: Self.hasFinishedOnboardingKey)
