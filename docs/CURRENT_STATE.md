@@ -1,14 +1,14 @@
 # Throughline current state
 
 **Verified:** 2026-08-17
-**Verification scope:** local source inspection plus a privacy-safe aggregate production capture. Live-provider state is not independently re-verified from this checkout. For durable intent, see `docs/PRODUCT.md` when it exists; for the current runtime map, see [ARCHITECTURE.md](ARCHITECTURE.md).
+**Verification scope:** local source inspection. The August 17 counts below are an operator-observed, unretained private aggregate-query snapshot: a repository assertion, not tracked production evidence. Live-provider state is not independently re-verified from this checkout. For durable intent, see `docs/PRODUCT.md` when it exists; for the current runtime map, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Evidence standard
 
 This document separates executable local evidence from repository assertions about external systems. The latter are useful operating context, not independent proof of a current provider or App Store Connect state.
 
 - **Local source evidence:** the release configuration in [ios/Throughline.xcodeproj/project.pbxproj](../ios/Throughline.xcodeproj/project.pbxproj), the iOS client, and [Supabase API source](../supabase/functions/api/index.ts).
-- **External-state assertions:** [App Store readiness record](app-store-readiness.md) and the August 17 aggregate baseline required by the [documentation operating-system plan](superpowers/plans/2026-08-17-documentation-operating-system.md). The underlying production query output is deliberately not tracked because it could expose user or session identifiers.
+- **External-state assertions:** [App Store readiness record](app-store-readiness.md) and the August 17 aggregate counts below. The counts are an operator-observed, unretained private aggregate-query snapshot; they are not independently reproducible evidence in this checkout. Regenerate the privacy-safe aggregate report with [scripts/product-learning-report.mjs](../scripts/product-learning-report.mjs) before using any count for a decision. The underlying query output is not tracked because it could expose user or session identifiers.
 - **Operational procedures:** [hosted-backend.md](hosted-backend.md) is a runbook, not proof that a command has been run or that a deployment is current.
 
 ## Release and runtime
@@ -29,7 +29,7 @@ This document separates executable local evidence from repository assertions abo
 
 ## Privacy-safe August 17 usage baseline
 
-The following is an aggregate, mixed-traffic snapshot captured on 2026-08-17. It contains no raw content or identifiers.
+The following is an operator-observed, unretained private aggregate-query snapshot from 2026-08-17. It is a repository assertion, not tracked production evidence; it contains no raw content or identifiers. Regenerate the privacy-safe aggregate report with [scripts/product-learning-report.mjs](../scripts/product-learning-report.mjs) before using these counts for a decision.
 
 | Measure | Aggregate |
 | --- | ---: |
