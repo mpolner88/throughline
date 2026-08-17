@@ -32,7 +32,7 @@ The SwiftUI app owns capture, authentication, local event queuing, API calls, an
 
 [supabase/functions/api/index.ts](../supabase/functions/api/index.ts) is the app-facing Edge Function. It validates a Supabase JWT for signed-in requests, accepts recordings, stores audio in the private `throughline-audio` bucket, and persists recordings and feedback in Postgres through service-role access. Current tables/migrations include `throughline_recordings`, `throughline_feedback`, `throughline_product_events`, `throughline_product_feedback`, profiles, and MCP tokens under [supabase/migrations](../supabase/migrations).
 
-The API exposes routes for recording creation/reads, editing a note, toggling action items, extraction feedback, product feedback, event ingestion, account deletion, MCP-token management, and protected maintenance. These APIs mutate the current recording data; they do not create immutable edit or processing revisions.
+The API exposes routes for recording creation/reads, editing a note, toggling action items, extraction feedback, product feedback, event ingestion, account deletion, MCP-token management, and protected maintenance. Its recording-processing, note-edit, and action-item routes mutate current recording data; they do not create immutable edit or processing revisions.
 
 ### Processing pipeline
 
