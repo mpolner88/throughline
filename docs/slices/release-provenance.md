@@ -1,8 +1,10 @@
 # Release Provenance Slice
 
-**Status:** Selected
+**Status:** Completed
 **Selected:** 2026-08-17
+**Completed:** 2026-08-17
 **Program:** [Core Quality and Learning](../programs/core-quality-learning.md)
+**Closure:** [iOS 1.0.4 / API v22 provenance closure](../releases/2026-08-17-ios-1.0.4-2026081602-provenance.md)
 
 ## Problem
 
