@@ -1,3 +1,5 @@
+> **Status: superseded historical design (2026-08-17).** The active program is [Core Quality and Learning](../../programs/core-quality-learning.md). This draft is retained unchanged below for historical context and must not guide active implementation. Its assumptions of manual reviewer/promotion, a 60-second authenticated recording limit, and built-now evaluation credits are superseded; those limits and credits are backlog-only under the active program.
+
 # Throughline Core Quality and Learning System
 
 **Status:** Draft for final review; architecture approved

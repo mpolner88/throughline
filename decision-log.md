@@ -449,3 +449,53 @@ Each decision should explain the call that was made, the alternatives considered
 **Reasoning:** Eval-candidate feedback preserves the learning loop while keeping user trust intact. Agents can propose prompt or post-processing changes from reviewed failures, and those changes must pass the eval suite before promotion.
 
 **Revisit when:** Feedback volume becomes large enough to justify semi-automated review, privacy controls mature, or there is a safe canary deployment path for extraction changes.
+
+---
+
+## 2026-08-17 — Core-quality target user and boundary
+
+**Decision:** Core quality work serves the individual who captures personal thoughts while driving, walking, or thinking, then needs durable structured notes and to-dos readable by their AI agent. It does not expand Throughline into a meeting recorder, team-transcription product, or generic audio archive.
+
+**Reasoning:** The quality program must measure the product promise it is improving, rather than optimize for a broader transcription category.
+
+**Revisit when:** Mike changes product priority or approves a change to the durable product charter.
+
+---
+
+## 2026-08-17 — Feedback evaluation and hybrid learning authority
+
+**Decision:** The user who recorded a note is the only human evaluator for that note. Feedback automation validates, deduplicates, classifies, and quarantines signals; ambiguous labels are excluded until they can be classified without inventing a label. Mike does not review examples, and there is no employee, contractor, or external-review queue. Safe prompt, schema, and normalizer changes may auto-promote only after declared quality, critical-error, reliability, latency, cost, canary, lineage, and rollback gates pass.
+
+**Reasoning:** This preserves user authority over their note while making learning repeatable, auditable, and safe to operate without a recurring manual review function.
+
+**Revisit when:** A change to data-use policy, the learning authority model, or a promotion gate is explicitly approved.
+
+---
+
+## 2026-08-17 — Onboarding and recording-limit baseline
+
+**Decision:** Onboarding is unchanged. The current recorded limits are a 30-second onboarding demo and a five-minute authenticated client cap per recording. A ten-minute daily allowance is intended but is not implemented or enforced; it must not be described as live.
+
+**Reasoning:** Documentation and quality work must not silently alter a user-facing experience or present an intended policy as runtime behavior.
+
+**Revisit when:** Mike explicitly approves an onboarding or recording-limit change after the relevant baseline and rollout evidence exist.
+
+---
+
+## 2026-08-17 — Premium limits and evaluation credits remain backlog-only
+
+**Decision:** Premium recordings up to 15 minutes and evaluation credits remain backlog items. They are not a current program milestone, implementation commitment, or credit-ledger build.
+
+**Reasoning:** Monetization and limits require decision-grade usage and cost evidence, and both are approval-bound changes.
+
+**Revisit when:** Mike prioritizes a bounded, approved pricing or recording-limit slice supported by decision-grade baselines.
+
+---
+
+## 2026-08-17 — Baseline-first quality changes and operating authority
+
+**Decision:** Establish a baseline through measurement before setting lift targets or changing a quality control. Mike decides what enters build, reviews product/design taste and judgment, and sets priority. Agents own baseline inspection, options, specifications, plans, implementation, verification, routine reversible rollout, measurement, and documentation; within an approved reversible slice, agents may implement and roll out routine reversible work without another approval.
+
+**Reasoning:** A baseline prevents false improvement claims, while the authority boundary keeps routine reversible progress moving without widening approval-bound work.
+
+**Revisit when:** The workflow authority matrix or canonical metric definitions change through an approved decision.
