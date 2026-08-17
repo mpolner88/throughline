@@ -150,16 +150,18 @@ Deno.test("schema-v2 durable outcomes require a top-level recording reference", 
 });
 
 Deno.test("pre-record failures may omit a reference but processing failures may not", () => {
-  const preRecordFailure = normalizeProductEventContract({
-    event_name: "recording_failed",
-    schema_version: 2,
-    distribution_channel: "debug",
-    properties: { stage: "pre_record", surface: "home" },
-  });
-  assert(
-    preRecordFailure.recording_id === null,
-    "pre-record failure requires a reference",
-  );
+  for (const stage of ["pre_record", "demo_upload", "demo_promotion"]) {
+    const preRecordFailure = normalizeProductEventContract({
+      event_name: "recording_failed",
+      schema_version: 2,
+      distribution_channel: "debug",
+      properties: { stage, surface: "home" },
+    });
+    assert(
+      preRecordFailure.recording_id === null,
+      `${stage} failure requires a reference`,
+    );
+  }
 
   for (
     const stage of [
@@ -179,16 +181,6 @@ Deno.test("pre-record failures may omit a reference but processing failures may 
       `${stage ?? "omitted"} failure accepted without recording_id`,
     );
   }
-
-  assertThrowsContractError(
-    () =>
-      normalizeProductEventContract({
-        event_name: "recording_failed",
-        schema_version: 2,
-        properties: { stage: "processing" },
-      }),
-    "processing failure accepted without recording_id",
-  );
 });
 
 Deno.test("properties are event-allowlisted and value-constrained", () => {

@@ -155,6 +155,11 @@ const PROCESSING_FAILURE_TYPES = new Set([
   "processing_empty_structure",
   "processing_unknown",
 ]);
+const PRE_DURABLE_FAILURE_STAGES = new Set([
+  "pre_record",
+  "demo_upload",
+  "demo_promotion",
+]);
 
 export class ProductEventContractError extends Error {
   constructor(message: string) {
@@ -217,10 +222,12 @@ export function normalizeProductEventContract(
     event.distribution_channel,
   );
   const recordingId = normalizeRecordingId(event.recording_id);
+  const isPreDurableFailureStage = typeof properties.stage === "string" &&
+    PRE_DURABLE_FAILURE_STAGES.has(properties.stage);
   const requiresRecordingId = event.event_name === "recording_uploaded" ||
     event.event_name === "recording_processed" ||
     (event.event_name === "recording_failed" &&
-      properties.stage !== "pre_record");
+      !isPreDurableFailureStage);
 
   if (requiresRecordingId && !recordingId) {
     throw new ProductEventContractError(
