@@ -1,6 +1,15 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 
 import { listMemoryTools, runMemoryTool } from "../_shared/memory-tools.ts";
+import {
+  captureProductEventsInPostHog,
+  deleteProductAnalyticsUserFromPostHog,
+  hasPostHogCaptureConfig,
+  hasPostHogDeletionConfig,
+  type PostHogCaptureConfig,
+  type PostHogDeletionConfig,
+  type ProductEventRow,
+} from "../_shared/posthog.ts";
 
 declare const EdgeRuntime: {
   waitUntil(promise: Promise<unknown>): void;
@@ -21,9 +30,12 @@ const PRODUCT_EVENT_MAX_BODY_BYTES = 64 * 1024;
 const PRODUCT_FEEDBACK_MAX_BODY_BYTES = 16 * 1024;
 const AUDIO_RETENTION_DAYS = positiveNumberEnv("THROUGHLINE_AUDIO_RETENTION_DAYS", 30);
 const AUDIO_RETENTION_BATCH_LIMIT = positiveNumberEnv("THROUGHLINE_AUDIO_RETENTION_BATCH_LIMIT", 500);
+const DEFAULT_POSTHOG_INGEST_HOST = "https://us.i.posthog.com";
+const DEFAULT_POSTHOG_API_HOST = "https://us.posthog.com";
 
 const RECORDING_TYPES = new Set(["morning", "evening", "weekly_review", "freeform"]);
 const PRODUCT_EVENT_NAMES = new Set([
+  "first_opened",
   "app_opened",
   "onboarding_step_viewed",
   "onboarding_started",
@@ -40,9 +52,15 @@ const PRODUCT_EVENT_NAMES = new Set([
   "recording_processed",
   "recording_failed",
   "note_opened",
+  "note_edited",
+  "note_deleted",
   "action_item_toggled",
+  "agent_connection_opened",
+  "agent_token_created",
+  "agent_token_revoked",
   "feedback_opened",
   "feedback_submitted",
+  "feedback_submit_failed",
 ]);
 const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
 const OUTPUT_FIELDS = [
@@ -180,6 +198,27 @@ Before returning, check:
 - If the transcript says what matters most, priorities is not empty.
 - If the transcript says how to approach the work, intentions is not empty.
 
+Return one JSON object with exactly these fields and shapes:
+
+{
+  "type": "morning | evening | weekly_review | freeform",
+  "title": "a concise non-empty title",
+  "summary": "a concise non-empty one or two sentence summary",
+  "most_important": ["high-signal item"],
+  "todos": [{"text":"imperative task","priority":"high | medium | low | null","due":"YYYY-MM-DD | null","for_date":"YYYY-MM-DD | null","context":"short context | null"}],
+  "priorities": ["priority"],
+  "intentions": ["intention or constraint"],
+  "accomplishments": ["completed action"],
+  "tomorrow_todos": ["task text"],
+  "mood": "focused | energized | grateful | calm | anxious | frustrated | tired | sad | neutral | null",
+  "people": ["person"],
+  "projects": ["project"],
+  "tags": ["tag"],
+  "centers_of_balance": ["health | relationships | passions | purpose | profession"]
+}
+
+When the user says they need to, should, have to, plan to, want to remember to, or asks to be reminded to do something, include it in todos as an imperative task. Never return an empty title or summary when a transcript is present.
+
 Return strict JSON only. No markdown. No commentary.`;
 
 class HttpError extends Error {
@@ -201,6 +240,13 @@ Deno.serve((req) => {
   return handleRequest(req).catch((error) => {
     const status = error instanceof HttpError ? error.status : 500;
     const message = error instanceof Error ? error.message : "Unknown server error";
+    console.error(JSON.stringify({
+      event: "api_request_failed",
+      method: req.method,
+      path: new URL(req.url).pathname,
+      status,
+      error_type: error instanceof HttpError ? "http_error" : "unexpected_error",
+    }));
     return jsonResponse(status, { error: message });
   });
 });
@@ -223,6 +269,8 @@ async function handleRequest(req: Request) {
       authenticated: Boolean(context),
       auth_mode: context?.kind ?? null,
       transcription: Boolean(Deno.env.get("GROQ_API_KEY")) ? "groq" : "not_configured",
+      product_analytics: hasPostHogCaptureConfig(postHogCaptureConfig()) ? "posthog" : "first_party_only",
+      analytics_deletion: hasPostHogDeletionConfig(postHogDeletionConfig()) ? "configured" : "not_configured",
     });
   }
 
@@ -345,7 +393,7 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
     throw new HttpError(400, "Submit between 1 and 50 product events");
   }
 
-  const rows = candidates.map((candidate) => {
+  const rows: ProductEventRow[] = candidates.map((candidate) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
       throw new HttpError(400, "Each product event must be an object");
     }
@@ -378,7 +426,22 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
   });
 
   await insertManyIgnoringDuplicates("throughline_product_events", rows);
+  EdgeRuntime.waitUntil(forwardProductEventsToPostHog(rows));
   return jsonResponse(202, { accepted: rows.length });
+}
+
+async function forwardProductEventsToPostHog(rows: ProductEventRow[]) {
+  try {
+    const result = await captureProductEventsInPostHog(rows, postHogCaptureConfig());
+    if (result.configured) {
+      console.log(`Forwarded ${result.sent} product event(s) to PostHog`);
+    }
+  } catch (error) {
+    console.error(
+      "PostHog product-event forwarding failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
 }
 
 async function handlePostProductFeedback(req: Request, context: RequestContext) {
@@ -452,6 +515,7 @@ async function handlePostRecording(req: Request, context: RequestContext) {
 }
 
 async function handlePostDemoRecording(req: Request) {
+  const startedAt = performance.now();
   const bytes = new Uint8Array(await req.arrayBuffer());
   if (bytes.byteLength > DEMO_MAX_BODY_BYTES) {
     throw new HttpError(413, `Demo recording exceeds ${DEMO_MAX_BODY_BYTES} bytes`);
@@ -485,7 +549,9 @@ async function handlePostDemoRecording(req: Request) {
     processing_status: "uploaded",
   };
 
+  logRecordingHealth("processing_started", recording, bytes);
   await processRecording(recording, bytes);
+  logRecordingHealth("processing_finished", recording, bytes, startedAt);
 
   return jsonResponse(201, {
     id: recording.id,
@@ -603,6 +669,24 @@ async function handlePatchRecording(req: Request, context: RequestContext, recor
 async function handleDeleteAccount(context: RequestContext) {
   const authUserId = requireAuthUser(context);
   const recordings = await listFullRecordings(context);
+  const captureConfig = postHogCaptureConfig();
+
+  if (hasPostHogCaptureConfig(captureConfig)) {
+    const deletionConfig = postHogDeletionConfig();
+    if (!hasPostHogDeletionConfig(deletionConfig)) {
+      throw new HttpError(503, "Account deletion is temporarily unavailable");
+    }
+
+    try {
+      await deleteProductAnalyticsUserFromPostHog(authUserId, deletionConfig);
+    } catch (error) {
+      console.error(
+        "PostHog account deletion failed",
+        error instanceof Error ? error.message : String(error),
+      );
+      throw new HttpError(503, "Account deletion is temporarily unavailable");
+    }
+  }
 
   for (const recording of recordings) {
     await deleteRecording(recording.id, context);
@@ -712,6 +796,8 @@ async function processRecording(recording: any, audioBytes: Uint8Array | null) {
 }
 
 async function processAndPersistRecording(recording: any, audioBytes: Uint8Array | null) {
+  const startedAt = performance.now();
+  logRecordingHealth("processing_started", recording, audioBytes);
   try {
     await processRecording(recording, audioBytes);
   } catch (error) {
@@ -723,6 +809,7 @@ async function processAndPersistRecording(recording: any, audioBytes: Uint8Array
   }
 
   await persistRecording(recording);
+  logRecordingHealth("processing_finished", recording, audioBytes, startedAt);
   return recording;
 }
 
@@ -1470,8 +1557,70 @@ function metadataForRecording(recording: any) {
 function postprocessExtraction(actual: any, metadata: Record<string, unknown>) {
   deriveTomorrowTodos(actual, metadata);
   deriveMostImportant(actual);
+  deriveTitleAndSummary(actual);
   deriveActionItems(actual);
   return actual;
+}
+
+function deriveTitleAndSummary(actual: any) {
+  const firstTodo = actual.todos?.[0]?.text;
+  const firstImportant = actual.most_important?.[0];
+  const firstPriority = actual.priorities?.[0];
+  const fallbackTitle = nullableString(firstImportant)
+    ?? nullableString(firstPriority)
+    ?? nullableString(firstTodo)
+    ?? "voice note";
+
+  actual.title = (nullableString(actual.title) ?? fallbackTitle).slice(0, 80);
+
+  if (!nullableString(actual.summary)) {
+    const summaryItems = (actual.most_important ?? [])
+      .map(nullableString)
+      .filter(Boolean)
+      .slice(0, 2);
+    actual.summary = summaryItems.length
+      ? summaryItems.join(". ")
+      : actual.title;
+  }
+}
+
+function logRecordingHealth(
+  phase: "processing_started" | "processing_finished",
+  recording: any,
+  audioBytes: Uint8Array | null,
+  startedAt?: number,
+) {
+  const note = recording.structured_note;
+  console.log(JSON.stringify({
+    event: `recording_${phase}`,
+    recording_kind: recording.upload_source === "demo" ? "demo" : "signed_in",
+    processing_status: recording.processing_status,
+    duration_bucket: durationBucket(recording.duration_seconds),
+    audio_size_bucket: byteSizeBucket(audioBytes?.byteLength ?? 0),
+    has_transcript: Boolean(recording.transcript_raw),
+    has_structured_note: Boolean(note),
+    structured_item_count: note
+      ? (note.most_important?.length ?? 0) + (note.todos?.length ?? 0)
+      : 0,
+    latency_ms: startedAt === undefined ? null : Math.round(performance.now() - startedAt),
+  }));
+}
+
+function durationBucket(value: unknown) {
+  const seconds = nullableNumber(value);
+  if (seconds === null) return "unknown";
+  if (seconds < 5) return "under_5_seconds";
+  if (seconds < 15) return "5_to_14_seconds";
+  if (seconds < 60) return "15_to_59_seconds";
+  return "60_seconds_or_more";
+}
+
+function byteSizeBucket(bytes: number) {
+  if (bytes <= 0) return "none";
+  if (bytes < 64 * 1024) return "under_64_kb";
+  if (bytes < 512 * 1024) return "64_to_511_kb";
+  if (bytes < 2 * 1024 * 1024) return "512_kb_to_1_9_mb";
+  return "2_mb_or_more";
 }
 
 function normalizeTodo(todo: any, metadata: Record<string, unknown> = {}) {
@@ -1575,10 +1724,6 @@ function deriveActionItems(actual: any) {
 
   for (const todo of actual.todos ?? []) {
     addActionItem(items, todo.text, "todo", todo.status, todo.completed_at);
-  }
-
-  for (const text of actual.most_important ?? []) {
-    addActionItem(items, text, "most_important");
   }
 
   actual.action_items = items;
@@ -2225,6 +2370,24 @@ function storagePathSegment(value: string) {
 
 function audioBucket() {
   return Deno.env.get("THROUGHLINE_AUDIO_BUCKET") || Deno.env.get("SUPABASE_AUDIO_BUCKET") || DEFAULT_AUDIO_BUCKET;
+}
+
+function postHogCaptureConfig(): PostHogCaptureConfig {
+  return {
+    projectToken: Deno.env.get("POSTHOG_PROJECT_TOKEN") || "",
+    ingestHost: Deno.env.get("POSTHOG_INGEST_HOST") || DEFAULT_POSTHOG_INGEST_HOST,
+    analyticsIdSecret: Deno.env.get("THROUGHLINE_ANALYTICS_ID_SECRET") || "",
+    environment: Deno.env.get("THROUGHLINE_ENVIRONMENT") || "production",
+  };
+}
+
+function postHogDeletionConfig(): PostHogDeletionConfig {
+  return {
+    personalApiKey: Deno.env.get("POSTHOG_PERSONAL_API_KEY") || "",
+    apiHost: Deno.env.get("POSTHOG_API_HOST") || DEFAULT_POSTHOG_API_HOST,
+    projectId: Deno.env.get("POSTHOG_PROJECT_ID") || "",
+    analyticsIdSecret: Deno.env.get("THROUGHLINE_ANALYTICS_ID_SECRET") || "",
+  };
 }
 
 function positiveNumberEnv(name: string, fallback: number) {
