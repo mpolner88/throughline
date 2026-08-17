@@ -22,6 +22,7 @@
 - Never put raw audio, transcripts, note text, feedback text, emails, credentials, or raw user/session identifiers in tracked reports, analytics, fixtures, or release manifests.
 - Preserve all unrelated dirty-worktree changes. Stage only the files named by the current task.
 - The submitted 1.0.4 build source is not reproducible from a committed tree; document that gap without claiming it is fixed.
+- Do not edit or stage `docs/product-learning-loop.md` or `docs/app-store-readiness.md` in this plan because both contain pre-existing uncommitted 1.0.4 work. Consolidate them only after the release-provenance slice preserves that source.
 
 ---
 
@@ -101,7 +102,6 @@
 - Modify: `throughline-product-spec-v0.md`
 - Modify: `agentic-product-workflow.md`
 - Modify: `agent-prompts.md`
-- Modify: `docs/product-learning-loop.md`
 
 **Interfaces:**
 - Consumes: Mike's origin story and non-goals plus Task 1's canonical-source map.
@@ -119,13 +119,13 @@
 
   Add concise supersession banners to `agentic-product-workflow.md` and `agent-prompts.md` pointing to `AGENTS.md` and `docs/WORKFLOW.md`. Preserve historical content below the banner.
 
-- [ ] **Step 4: Retire the duplicate learning-loop source**
+- [ ] **Step 4: Record the deferred dirty-file consolidation**
 
-  Add a supersession banner to `docs/product-learning-loop.md` pointing operational reporting to `product/README.md`, metrics to `product/metrics.md`, backlog to `product/backlog.json`, and workflow to `docs/WORKFLOW.md`. Preserve the historical body.
+  In the historical-boundaries section of `docs/PRODUCT.md`, state that `docs/product-learning-loop.md` remains a noncanonical, pre-existing dirty release artifact until the release-provenance slice preserves it; current workflow, metrics, and backlog truth already live in their canonical files. Do not modify or stage the dirty file in this task.
 
 - [ ] **Step 5: Self-review and commit Task 3**
 
-  Confirm `docs/PRODUCT.md` contains no live release, model, pricing, or metric facts; run `git diff --check` on the five Task 3 files; stage only those files; commit with message `docs: establish durable Throughline product charter`.
+  Confirm `docs/PRODUCT.md` contains no live release, model, pricing, or metric facts; run `git diff --check` on the four Task 3 files; stage only those files; commit with message `docs: establish durable Throughline product charter`.
 
 ### Task 4: Core Quality Program Brief and Locked Decisions
 
@@ -167,7 +167,6 @@
 - Create: `docs/releases/README.md`
 - Create: `docs/releases/TEMPLATE.md`
 - Create: `docs/releases/2026-08-16-ios-1.0.4-2026081602.md`
-- Modify: `docs/app-store-readiness.md`
 
 **Interfaces:**
 - Consumes: the current aggregate baseline, existing backlog, local Xcode upload receipt, Task 1 workflow, and Task 2 current-state facts.
@@ -193,9 +192,9 @@
 
   Create `docs/releases/2026-08-16-ios-1.0.4-2026081602.md`. Record that local archive evidence proves successful Apple upload on August 16/17, 2026; current repo documentation asserts processing/TestFlight/submission state; exact submitted source is not reproducible from a clean commit; the archive receipt lives under `/private/tmp` and is ephemeral. Do not claim more than evidence supports.
 
-- [ ] **Step 6: Reduce the mutable App Store checklist**
+- [ ] **Step 6: Record the deferred mutable-checklist consolidation**
 
-  Make `docs/app-store-readiness.md` point to the immutable release manifest for build facts and retain only current checklist/action items. Preserve any still-useful reviewer instructions and privacy checks.
+  In the 1.0.4 release manifest, state that `docs/app-store-readiness.md` contains pre-existing uncommitted release work and will be reduced to a current checklist only after the release-provenance slice preserves it. Do not modify or stage the dirty file in this task.
 
 - [ ] **Step 7: Validate and commit Task 5**
 
@@ -216,7 +215,7 @@
 
 - [ ] **Step 2: Search for active contradictions**
 
-  Search canonical files for claims that authenticated recordings are currently 60 seconds, the ten-minute daily cap is enforced, credits are being built now, Mike reviews evaluation examples, onboarding should change, or current extraction feedback already trains/improves the model. Historical documents may contain those claims only below an explicit supersession banner.
+  Search canonical files for claims that authenticated recordings are currently 60 seconds, the ten-minute daily cap is enforced, credits are being built now, Mike reviews evaluation examples, onboarding should change, or current extraction feedback already trains/improves the model. Historical documents modified by this plan may contain those claims only below an explicit supersession banner. The two explicitly deferred dirty release documents remain noncanonical until the provenance slice.
 
 - [ ] **Step 3: Run repository checks**
 
