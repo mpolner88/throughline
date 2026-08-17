@@ -1,6 +1,6 @@
 # Throughline — Product Spec v0
 
-> Canonical reference for what we're building. Source of truth for product decisions. Brand decisions (visual identity, voice, design system) live in `throughline-brand-decisions.md`.
+> **Historical document.** Retained for history only. [docs/PRODUCT.md](docs/PRODUCT.md), [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and active program briefs now govern.
 
 ---
 

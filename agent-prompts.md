@@ -1,5 +1,7 @@
 # Agent Prompts
 
+> **Superseded prompts.** This tool-specific document is retained for history. Follow [AGENTS.md](AGENTS.md) and [docs/WORKFLOW.md](docs/WORKFLOW.md) for the current workflow.
+
 Reusable prompts for the Throughline product workflow.
 
 ---

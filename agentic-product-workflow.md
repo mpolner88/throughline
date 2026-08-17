@@ -1,5 +1,7 @@
 # Agentic Product Workflow
 
+> **Superseded workflow.** This tool-specific document is retained for history. Follow [AGENTS.md](AGENTS.md) and [docs/WORKFLOW.md](docs/WORKFLOW.md) for the current workflow.
+
 This is the operating loop for turning product taste, model critique, and engineering skepticism into buildable specs.
 
 The goal is not to remove human judgment. The goal is to make judgment visible, repeatable, and easier to delegate over time.
