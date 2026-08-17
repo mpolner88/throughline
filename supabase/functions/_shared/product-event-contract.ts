@@ -129,6 +129,7 @@ const ENUM_PROPERTY_VALUES: Record<string, ReadonlySet<string>> = {
     "extraction_quality",
   ]),
   stage: new Set([
+    "pre_record",
     "demo_upload",
     "demo_promotion",
     "upload_or_processing",
@@ -219,7 +220,7 @@ export function normalizeProductEventContract(
   const requiresRecordingId = event.event_name === "recording_uploaded" ||
     event.event_name === "recording_processed" ||
     (event.event_name === "recording_failed" &&
-      properties.stage === "processing");
+      properties.stage !== "pre_record");
 
   if (requiresRecordingId && !recordingId) {
     throw new ProductEventContractError(

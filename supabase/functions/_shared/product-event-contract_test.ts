@@ -154,12 +154,31 @@ Deno.test("pre-record failures may omit a reference but processing failures may 
     event_name: "recording_failed",
     schema_version: 2,
     distribution_channel: "debug",
-    properties: { stage: "upload_or_processing", surface: "home" },
+    properties: { stage: "pre_record", surface: "home" },
   });
   assert(
     preRecordFailure.recording_id === null,
     "pre-record failure requires a reference",
   );
+
+  for (
+    const stage of [
+      "upload_or_processing",
+      undefined,
+      "not_a_stage",
+      "processing",
+    ]
+  ) {
+    assertThrowsContractError(
+      () =>
+        normalizeProductEventContract({
+          event_name: "recording_failed",
+          schema_version: 2,
+          properties: stage === undefined ? { surface: "home" } : { stage },
+        }),
+      `${stage ?? "omitted"} failure accepted without recording_id`,
+    );
+  }
 
   assertThrowsContractError(
     () =>
