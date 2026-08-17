@@ -1,6 +1,6 @@
 # Core Quality and Learning Program
 
-**Status:** Active program brief  
+**Status:** Active program brief
 **Verified baseline:** 2026-08-17; see [current state](../CURRENT_STATE.md) for evidence strength and re-verification requirements.
 
 ## Problem
