@@ -1,4 +1,9 @@
-# Supabase Backend
+# Hosted backend runbook
+
+**Last verified:** 2026-08-17 by local source and runbook inspection; this is not a live deployment verification.
+**Current architecture:** [ARCHITECTURE.md](ARCHITECTURE.md) is the factual runtime and data-flow map. [CURRENT_STATE.md](CURRENT_STATE.md) records the date-stamped live-fact boundary and release caveats.
+
+This document contains operating procedures: configuration, deployment, health/canary checks, and retention. It does not establish that a provider configuration, function deployment, App Store state, or scheduled retention job is current.
 
 Throughline uses Supabase as the hosted backend.
 
@@ -8,7 +13,7 @@ iPhone app -> Supabase Edge Function -> Supabase Postgres/Storage -> Groq
                                            -> MCP memory endpoint
 ```
 
-This replaces the separate Google Cloud / Docker deployment path. The only server code we need for dogfood is in `supabase/functions`.
+The deployed Edge Function sources are in `supabase/functions`. See [ARCHITECTURE.md](ARCHITECTURE.md) for the component boundaries and data flow.
 
 ## What Supabase Owns
 
@@ -20,7 +25,7 @@ This replaces the separate Google Cloud / Docker deployment path. The only serve
 
 ## Prepare Database
 
-The project is already linked to Supabase project `ywsenspsfyrdhgyxgcrv`.
+Confirm that the local checkout is linked to the intended Supabase project before applying migrations. The production project reference used by the current app configuration is `ywsenspsfyrdhgyxgcrv`.
 
 Apply local migrations:
 
@@ -81,7 +86,9 @@ MCP endpoint:
 https://ywsenspsfyrdhgyxgcrv.supabase.co/functions/v1/mcp
 ```
 
-## Check Health
+## Health and canary checks
+
+Run these checks after deployment and record the result in the relevant slice evidence or release manifest. A documented command and expected response do not prove a current production deployment.
 
 ```bash
 curl https://ywsenspsfyrdhgyxgcrv.supabase.co/functions/v1/api/health
