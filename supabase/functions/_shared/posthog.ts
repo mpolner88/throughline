@@ -1,3 +1,9 @@
+import {
+  type ProductEventDistributionChannel,
+  type ProductEventSchemaVersion,
+  sanitizeProductEventProperties,
+} from "./product-event-contract.ts";
+
 export type ProductEventProperty = string | number | boolean;
 
 export type ProductEventRow = {
@@ -9,6 +15,10 @@ export type ProductEventRow = {
   platform: string;
   app_version: string | null;
   build_number: string | null;
+  schema_version: ProductEventSchemaVersion;
+  distribution_channel: ProductEventDistributionChannel;
+  is_internal_user: boolean | null;
+  recording_id: string | null;
   properties: Record<string, ProductEventProperty>;
 };
 
@@ -69,7 +79,7 @@ export async function postHogDistinctId(
   return `tl_${kind}_${digest}`;
 }
 
-export async function buildPostHogBatch(
+export function buildPostHogBatch(
   rows: ProductEventRow[],
   config: PostHogCaptureConfig,
 ) {
@@ -80,17 +90,14 @@ export async function buildPostHogBatch(
       row.auth_user_id ?? row.session_id,
       config.analyticsIdSecret,
     );
-    const sessionId = await postHogDistinctId(
-      "session",
-      row.session_id,
-      config.analyticsIdSecret,
-    );
     const eventUuid = productEventUuid(row.id);
     const properties: Record<string, ProductEventProperty> = {
-      ...row.properties,
+      ...sanitizeProductEventProperties(row.event_name, row.properties),
       platform: row.platform,
       environment: config.environment,
-      throughline_session_id: sessionId,
+      schema_version: row.schema_version,
+      distribution_channel: row.distribution_channel,
+      is_internal_user: row.is_internal_user ?? "unknown",
       "$process_person_profile": isIdentified,
       "$geoip_disable": true,
       "$lib": "throughline-edge",

@@ -10,6 +10,11 @@ import {
   type PostHogDeletionConfig,
   type ProductEventRow,
 } from "../_shared/posthog.ts";
+import {
+  normalizeProductEventContract,
+  PRODUCT_EVENT_NAMES,
+  ProductEventContractError,
+} from "../_shared/product-event-contract.ts";
 
 declare const EdgeRuntime: {
   waitUntil(promise: Promise<unknown>): void;
@@ -34,34 +39,6 @@ const DEFAULT_POSTHOG_INGEST_HOST = "https://us.i.posthog.com";
 const DEFAULT_POSTHOG_API_HOST = "https://us.posthog.com";
 
 const RECORDING_TYPES = new Set(["morning", "evening", "weekly_review", "freeform"]);
-const PRODUCT_EVENT_NAMES = new Set([
-  "first_opened",
-  "app_opened",
-  "onboarding_step_viewed",
-  "onboarding_started",
-  "demo_recording_started",
-  "demo_recording_completed",
-  "auth_started",
-  "auth_confirmation_required",
-  "auth_succeeded",
-  "auth_failed",
-  "home_viewed",
-  "settings_opened",
-  "recording_started",
-  "recording_uploaded",
-  "recording_processed",
-  "recording_failed",
-  "note_opened",
-  "note_edited",
-  "note_deleted",
-  "action_item_toggled",
-  "agent_connection_opened",
-  "agent_token_created",
-  "agent_token_revoked",
-  "feedback_opened",
-  "feedback_submitted",
-  "feedback_submit_failed",
-]);
 const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
 const OUTPUT_FIELDS = [
   "type",
@@ -236,7 +213,11 @@ type RequestContext = {
   authUserId: string | null;
 };
 
-Deno.serve((req) => {
+if (import.meta.main) {
+  Deno.serve(handleRequestResponse);
+}
+
+export function handleRequestResponse(req: Request) {
   return handleRequest(req).catch((error) => {
     const status = error instanceof HttpError ? error.status : 500;
     const message = error instanceof Error ? error.message : "Unknown server error";
@@ -249,9 +230,9 @@ Deno.serve((req) => {
     }));
     return jsonResponse(status, { error: message });
   });
-});
+}
 
-async function handleRequest(req: Request) {
+export async function handleRequest(req: Request) {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders() });
   }
@@ -393,7 +374,10 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
     throw new HttpError(400, "Submit between 1 and 50 product events");
   }
 
-  const rows: ProductEventRow[] = candidates.map((candidate) => {
+  const isInternalUser = context?.authUserId
+    ? await lookupInternalUser(context.authUserId)
+    : null;
+  const rows: ProductEventRow[] = await Promise.all(candidates.map(async (candidate) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
       throw new HttpError(400, "Each product event must be an object");
     }
@@ -404,12 +388,40 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
     const sessionId = normalizedUuid(event.session_id);
     const occurredAt = normalizedClientTimestamp(event.occurred_at);
 
-    if (!id || !eventName || !PRODUCT_EVENT_NAMES.has(eventName)) {
+    if (
+      !id || !eventName ||
+      !PRODUCT_EVENT_NAMES.includes(
+        eventName as typeof PRODUCT_EVENT_NAMES[number],
+      )
+    ) {
       throw new HttpError(400, "Unknown or invalid product event");
     }
 
     if (!sessionId || !occurredAt) {
       throw new HttpError(400, "Product events require valid session and timestamp values");
+    }
+
+    let contract;
+    try {
+      contract = normalizeProductEventContract(event);
+    } catch (error) {
+      if (error instanceof ProductEventContractError) {
+        throw new HttpError(400, error.message);
+      }
+      throw error;
+    }
+
+    if (contract.recording_id) {
+      if (!context?.authUserId) {
+        throw new HttpError(
+          403,
+          "A signed-in user is required for a recording reference",
+        );
+      }
+      await requireOwnedProductEventRecording(
+        contract.recording_id,
+        context.authUserId,
+      );
     }
 
     return {
@@ -421,13 +433,49 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
       platform: "ios",
       app_version: limitedString(event.app_version, 40),
       build_number: limitedString(event.build_number, 40),
-      properties: normalizedEventProperties(event.properties),
+      schema_version: contract.schema_version,
+      distribution_channel: contract.distribution_channel,
+      is_internal_user: isInternalUser,
+      recording_id: contract.recording_id,
+      properties: contract.properties,
     };
-  });
+  }));
 
   await insertManyIgnoringDuplicates("throughline_product_events", rows);
   EdgeRuntime.waitUntil(forwardProductEventsToPostHog(rows));
   return jsonResponse(202, { accepted: rows.length });
+}
+
+async function lookupInternalUser(authUserId: string) {
+  try {
+    const rows = await restRequest(
+      `/throughline_internal_users?select=auth_user_id&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`,
+    );
+    if (!Array.isArray(rows)) {
+      throw new Error("Unexpected allowlist lookup response");
+    }
+    return rows.length > 0;
+  } catch {
+    throw new HttpError(503, "Internal attribution lookup is temporarily unavailable");
+  }
+}
+
+async function requireOwnedProductEventRecording(recordingId: string, authUserId: string) {
+  let rows: unknown;
+  try {
+    rows = await restRequest(
+      `/throughline_recordings?select=id&id=eq.${encodeURIComponent(recordingId)}&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`,
+    );
+  } catch {
+    throw new HttpError(503, "Recording attribution lookup is temporarily unavailable");
+  }
+
+  if (!Array.isArray(rows)) {
+    throw new HttpError(503, "Recording attribution lookup is temporarily unavailable");
+  }
+  if (!rows.some((row) => row?.id === recordingId)) {
+    throw new HttpError(403, "Recording reference is not owned by the authenticated account");
+  }
 }
 
 async function forwardProductEventsToPostHog(rows: ProductEventRow[]) {

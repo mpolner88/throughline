@@ -23,6 +23,10 @@ const signedInRow: ProductEventRow = {
   platform: "ios",
   app_version: "1.0.1",
   build_number: "2026080601",
+  schema_version: 2,
+  distribution_channel: "testflight",
+  is_internal_user: true,
+  recording_id: "rec_private_recording_reference",
   properties: { processing_mode: "live", success: true },
 };
 
@@ -69,6 +73,18 @@ Deno.test("PostHog batch contains only sanitized product properties", async () =
   }
   if (event.properties.app_version !== "1.0.1") {
     throw new Error("App version missing");
+  }
+  if (event.properties.schema_version !== 2) {
+    throw new Error("Server schema version missing");
+  }
+  if (event.properties.distribution_channel !== "testflight") {
+    throw new Error("Server distribution channel missing");
+  }
+  if (event.properties.is_internal_user !== true) {
+    throw new Error("Server internal classification missing");
+  }
+  if (JSON.stringify(event).includes(signedInRow.recording_id!)) {
+    throw new Error("Recording reference leaked");
   }
   if (JSON.stringify(event).includes(signedInRow.auth_user_id!)) {
     throw new Error("Auth user ID leaked");
@@ -121,6 +137,18 @@ Deno.test("capture uses the batch endpoint and project token only in the body", 
   }
   if (body.api_key !== "phc_test" || body.batch.length !== 1) {
     throw new Error("Invalid capture body");
+  }
+  const serialized = JSON.stringify(body);
+  for (
+    const sourceIdentifier of [
+      signedInRow.recording_id!,
+      signedInRow.auth_user_id!,
+      signedInRow.session_id,
+    ]
+  ) {
+    if (serialized.includes(sourceIdentifier)) {
+      throw new Error("Raw first-party identifier leaked into capture body");
+    }
   }
   if (result.sent !== 1) throw new Error("Wrong sent count");
 });
