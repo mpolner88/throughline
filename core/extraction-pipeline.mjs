@@ -129,8 +129,31 @@ export function userLocalDateFromTime(userLocalTime) {
 function postprocessExtraction(actual, metadata) {
   deriveTomorrowTodos(actual, metadata);
   deriveMostImportant(actual);
+  deriveTitleAndSummary(actual);
   deriveActionItems(actual);
   return actual;
+}
+
+function deriveTitleAndSummary(actual) {
+  const firstTodo = actual.todos?.[0]?.text;
+  const firstImportant = actual.most_important?.[0];
+  const firstPriority = actual.priorities?.[0];
+  const fallbackTitle = nullableString(firstImportant)
+    ?? nullableString(firstPriority)
+    ?? nullableString(firstTodo)
+    ?? "voice note";
+
+  actual.title = (nullableString(actual.title) ?? fallbackTitle).slice(0, 80);
+
+  if (!nullableString(actual.summary)) {
+    const summaryItems = (actual.most_important ?? [])
+      .map(nullableString)
+      .filter(Boolean)
+      .slice(0, 2);
+    actual.summary = summaryItems.length
+      ? summaryItems.join(". ")
+      : actual.title;
+  }
 }
 
 function normalizeTodo(todo, metadata = {}) {
@@ -246,10 +269,6 @@ function deriveActionItems(actual) {
 
   for (const todo of actual.todos ?? []) {
     addActionItem(items, todo.text, "todo", todo.status, todo.completed_at);
-  }
-
-  for (const text of actual.most_important ?? []) {
-    addActionItem(items, text, "most_important");
   }
 
   actual.action_items = items;

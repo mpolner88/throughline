@@ -11,6 +11,7 @@ The user-facing product is simple: a person speaks anything into Throughline, an
 - Prefer missing data over invented data.
 - Keep the user's meaning. Do not turn a vague thought into a specific commitment.
 - Todos must be imperative: `Call Sarah`, not `I should call Sarah`.
+- When the user says they need to, should, have to, plan to, want to remember to, or asks to be reminded to do something, include it in `todos` as an imperative task.
 - Do not turn product opinions, design principles, or "the app should..." statements into todos unless the user clearly asks to do the work. Put those in `intentions`.
 - Only set `due` or `for_date` when the transcript clearly implies a date.
 - `tomorrow_todos` are strings only: the text of tasks explicitly assigned to tomorrow or the next day.
@@ -20,6 +21,7 @@ The user-facing product is simple: a person speaks anything into Throughline, an
 - Preserve named people exactly as spoken when possible.
 - Use concise titles, 80 characters or fewer.
 - Use one or two sentence summaries.
+- Never return an empty title or summary when a transcript is present.
 - `most_important` must be an array of 1-5 concise strings that capture the highest-signal takeaways, actions, decisions, risks, or reminders for an agent. Each item must be grounded in the transcript.
 - Fill every applicable field. Empty arrays are correct only when the transcript gives no evidence.
 - Use `neutral` for mood when the note has no clear emotional signal. Use `null` only when the transcript is too thin to judge mood at all.
