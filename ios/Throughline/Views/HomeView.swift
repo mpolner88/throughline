@@ -382,6 +382,7 @@ struct HomeView: View {
         guard recorder.isRecording, !isFinishingRecording, !isUploading, !isProcessing else { return }
 
         Task {
+            var durableRecordingID: String?
             do {
                 didJustSave = false
                 isFinishingRecording = true
@@ -398,6 +399,7 @@ struct HomeView: View {
                     type: .freeform,
                     processingMode: .async
                 )
+                durableRecordingID = response.id
 
                 isUploading = false
                 ProductAnalytics.track(
@@ -405,7 +407,8 @@ struct HomeView: View {
                     properties: [
                         "surface": "home",
                         "duration_bucket": recordingDurationBucket(duration)
-                    ]
+                    ],
+                    recordingID: response.id
                 )
                 appState.addUploadedNote(response.displayNote)
                 uploadError = nil
@@ -420,12 +423,14 @@ struct HomeView: View {
                         properties: [
                             "surface": "home",
                             "processing_status": finalStatus
-                        ]
+                        ],
+                        recordingID: response.id
                     )
                 } else if Self.failedProcessingStatuses.contains(finalStatus) {
                     ProductAnalytics.track(
                         "recording_failed",
-                        properties: ["processing_status": finalStatus, "stage": "processing"]
+                        properties: ["processing_status": finalStatus, "stage": "processing"],
+                        recordingID: response.id
                     )
                 }
                 isProcessing = false
@@ -436,7 +441,11 @@ struct HomeView: View {
                 didJustSave = false
                 ProductAnalytics.track(
                     "recording_failed",
-                    properties: ["surface": "home", "stage": "upload_or_processing"]
+                    properties: [
+                        "surface": "home",
+                        "stage": durableRecordingID == nil ? "pre_record" : "processing"
+                    ],
+                    recordingID: durableRecordingID
                 )
                 uploadError = error.localizedDescription
                 await refreshFromBackend()

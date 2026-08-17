@@ -17,6 +17,7 @@
 		A00000000000000000000108 /* Views/HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* Views/HomeView.swift */; };
 		A00000000000000000000109 /* Services/AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* Services/AudioRecorder.swift */; };
 		A00000000000000000000110 /* Services/UploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* Services/UploadClient.swift */; };
+		D00000000000000000000101 /* Services/ProductEventAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000001 /* Services/ProductEventAttribution.swift */; };
 		B00000000000000000000101 /* Services/AuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* Services/AuthClient.swift */; };
 		C00000000000000000000101 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000001 /* Assets.xcassets */; };
 		C00000000000000000000102 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* PrivacyInfo.xcprivacy */; };
@@ -38,6 +39,7 @@
 		A00000000000000000000025 /* Config/Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Debug.xcconfig; sourceTree = "<group>"; };
 		A00000000000000000000026 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B00000000000000000000001 /* Services/AuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AuthClient.swift; sourceTree = "<group>"; };
+		D00000000000000000000001 /* Services/ProductEventAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ProductEventAttribution.swift; sourceTree = "<group>"; };
 		B00000000000000000000002 /* Config/Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Release.xcconfig; sourceTree = "<group>"; };
 		C00000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C00000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -82,6 +84,7 @@
 				A00000000000000000000018 /* Views/HomeView.swift */,
 				A00000000000000000000019 /* Services/AudioRecorder.swift */,
 				A00000000000000000000020 /* Services/UploadClient.swift */,
+				D00000000000000000000001 /* Services/ProductEventAttribution.swift */,
 				B00000000000000000000001 /* Services/AuthClient.swift */,
 			);
 			path = Throughline;
@@ -185,6 +188,7 @@
 				A00000000000000000000108 /* Views/HomeView.swift in Sources */,
 				A00000000000000000000109 /* Services/AudioRecorder.swift in Sources */,
 				A00000000000000000000110 /* Services/UploadClient.swift in Sources */,
+				D00000000000000000000101 /* Services/ProductEventAttribution.swift in Sources */,
 				B00000000000000000000101 /* Services/AuthClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

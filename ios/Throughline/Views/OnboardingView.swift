@@ -540,11 +540,13 @@ struct OnboardingView: View {
     private func persistDemoNoteIfNeeded() async -> ThroughlineNote? {
         guard appState.isSignedIn, let capturedNote else { return capturedNote }
 
+        var durableRecordingID: String?
         do {
             let response = try await UploadClient().saveDemoNote(
                 capturedNote,
                 duration: capturedRecordingDuration
             )
+            durableRecordingID = response.id
             guard response.processingStatus == "processed", response.hasNote else {
                 throw UploadClientError.processingFailed(response.processingStatus)
             }
@@ -555,14 +557,16 @@ struct OnboardingView: View {
                 properties: [
                     "surface": "onboarding_promotion",
                     "duration_bucket": recordingDurationBucket(capturedRecordingDuration)
-                ]
+                ],
+                recordingID: response.id
             )
             ProductAnalytics.track(
                 "recording_processed",
                 properties: [
                     "surface": "onboarding_promotion",
                     "processing_status": response.processingStatus
-                ]
+                ],
+                recordingID: response.id
             )
             return savedNote
         } catch {
@@ -570,9 +574,10 @@ struct OnboardingView: View {
                 "recording_failed",
                 properties: [
                     "surface": "onboarding",
-                    "stage": "demo_promotion",
+                    "stage": durableRecordingID == nil ? "demo_promotion" : "processing",
                     "failure_type": recordingFailureType(error)
-                ]
+                ],
+                recordingID: durableRecordingID
             )
             return capturedNote
         }

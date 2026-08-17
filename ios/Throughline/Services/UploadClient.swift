@@ -438,34 +438,22 @@ struct ProductFeedbackResponse: Decodable {
     let status: String
 }
 
-struct ProductEvent: Codable, Identifiable {
-    let id: String
-    let eventName: String
-    let sessionID: String
-    let occurredAt: String
-    let appVersion: String?
-    let buildNumber: String?
-    let properties: [String: String]
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case eventName = "event_name"
-        case sessionID = "session_id"
-        case occurredAt = "occurred_at"
-        case appVersion = "app_version"
-        case buildNumber = "build_number"
-        case properties
-    }
-}
-
 enum ProductAnalytics {
     private static let firstOpenedAtKey = "throughline.analytics.firstOpenedAt"
 
-    static func track(_ eventName: String, properties: [String: String] = [:]) {
+    static func track(
+        _ eventName: String,
+        properties: [String: String] = [:],
+        recordingID: String? = nil
+    ) {
         guard !isPreviewLaunch else { return }
 
         Task {
-            await ProductEventQueue.shared.enqueue(eventName: eventName, properties: properties)
+            await ProductEventQueue.shared.enqueue(
+                eventName: eventName,
+                properties: properties,
+                recordingID: recordingID
+            )
         }
     }
 
@@ -504,6 +492,7 @@ private actor ProductEventQueue {
     private static let storageKey = "throughline.pendingProductEvents"
     private static let sessionID = UUID().uuidString.lowercased()
     private var pendingEvents: [ProductEvent]
+    private var distributionChannel: ProductEventDistributionChannel?
     private var isFlushing = false
 
     init() {
@@ -515,7 +504,20 @@ private actor ProductEventQueue {
         }
     }
 
-    func enqueue(eventName: String, properties: [String: String]) async {
+    func enqueue(
+        eventName: String,
+        properties: [String: String],
+        recordingID: String?
+    ) async {
+        let eventDistributionChannel: ProductEventDistributionChannel
+        if let distributionChannel {
+            eventDistributionChannel = distributionChannel
+        } else {
+            let detectedChannel = await ProductEventAttribution.currentDistributionChannel()
+            distributionChannel = detectedChannel
+            eventDistributionChannel = detectedChannel
+        }
+
         pendingEvents.append(
             ProductEvent(
                 id: "evt_\(UUID().uuidString.lowercased())",
@@ -524,6 +526,9 @@ private actor ProductEventQueue {
                 occurredAt: Self.timestamp(),
                 appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
                 buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+                schemaVersion: 2,
+                distributionChannel: eventDistributionChannel,
+                recordingID: recordingID,
                 properties: properties
             )
         )
