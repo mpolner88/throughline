@@ -40,6 +40,9 @@ export type ProductEventDistributionChannel =
   typeof PRODUCT_EVENT_DISTRIBUTION_CHANNELS[number];
 export type ProductEventProperty = string | number | boolean;
 
+const APP_VERSION_PATTERN = /^\d{1,3}(?:\.\d{1,3}){1,2}$/;
+const BUILD_NUMBER_PATTERN = /^\d{1,20}$/;
+
 export type NormalizedProductEventContract = {
   schema_version: ProductEventSchemaVersion;
   distribution_channel: ProductEventDistributionChannel;
@@ -186,6 +189,20 @@ export function sanitizeProductEventProperties(
   }
 
   return output;
+}
+
+export function normalizeProductEventAppVersion(value: unknown): string | null {
+  return typeof value === "string" && APP_VERSION_PATTERN.test(value.trim())
+    ? value.trim()
+    : null;
+}
+
+export function normalizeProductEventBuildNumber(
+  value: unknown,
+): string | null {
+  return typeof value === "string" && BUILD_NUMBER_PATTERN.test(value.trim())
+    ? value.trim()
+    : null;
 }
 
 export function normalizeProductEventContract(

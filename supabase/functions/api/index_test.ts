@@ -4,6 +4,7 @@ const AUTH_USER_ID = "00000000-0000-4000-8000-000000000001";
 const SESSION_ID = "00000000-0000-4000-8000-000000000002";
 const EVENT_ID = "evt_00000000-0000-4000-8000-000000000003";
 const RECORDING_ID = "rec_owned_recording";
+const SECOND_RECORDING_ID = "rec_second_owned_recording";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -13,15 +14,23 @@ function setTestEnvironment() {
   Deno.env.set("SUPABASE_URL", "https://supabase.test");
   Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "service-role-test");
   Deno.env.set("SUPABASE_ANON_KEY", "anon-test");
+  Deno.env.delete("THROUGHLINE_API_TOKEN");
 }
 
-function requestWithEvents(events: unknown[]) {
+function requestWithEvents(
+  events: unknown[],
+  authorization = "Bearer user-token-test",
+) {
   return new Request("https://edge.test/functions/v1/api/events", {
     method: "POST",
-    headers: {
-      Authorization: "Bearer user-token-test",
-      "Content-Type": "application/json",
-    },
+    headers: authorization
+      ? {
+        Authorization: authorization,
+        "Content-Type": "application/json",
+      }
+      : {
+        "Content-Type": "application/json",
+      },
     body: JSON.stringify({ events }),
   });
 }
@@ -41,7 +50,7 @@ function schemaV2Event(overrides: Record<string, unknown> = {}) {
 
 function installFetchMock(options: {
   allowlist?: "hit" | "miss" | "failure";
-  recording?: "owned" | "missing";
+  recording?: "owned" | "missing" | "failure" | "partial";
 }) {
   const requests: Array<{ url: string; body: unknown }> = [];
   const originalFetch = globalThis.fetch;
@@ -62,8 +71,15 @@ function installFetchMock(options: {
       ));
     }
     if (target.includes("/throughline_recordings?")) {
+      if (options.recording === "failure") {
+        return Promise.resolve(new Response("unavailable", { status: 503 }));
+      }
       return Promise.resolve(Response.json(
-        options.recording === "missing" ? [] : [{ id: RECORDING_ID }],
+        options.recording === "missing"
+          ? []
+          : options.recording === "partial"
+          ? [{ id: RECORDING_ID }]
+          : [{ id: RECORDING_ID }, { id: SECOND_RECORDING_ID }],
       ));
     }
     if (target.includes("/throughline_product_events?")) {
@@ -93,11 +109,14 @@ Deno.test("event ingestion derives trusted attribution once and discards forged 
     const response = await handleRequestResponse(requestWithEvents([
       schemaV2Event({
         is_internal_user: false,
+        app_version: AUTH_USER_ID,
+        build_number: AUTH_USER_ID,
         properties: {
           is_internal_user: false,
           schema_version: 1,
           distribution_channel: "app_store",
           recording_id: "rec_forged_property",
+          raw_content: "private note body must not persist",
           surface: "home",
         },
       }),
@@ -129,6 +148,14 @@ Deno.test("event ingestion derives trusted attribution once and discards forged 
       "Expected validated reference",
     );
     assert(
+      rows[0].app_version === null,
+      "Invalid app version must not persist",
+    );
+    assert(
+      rows[0].build_number === null,
+      "Invalid build number must not persist",
+    );
+    assert(
       !JSON.stringify(rows[0].properties).includes("forged"),
       "Reserved property survived",
     );
@@ -145,6 +172,28 @@ Deno.test("schema-v2 recording references require authenticated ownership", asyn
       requestWithEvents([schemaV2Event()]),
     );
     assert(response.status === 403, "Unowned reference must be rejected");
+  } finally {
+    mock.restore();
+  }
+});
+
+Deno.test("recording lookup failures remain retryable and do not partially insert a batch", async () => {
+  setTestEnvironment();
+  const mock = installFetchMock({ allowlist: "miss", recording: "failure" });
+  try {
+    const response = await handleRequestResponse(
+      requestWithEvents([schemaV2Event()]),
+    );
+    assert(
+      response.status === 503,
+      "Recording lookup failure must be retryable",
+    );
+    assert(
+      !mock.requests.some((request) =>
+        request.url.includes("/throughline_product_events?")
+      ),
+      "Failed attribution batch must not insert any events",
+    );
   } finally {
     mock.restore();
   }
@@ -186,6 +235,120 @@ Deno.test("legacy schema-v1 events remain compatible without a recording referen
       "Legacy channel must be unknown",
     );
     assert(row.recording_id === null, "Legacy reference must be dropped");
+    assert(
+      row.is_internal_user === false,
+      "Confirmed allowlist miss must be false",
+    );
+  } finally {
+    mock.restore();
+  }
+});
+
+Deno.test("anonymous and service legacy events remain internal-attribution unknown without allowlist calls", async () => {
+  setTestEnvironment();
+  const mock = installFetchMock({ recording: "owned" });
+  try {
+    const legacyEvent = {
+      id: EVENT_ID,
+      session_id: SESSION_ID,
+      occurred_at: new Date().toISOString(),
+      event_name: "app_opened",
+    };
+    const anonymous = await handleRequestResponse(
+      requestWithEvents([legacyEvent], ""),
+    );
+    Deno.env.set("THROUGHLINE_API_TOKEN", "service-token-test");
+    const service = await handleRequestResponse(
+      requestWithEvents(
+        [{ ...legacyEvent, id: "evt_00000000-0000-4000-8000-000000000005" }],
+        "Bearer service-token-test",
+      ),
+    );
+    assert(
+      anonymous.status === 202 && service.status === 202,
+      "Legacy events must be accepted",
+    );
+    assert(
+      !mock.requests.some((request) =>
+        request.url.includes("/throughline_internal_users?")
+      ),
+      "Anonymous and service events must not query the allowlist",
+    );
+    const inserts = mock.requests.filter((request) =>
+      request.url.includes("/throughline_product_events?")
+    );
+    assert(
+      inserts.every((request) =>
+        (request.body as Array<Record<string, unknown>>).every((row) =>
+          row.is_internal_user === null
+        )
+      ),
+      "Anonymous and service events must remain unknown",
+    );
+  } finally {
+    Deno.env.delete("THROUGHLINE_API_TOKEN");
+    mock.restore();
+  }
+});
+
+Deno.test("a 50-event batch validates distinct recording references once and persists atomically", async () => {
+  setTestEnvironment();
+  const mock = installFetchMock({ allowlist: "hit", recording: "owned" });
+  try {
+    const events = Array.from({ length: 50 }, (_, index) =>
+      schemaV2Event({
+        id: `evt_00000000-0000-4000-8000-${
+          String(index + 10).padStart(12, "0")
+        }`,
+        recording_id: index % 2 === 0 ? RECORDING_ID : SECOND_RECORDING_ID,
+      }));
+    const response = await handleRequestResponse(requestWithEvents(events));
+    assert(response.status === 202, "Expected accepted batch response");
+    assert(
+      mock.requests.filter((request) =>
+        request.url.includes("/throughline_internal_users?")
+      ).length === 1,
+      "Allowlist lookup must occur once per authenticated batch",
+    );
+    assert(
+      mock.requests.filter((request) =>
+        request.url.includes("/throughline_recordings?")
+      ).length === 1,
+      "Distinct recording references must use one ownership lookup",
+    );
+    const insertRequest = mock.requests.find((request) =>
+      request.url.includes("/throughline_product_events?")
+    );
+    assert(
+      (insertRequest?.body as Array<unknown>).length === 50,
+      "Validated batch must persist together",
+    );
+  } finally {
+    mock.restore();
+  }
+});
+
+Deno.test("an unowned recording in a batch rejects every event before persistence", async () => {
+  setTestEnvironment();
+  const mock = installFetchMock({ allowlist: "hit", recording: "partial" });
+  try {
+    const response = await handleRequestResponse(requestWithEvents([
+      schemaV2Event({ recording_id: RECORDING_ID }),
+      schemaV2Event({
+        id: "evt_00000000-0000-4000-8000-000000000006",
+        recording_id: SECOND_RECORDING_ID,
+      }),
+    ]));
+    assert(
+      response.status === 403,
+      "Unowned batch reference must reject the batch",
+    );
+    assert(
+      !mock.requests.some((request) =>
+        request.url.includes("/throughline_product_events?")
+      ),
+      "Unowned batch must not partially insert events",
+    );
   } finally {
     mock.restore();
   }

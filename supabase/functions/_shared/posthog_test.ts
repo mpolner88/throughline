@@ -62,8 +62,14 @@ Deno.test("PostHog batch contains only sanitized product properties", async () =
   if (event.event !== "recording_processed") {
     throw new Error("Wrong event name");
   }
-  if (event.uuid !== "123e4567-e89b-42d3-a456-426614174000") {
-    throw new Error("Wrong event UUID");
+  if (
+    event.uuid === "123e4567-e89b-42d3-a456-426614174000" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      .test(
+        event.uuid,
+      )
+  ) {
+    throw new Error("Event UUID must be keyed and pseudonymous");
   }
   if (event.properties["$process_person_profile"] !== true) {
     throw new Error("Signed-in event must be identified");
@@ -151,6 +157,51 @@ Deno.test("capture uses the batch endpoint and project token only in the body", 
     }
   }
   if (result.sent !== 1) throw new Error("Wrong sent count");
+});
+
+Deno.test("PostHog capture never serializes client identifiers or content through metadata or event UUIDs", async () => {
+  const rawSessionIdentifier = "00000000-0000-4000-8000-000000009991";
+  const privateMarkers = [
+    rawSessionIdentifier,
+    "person@example.test",
+    "private note body must not be analyzed",
+  ];
+  let requestBody = "";
+  const fetcher: typeof fetch = (_url, init) => {
+    requestBody = String(init?.body);
+    return Promise.resolve(new Response("ok", { status: 200 }));
+  };
+
+  await captureProductEventsInPostHog(
+    [{
+      ...signedInRow,
+      id: `evt_${rawSessionIdentifier}`,
+      session_id: rawSessionIdentifier,
+      app_version: rawSessionIdentifier,
+      build_number: rawSessionIdentifier,
+      properties: {
+        surface: "person@example.test",
+        raw_content: "private note body must not be analyzed",
+      },
+    }],
+    captureConfig,
+    fetcher,
+  );
+
+  for (const marker of privateMarkers) {
+    if (requestBody.includes(marker)) {
+      throw new Error("Private client value leaked into PostHog capture body");
+    }
+  }
+
+  const body = JSON.parse(requestBody);
+  const [event] = body.batch;
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      .test(event.uuid)
+  ) {
+    throw new Error("PostHog event UUID must be a keyed pseudonymous UUID");
+  }
 });
 
 Deno.test("account deletion requests person and historical event deletion by pseudonymous ID", async () => {

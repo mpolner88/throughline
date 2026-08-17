@@ -1,4 +1,6 @@
 import {
+  normalizeProductEventAppVersion,
+  normalizeProductEventBuildNumber,
   type ProductEventDistributionChannel,
   type ProductEventSchemaVersion,
   sanitizeProductEventProperties,
@@ -90,7 +92,10 @@ export function buildPostHogBatch(
       row.auth_user_id ?? row.session_id,
       config.analyticsIdSecret,
     );
-    const eventUuid = productEventUuid(row.id);
+    const eventUuid = await postHogEventUuid(
+      row.id,
+      config.analyticsIdSecret,
+    );
     const properties: Record<string, ProductEventProperty> = {
       ...sanitizeProductEventProperties(row.event_name, row.properties),
       platform: row.platform,
@@ -104,15 +109,17 @@ export function buildPostHogBatch(
       "$lib_version": "1",
     };
 
-    if (row.app_version) properties.app_version = row.app_version;
-    if (row.build_number) properties.build_number = row.build_number;
+    const appVersion = normalizeProductEventAppVersion(row.app_version);
+    const buildNumber = normalizeProductEventBuildNumber(row.build_number);
+    if (appVersion) properties.app_version = appVersion;
+    if (buildNumber) properties.build_number = buildNumber;
 
     return {
       event: row.event_name,
       distinct_id: distinctId,
       timestamp: row.occurred_at,
       properties,
-      ...(eventUuid ? { uuid: eventUuid } : {}),
+      uuid: eventUuid,
     };
   }));
 }
@@ -205,11 +212,40 @@ export async function deleteProductAnalyticsUserFromPostHog(
   };
 }
 
-function productEventUuid(eventId: string) {
-  const match = eventId.match(
-    /^evt_([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i,
+export async function postHogEventUuid(
+  eventId: string,
+  analyticsIdSecret: string,
+) {
+  const digest = await hmacSha256Hex(
+    "throughline:event:" + eventId,
+    analyticsIdSecret,
   );
-  return match?.[1]?.toLowerCase() ?? null;
+  const variant = "89ab"[Number.parseInt(digest.slice(16, 17), 16) % 4];
+  return digest.slice(0, 8) + "-" + digest.slice(8, 12) + "-4" +
+    digest.slice(13, 16) + "-" + variant + digest.slice(17, 20) + "-" +
+    digest.slice(20, 32);
+}
+
+async function hmacSha256Hex(value: string, analyticsIdSecret: string) {
+  if (!analyticsIdSecret) {
+    throw new Error("Analytics identifier secret is required");
+  }
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(analyticsIdSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(value),
+  );
+  return Array.from(new Uint8Array(signature))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function trimTrailingSlash(value: string) {

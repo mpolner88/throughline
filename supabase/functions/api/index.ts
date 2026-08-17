@@ -11,6 +11,8 @@ import {
   type ProductEventRow,
 } from "../_shared/posthog.ts";
 import {
+  normalizeProductEventAppVersion,
+  normalizeProductEventBuildNumber,
   normalizeProductEventContract,
   PRODUCT_EVENT_NAMES,
   ProductEventContractError,
@@ -374,10 +376,7 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
     throw new HttpError(400, "Submit between 1 and 50 product events");
   }
 
-  const isInternalUser = context?.authUserId
-    ? await lookupInternalUser(context.authUserId)
-    : null;
-  const rows: ProductEventRow[] = await Promise.all(candidates.map(async (candidate) => {
+  const normalizedEvents = candidates.map((candidate) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
       throw new HttpError(400, "Each product event must be an object");
     }
@@ -418,10 +417,6 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
           "A signed-in user is required for a recording reference",
         );
       }
-      await requireOwnedProductEventRecording(
-        contract.recording_id,
-        context.authUserId,
-      );
     }
 
     return {
@@ -431,14 +426,37 @@ async function handlePostProductEvents(req: Request, context: RequestContext | n
       occurred_at: occurredAt,
       event_name: eventName,
       platform: "ios",
-      app_version: limitedString(event.app_version, 40),
-      build_number: limitedString(event.build_number, 40),
+      app_version: normalizeProductEventAppVersion(event.app_version),
+      build_number: normalizeProductEventBuildNumber(event.build_number),
       schema_version: contract.schema_version,
       distribution_channel: contract.distribution_channel,
-      is_internal_user: isInternalUser,
       recording_id: contract.recording_id,
       properties: contract.properties,
     };
+  });
+
+  const isInternalUser = context?.authUserId
+    ? await lookupInternalUser(context.authUserId)
+    : null;
+  const recordingIds = [
+    ...new Set(
+      normalizedEvents.flatMap((event) =>
+        event.recording_id ? [event.recording_id] : []
+      ),
+    ),
+  ];
+  if (recordingIds.length) {
+    if (!context?.authUserId) {
+      throw new HttpError(
+        403,
+        "A signed-in user is required for a recording reference",
+      );
+    }
+    await requireOwnedProductEventRecordings(recordingIds, context.authUserId);
+  }
+  const rows: ProductEventRow[] = normalizedEvents.map((event) => ({
+    ...event,
+    is_internal_user: isInternalUser,
   }));
 
   await insertManyIgnoringDuplicates("throughline_product_events", rows);
@@ -460,11 +478,15 @@ async function lookupInternalUser(authUserId: string) {
   }
 }
 
-async function requireOwnedProductEventRecording(recordingId: string, authUserId: string) {
+async function requireOwnedProductEventRecordings(
+  recordingIds: string[],
+  authUserId: string,
+) {
   let rows: unknown;
   try {
+    const ids = recordingIds.map(encodeURIComponent).join(",");
     rows = await restRequest(
-      `/throughline_recordings?select=id&id=eq.${encodeURIComponent(recordingId)}&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`,
+      `/throughline_recordings?select=id&id=in.(${ids})&auth_user_id=eq.${encodeURIComponent(authUserId)}`,
     );
   } catch {
     throw new HttpError(503, "Recording attribution lookup is temporarily unavailable");
@@ -473,7 +495,8 @@ async function requireOwnedProductEventRecording(recordingId: string, authUserId
   if (!Array.isArray(rows)) {
     throw new HttpError(503, "Recording attribution lookup is temporarily unavailable");
   }
-  if (!rows.some((row) => row?.id === recordingId)) {
+  const ownedIds = new Set(rows.map((row) => row?.id));
+  if (recordingIds.some((recordingId) => !ownedIds.has(recordingId))) {
     throw new HttpError(403, "Recording reference is not owned by the authenticated account");
   }
 }
