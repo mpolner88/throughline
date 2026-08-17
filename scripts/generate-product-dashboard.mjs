@@ -3,6 +3,14 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
+import {
+  buildDashboardCanonicalSource,
+  buildDashboardReconciliationRows,
+  buildDashboardReconciliationSummary,
+  dashboardKpiDecisionStatus,
+  hasMeasurementAttributionContract,
+} from "./product-learning-report.mjs";
+
 const root = resolve(import.meta.dirname, "..");
 const canonicalPath = join(root, ".throughline", "product-learning", "latest.json");
 const externalPath = join(root, "product", "dashboard", "external-snapshot.json");
@@ -40,6 +48,12 @@ const activation = canonical.kpis?.activation_24h ?? {};
 const retention = canonical.kpis?.retention_days_2_7 ?? {};
 const failure = canonical.guardrails?.recording_failure_rate_7d ?? {};
 const quality = canonical.guardrails?.extraction_quality ?? {};
+const reconciliation = hasMeasurementAttributionContract(canonical)
+  ? canonical.processing_reconciliation
+  : undefined;
+const legacyReconciliation = reconciliation?.legacy_unattributed;
+const reconciliationRows = buildDashboardReconciliationRows(reconciliation);
+const reconciliationSummary = buildDashboardReconciliationSummary(reconciliation);
 const apple = external.apple;
 const canaries = external.canaries;
 
@@ -52,24 +66,7 @@ const canaryPassCount = Number(Boolean(canaries.auth?.passed)) + Number(Boolean(
 const overallStatus = canaryPassCount === 2 ? "HEALTHY · COLLECTING BASELINE" : "RELIABILITY INCIDENT";
 
 const sources = [
-  {
-    id: "canonical",
-    label: "Canonical Supabase product-learning report",
-    path: ".throughline/product-learning/latest.json",
-    query: {
-      engine: "Supabase aggregate export",
-      language: "sql",
-      sql: "select occurred_at, event_name, session_id, auth_user_id, properties from public.throughline_product_events where occurred_at >= now() - interval '35 days' order by occurred_at asc;",
-      description: "Privacy-safe aggregate product events and derived cohorts produced by product:weekly.",
-      executed_at: canonical.generated_at,
-      filters: ["Demo promotion excluded from first real activation", "No raw user or session identifiers", "Trailing 7-day reliability window"],
-      metric_definitions: [
-        "24-hour activation = signed-in users with a first non-demo home recording_processed within 24 hours / users with auth_succeeded.",
-        "Days 2-7 retention = mature activated users with another recording_processed event 48 hours to 7 days after first activation / mature activated users.",
-        "Recording success rate = 1 - recording_failed / (recording_failed + recording_processed)."
-      ]
-    }
-  },
+  buildDashboardCanonicalSource(canonical),
   {
     id: "apple",
     label: "App Store Connect aggregate analytics",
@@ -131,6 +128,12 @@ const snapshot = {
       retention_rate: percent(retention.rate),
       recording_success_rate: recordingSuccessRate,
       recording_outcomes: failure.outcomes ?? 0,
+      reconciliation_rate: reconciliationSummary.rate,
+      reconciled_outcomes: reconciliationSummary.matched,
+      reconciliation_outcomes: reconciliationSummary.total,
+      public_baseline_eligible_outcomes: reconciliationSummary.available
+        ? reconciliation?.public_baseline?.eligible_outcomes ?? 0
+        : null,
       canaries_passed: canaryPassCount,
       canaries_total: 2
     }],
@@ -150,6 +153,7 @@ const snapshot = {
       entities: row.entities,
       events: row.events
     })),
+    processing_reconciliation: reconciliationRows,
     acquisition_days: [apple.prior_day, apple.latest_day].map((row) => ({
       date: row.date,
       first_time_downloads: row.first_time_downloads,
@@ -176,14 +180,36 @@ const snapshot = {
         metric: "24-hour activation",
         current: `${activation.numerator ?? 0}/${activation.denominator ?? 0} (${Math.round(percent(activation.rate) * 100)}%)`,
         target_or_floor: "5 users to interpret; 20 decision-grade",
-        decision_status: canonical.data_readiness?.activation_ready ? "Interpretable" : "Collecting baseline",
+        decision_status: dashboardKpiDecisionStatus(
+          canonical.data_readiness?.activation_ready,
+          canonical.data_readiness?.product_kpi_scope,
+        ),
         freshness: canonical.generated_at
       },
       {
         metric: "Days 2-7 retention",
         current: `${retention.numerator ?? 0}/${retention.denominator ?? 0}`,
         target_or_floor: "5 mature users to interpret; 20 decision-grade",
-        decision_status: canonical.data_readiness?.retention_ready ? "Interpretable" : "Collecting baseline",
+        decision_status: dashboardKpiDecisionStatus(
+          canonical.data_readiness?.retention_ready,
+          canonical.data_readiness?.product_kpi_scope,
+        ),
+        freshness: canonical.generated_at
+      },
+      {
+        metric: "Processing reconciliation",
+        current: reconciliationSummary.current,
+        target_or_floor: "Controlled canaries must reach 100%",
+        decision_status: reconciliationSummary.status,
+        freshness: canonical.generated_at
+      },
+      {
+        metric: "Legacy / unattributed processing coverage",
+        current: reconciliationSummary.available
+          ? `${legacyReconciliation?.outcome_events ?? 0} outcome events; ${legacyReconciliation?.final_recordings_without_v2_upload_marker ?? 0} final recordings`
+          : "not yet generated",
+        target_or_floor: "Excluded from post-cutover denominator",
+        decision_status: reconciliationSummary.available ? "Coverage only" : "Unavailable",
         freshness: canonical.generated_at
       },
       {
@@ -216,7 +242,7 @@ const manifest = {
       id: "activation_evidence",
       dataset: "objective",
       sourceId: "canonical",
-      description: "Newly signed-in users observed; five are required before activation is interpretable.",
+      description: "Newly signed-in users observed in mixed operational coverage; cohort and reconciliation gates must pass before interpretation.",
       metrics: [
         { label: "Signed-in users", field: "signed_in_users", format: "number" },
         { label: "Interpretation floor", field: "activation_floor", format: "number" }
@@ -228,7 +254,7 @@ const manifest = {
       sourceId: "canonical",
       description: "First non-demo home recording processed within 24 hours of sign-in.",
       metrics: [
-        { label: "24-hour activation", field: "activation_rate", format: "percent" },
+        { label: "Operational activation (mixed)", field: "activation_rate", format: "percent" },
         { label: "Activated users", field: "activated_users", format: "number" }
       ]
     },
@@ -236,7 +262,7 @@ const manifest = {
       id: "retention_evidence",
       dataset: "objective",
       sourceId: "canonical",
-      description: "Activated users old enough to evaluate days 2-7 retention; five are required to interpret.",
+      description: "Mature activated users in mixed operational coverage; this is not a public retention baseline.",
       metrics: [
         { label: "Mature activated users", field: "mature_activated_users", format: "number" },
         { label: "Interpretation floor", field: "retention_floor", format: "number" }
@@ -250,6 +276,17 @@ const manifest = {
       metrics: [
         { label: "Recording success", field: "recording_success_rate", format: "percent" },
         { label: "Outcomes observed", field: "recording_outcomes", format: "number" }
+      ]
+    },
+    {
+      id: "reconciliation",
+      dataset: "objective",
+      sourceId: "canonical",
+      description: "State-consistent schema-v2 processing outcomes matched to durable recordings; legacy rows are excluded.",
+      metrics: [
+        { label: "Correctly reconciled", field: "reconciliation_rate", format: "percent" },
+        { label: "Matched outcomes", field: "reconciled_outcomes", format: "number" },
+        { label: "Public-baseline eligible", field: "public_baseline_eligible_outcomes", format: "number" }
       ]
     },
     {
@@ -301,6 +338,24 @@ const manifest = {
   ],
   tables: [
     {
+      id: "processing_reconciliation",
+      title: "Post-cutover processing reconciliation by cohort",
+      subtitle: "Five cohorts stay separate; legacy rows are excluded and never matched heuristically.",
+      dataset: "processing_reconciliation",
+      sourceId: "canonical",
+      density: "compact",
+      defaultSort: { field: "cohort", direction: "asc" },
+      columns: [
+        { field: "cohort", label: "Cohort", type: "text" },
+        { field: "matched", label: "Matched", type: "number" },
+        { field: "event_only", label: "Event only", type: "number" },
+        { field: "durable_only", label: "Durable only", type: "number" },
+        { field: "state_mismatch", label: "State mismatch", type: "number" },
+        { field: "duplicate", label: "Duplicate", type: "number" },
+        { field: "correct_rate", label: "Correct rate", type: "percent" }
+      ]
+    },
+    {
       id: "operating_health",
       title: "KPI readiness and source health",
       subtitle: "A metric can be healthy but still not decision-grade.",
@@ -326,12 +381,12 @@ const manifest = {
     {
       id: "okr_heading",
       type: "markdown",
-      body: "## Objective 1 · Establish repeatable product value\n\nActivation and retention remain in baseline collection; reliability is healthy on current production checks."
+      body: "## Objective 1 · Establish repeatable product value\n\nActivation and retention remain mixed operational coverage, not a public baseline. The first honest processing baseline begins with post-cutover schema-v2 reconciliation."
     },
     {
       id: "okr_metrics",
       type: "metric-strip",
-      cardIds: ["activation_evidence", "activation_rate", "retention_evidence", "reliability"]
+      cardIds: ["activation_evidence", "activation_rate", "retention_evidence", "reliability", "reconciliation"]
     },
     {
       id: "funnel_heading",
@@ -342,6 +397,16 @@ const manifest = {
       id: "funnel",
       type: "chart",
       chartId: "value_path"
+    },
+    {
+      id: "reconciliation_heading",
+      type: "markdown",
+      body: "## Processing evidence"
+    },
+    {
+      id: "reconciliation_table",
+      type: "table",
+      tableId: "processing_reconciliation"
     },
     {
       id: "growth_heading",
@@ -371,7 +436,7 @@ const manifest = {
     {
       id: "definitions",
       type: "markdown",
-      body: "## Reading the dashboard\n\n**Healthy** describes current reliability. **Interpretable** begins at five eligible users. **Decision-grade** begins at 20. Missing or immature downstream events are coverage gaps—not proven user drop-off. All values are aggregate-only."
+      body: "## Reading the dashboard\n\n**Healthy** describes current reliability. **Interpretable** begins at five eligible users. **Decision-grade** begins at 20. The August 17 snapshot remains mixed, legacy, and non-decision-grade. Only external, confirmed non-internal, App Store, schema-v2 matched outcomes enter the public-baseline population. All values are aggregate-only."
     }
   ]
 };

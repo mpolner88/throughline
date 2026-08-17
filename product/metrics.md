@@ -8,10 +8,39 @@ Do not treat a zero or a large percentage swing as a product conclusion until th
 
 ## Population and evidence rules
 
-- Once cohort attribution exists, report `internal` and `external` populations separately. Do not combine them into a public-product claim.
+- Report the five measurement cohorts separately: `debug`, `internal_dogfood`, `external_testflight`, `external_app_store`, and `unknown`. Do not combine them into a public-product claim.
 - The August 17 mixed aggregate snapshot is non-decision-grade: event versions and `surface` coverage differ, and its event and durable-recording populations have not yet been reconciled.
 - Before interpreting any processing outcome, reconcile its relevant event population with durable recordings and report the unmatched remainder. A recorded event alone is not proof of durable processing.
 - A metric that lacks the required cohort, coverage, reconciliation, or readiness floor is a coverage finding, not a product outcome.
+
+## Processing attribution and reconciliation
+
+The first honest processing baseline begins after the schema-v2 cutover. Schema-v1 outcomes remain `legacy_unattributed` and are never matched by account, timestamp, app version, or any other heuristic.
+
+### Cohort classification
+
+- A schema-v2 outcome with `distribution_channel = debug` is `debug`, including Simulator and verified Xcode traffic.
+- A non-debug schema-v2 outcome with `is_internal_user = true` is `internal_dogfood`.
+- A schema-v2 outcome with `is_internal_user = false` and `distribution_channel = testflight` is `external_testflight`.
+- A schema-v2 outcome with `is_internal_user = false` and `distribution_channel = app_store` is `external_app_store`.
+- Every remaining schema-v2 outcome is `unknown`; null attribution is never treated as external.
+- A durable-only final recording inherits its cohort only from an exact linked schema-v2 `recording_uploaded` marker. A final recording without that marker stays in legacy/unattributed coverage; account or timestamp proximity never supplies a cohort.
+
+### Mutually exclusive reconciliation populations
+
+- `matched`: one schema-v2 outcome event has a validated recording reference and its outcome agrees with the durable final processing state.
+- `event_only`: a schema-v2 outcome has no available durable recording. This includes a null link after deletion; the report does not reconstruct it.
+- `durable_only`: a durable final recording has an exact linked schema-v2 `recording_uploaded` marker but no linked schema-v2 outcome event.
+- `state_mismatch`: one linked schema-v2 outcome disagrees with the durable processing state.
+- `duplicate`: more than one schema-v2 outcome event references the same recording. Count the recording once in the denominator and report excess duplicate events separately.
+
+`recording_processed` agrees only with a durable `processed` state. `recording_failed` agrees with `needs_transcript`, `needs_extractor`, `transcription_failed`, `extraction_failed`, or `processing_failed`; when the event carries a specific final status, it must agree with the durable status. `uploaded` is not a final durable outcome.
+
+The correct reconciliation rate is:
+
+`matched / (matched + event_only + durable_only + state_mismatch + duplicate)`
+
+Only `external_app_store` outcomes that are confirmed non-internal, schema v2, and `matched` enter the public-baseline population. Final recordings without a schema-v2 upload marker and schema-v1 outcome events remain separate legacy/unattributed coverage and never enter the denominator. TestFlight may validate the pipeline but never establishes a public baseline. Private join fields may be used in memory, but reports and dashboards serialize aggregate counts only and never identifiers or user content.
 
 ## Primary KPIs
 

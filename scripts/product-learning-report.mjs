@@ -5,6 +5,48 @@ import { fileURLToPath } from "node:url";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PAGE_SIZE = 1000;
 const DEFAULT_WINDOW_DAYS = 35;
+const REPORT_SCHEMA_VERSION = 2;
+const REPORT_QUERY_CONTRACT = "measurement_attribution_v2";
+const RECONCILIATION_COHORTS = [
+  "debug",
+  "internal_dogfood",
+  "external_testflight",
+  "external_app_store",
+  "unknown",
+];
+const OUTCOME_EVENT_NAMES = new Set(["recording_processed", "recording_failed"]);
+const RECONCILIATION_EVENT_NAMES = new Set([
+  "recording_uploaded",
+  ...OUTCOME_EVENT_NAMES,
+]);
+const FINAL_RECORDING_STATUSES = new Set([
+  "processed",
+  "needs_transcript",
+  "needs_extractor",
+  "transcription_failed",
+  "extraction_failed",
+  "processing_failed",
+]);
+const FAILED_RECORDING_STATUSES = new Set([
+  "needs_transcript",
+  "needs_extractor",
+  "transcription_failed",
+  "extraction_failed",
+  "processing_failed",
+]);
+const AUTH_MODES = new Set(["apple", "google", "create_account", "sign_in"]);
+const ACCOUNT_STATES = new Set(["new", "existing", "unknown"]);
+const PRODUCT_FEEDBACK_SOURCES = new Set(["ios", "app_store", "email", "x", "reddit", "support"]);
+const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
+const PRODUCT_FEEDBACK_STATUSES = new Set(["new", "reviewing", "planned", "shipped", "closed"]);
+const EXTRACTION_ISSUE_TYPES = new Set([
+  "missed_actions",
+  "wrong_importance",
+  "invented_detail",
+  "weak_summary",
+  "transcript_error",
+  "missing",
+]);
 const FUNNEL = [
   "first_opened",
   "onboarding_started",
@@ -68,16 +110,6 @@ function round(value, digits = 3) {
   return Math.round(value * multiplier) / multiplier;
 }
 
-function redactFeedback(value) {
-  return String(value ?? "")
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email redacted]")
-    .replace(/https?:\/\/\S+/gi, "[url redacted]")
-    .replace(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g, "[phone redacted]")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 280);
-}
-
 function unique(values) {
   return new Set(values.filter(Boolean));
 }
@@ -87,7 +119,11 @@ function firstEvent(events, eventName) {
 }
 
 function eventSurface(event) {
-  return event.properties?.surface ?? null;
+  return eventProperty(event, "surface");
+}
+
+function eventProperty(event, key) {
+  return event.properties?.[key] ?? event[key] ?? null;
 }
 
 function isFirstRealRecording(event) {
@@ -111,10 +147,297 @@ function formatCount(value) {
   return Number(value ?? 0).toLocaleString("en-US");
 }
 
+function safeCategory(value, allowed) {
+  return typeof value === "string" && allowed.has(value) ? value : "unknown";
+}
+
+function countByAllowed(rows, key, allowed) {
+  const counts = {};
+  for (const row of rows) {
+    const category = safeCategory(row?.[key], allowed);
+    counts[category] = (counts[category] ?? 0) + 1;
+  }
+  return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function emptyReconciliationCohort() {
+  return {
+    matched: 0,
+    event_only: 0,
+    durable_only: 0,
+    state_mismatch: 0,
+    duplicate: 0,
+  };
+}
+
+function eventCohort(event) {
+  if (event.distribution_channel === "debug") return "debug";
+  if (event.is_internal_user === true) return "internal_dogfood";
+  if (event.is_internal_user === false && event.distribution_channel === "testflight") {
+    return "external_testflight";
+  }
+  if (event.is_internal_user === false && event.distribution_channel === "app_store") {
+    return "external_app_store";
+  }
+  return "unknown";
+}
+
+function eventGroupCohort(events) {
+  const cohorts = new Set(events.map(eventCohort));
+  return cohorts.size === 1 ? [...cohorts][0] : "unknown";
+}
+
+function isStateConsistent(event, recording) {
+  const durableStatus = recording.processing_status;
+  const eventStatus = eventProperty(event, "processing_status");
+  if (event.event_name === "recording_processed") {
+    return durableStatus === "processed" &&
+      (eventStatus === null || eventStatus === "processed" || eventStatus === "unknown");
+  }
+  if (event.event_name !== "recording_failed" || !FAILED_RECORDING_STATUSES.has(durableStatus)) {
+    return false;
+  }
+  return eventStatus === null || eventStatus === "unknown" || eventStatus === durableStatus;
+}
+
+export function buildProcessingReconciliation({ events = [], recordings = [] }) {
+  const cohorts = Object.fromEntries(
+    RECONCILIATION_COHORTS.map((cohort) => [cohort, emptyReconciliationCohort()]),
+  );
+  const recordingsById = new Map(
+    recordings
+      .filter((recording) => typeof recording?.id === "string" && recording.id)
+      .map((recording) => [recording.id, recording]),
+  );
+  const eventsByRecording = new Map();
+  const uploadEventsByRecording = new Map();
+  let legacyOutcomeEvents = 0;
+  let finalRecordingsWithoutV2UploadMarker = 0;
+  let duplicateEventExcess = 0;
+
+  const add = (cohort, population) => {
+    cohorts[cohort][population] += 1;
+  };
+
+  for (const event of events) {
+    if (
+      event.schema_version === 2 && event.event_name === "recording_uploaded" &&
+      typeof event.recording_id === "string" && event.recording_id
+    ) {
+      const existing = uploadEventsByRecording.get(event.recording_id) ?? [];
+      existing.push(event);
+      uploadEventsByRecording.set(event.recording_id, existing);
+    }
+    if (!OUTCOME_EVENT_NAMES.has(event.event_name)) continue;
+    if (event.schema_version !== 2) {
+      legacyOutcomeEvents += 1;
+      continue;
+    }
+    if (typeof event.recording_id !== "string" || !event.recording_id) {
+      add(eventCohort(event), "event_only");
+      continue;
+    }
+    const existing = eventsByRecording.get(event.recording_id) ?? [];
+    existing.push(event);
+    eventsByRecording.set(event.recording_id, existing);
+  }
+
+  for (const [recordingId, outcomeEvents] of eventsByRecording) {
+    const cohort = eventGroupCohort(outcomeEvents);
+    if (outcomeEvents.length > 1) {
+      add(cohort, "duplicate");
+      duplicateEventExcess += outcomeEvents.length - 1;
+      continue;
+    }
+    const durable = recordingsById.get(recordingId);
+    if (!durable) {
+      add(cohort, "event_only");
+    } else if (isStateConsistent(outcomeEvents[0], durable)) {
+      add(cohort, "matched");
+    } else {
+      add(cohort, "state_mismatch");
+    }
+  }
+
+  for (const durable of recordingsById.values()) {
+    if (!FINAL_RECORDING_STATUSES.has(durable.processing_status) || eventsByRecording.has(durable.id)) {
+      continue;
+    }
+    const uploadMarkers = uploadEventsByRecording.get(durable.id);
+    if (!uploadMarkers?.length) {
+      finalRecordingsWithoutV2UploadMarker += 1;
+      continue;
+    }
+    const cohort = eventGroupCohort(uploadMarkers);
+    add(cohort, "durable_only");
+  }
+
+  const finalizedCohorts = Object.fromEntries(RECONCILIATION_COHORTS.map((cohort) => {
+    const values = cohorts[cohort];
+    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
+    return [cohort, {
+      ...values,
+      total,
+      correctly_reconciled_rate: round(percentage(values.matched, total)),
+    }];
+  }));
+  const populations = {
+    matched: 0,
+    event_only: 0,
+    durable_only: 0,
+    state_mismatch: 0,
+    duplicate: 0,
+    total: 0,
+  };
+  for (const cohort of Object.values(finalizedCohorts)) {
+    for (const population of ["matched", "event_only", "durable_only", "state_mismatch", "duplicate"]) {
+      populations[population] += cohort[population];
+    }
+    populations.total += cohort.total;
+  }
+
+  return {
+    basis: "schema_v2_recording_reference_and_upload_marker_only",
+    populations,
+    correctly_reconciled_rate: round(percentage(populations.matched, populations.total)),
+    duplicate_event_excess: duplicateEventExcess,
+    cohorts: finalizedCohorts,
+    legacy_unattributed: {
+      outcome_events: legacyOutcomeEvents,
+      final_recordings_without_v2_upload_marker: finalRecordingsWithoutV2UploadMarker,
+    },
+    public_baseline: {
+      eligible_outcomes: finalizedCohorts.external_app_store.matched,
+      rule: "external non-internal app_store schema-v2 matched outcomes only",
+    },
+  };
+}
+
+export function buildDashboardReconciliationRows(reconciliation) {
+  if (!reconciliation?.cohorts || typeof reconciliation.cohorts !== "object") return [];
+  const labels = {
+    debug: "Debug",
+    internal_dogfood: "Internal dogfood",
+    external_testflight: "External TestFlight",
+    external_app_store: "External App Store",
+    unknown: "Unknown",
+  };
+  return RECONCILIATION_COHORTS.map((cohort) => {
+    const values = reconciliation.cohorts?.[cohort] ?? {};
+    const count = (key) => Number.isFinite(values[key]) ? values[key] : 0;
+    return {
+      cohort: labels[cohort],
+      matched: count("matched"),
+      event_only: count("event_only"),
+      durable_only: count("durable_only"),
+      state_mismatch: count("state_mismatch"),
+      duplicate: count("duplicate"),
+      total: count("total"),
+      correct_rate: Number.isFinite(values.correctly_reconciled_rate)
+        ? values.correctly_reconciled_rate
+        : null,
+    };
+  });
+}
+
+export function dashboardKpiDecisionStatus(ready, evidenceScope) {
+  if (evidenceScope !== "post_cutover_matched") {
+    return "Mixed coverage";
+  }
+  return ready ? "Interpretable" : "Collecting baseline";
+}
+
+export function buildDashboardReconciliationSummary(reconciliation) {
+  const matched = reconciliation?.populations?.matched;
+  const total = reconciliation?.populations?.total;
+  if (!Number.isFinite(matched) || !Number.isFinite(total)) {
+    return {
+      available: false,
+      rate: null,
+      matched: null,
+      total: null,
+      current: "not yet generated",
+      status: "Unavailable",
+    };
+  }
+  const rate = total > 0
+    ? (Number.isFinite(reconciliation.correctly_reconciled_rate)
+      ? reconciliation.correctly_reconciled_rate
+      : round(matched / total))
+    : null;
+  return {
+    available: true,
+    rate,
+    matched,
+    total,
+    current: rate === null
+      ? "collecting baseline (0 outcomes)"
+      : `${matched}/${total} (${Math.round(rate * 100)}%)`,
+    status: total > 0 ? "Post-cutover baseline" : "Collecting baseline",
+  };
+}
+
+export function hasMeasurementAttributionContract(canonical = {}) {
+  return canonical.report_schema_version === REPORT_SCHEMA_VERSION &&
+    canonical.query_contract === REPORT_QUERY_CONTRACT;
+}
+
+export function buildDashboardCanonicalSource(canonical = {}) {
+  const source = {
+    id: "canonical",
+    label: "Canonical Supabase product-learning report",
+    path: ".throughline/product-learning/latest.json",
+  };
+  const isCurrentContract = hasMeasurementAttributionContract(canonical);
+
+  if (!isCurrentContract) {
+    return {
+      ...source,
+      query: {
+        engine: "Local compatibility projection (not executed)",
+        language: "sql",
+        sql: "select cast(null as text) as unavailable where false; -- SQL-equivalent compatibility signature only; no query was executed",
+        executed: false,
+        implementation: "Non-executed SQL-equivalent compatibility projection required by the portable dashboard source schema.",
+        description: "The query contract was not embedded in this legacy report, so no Task 5 query is attributed to it; the SQL-equivalent signature documents the empty compatibility projection and was not executed.",
+        filters: ["Legacy mixed coverage", "No Task 5 reconciliation interpretation"],
+        metric_definitions: ["Legacy aggregate values remain descriptive only; missing Task 5 fields are unavailable, not zero."],
+      },
+    };
+  }
+
+  return {
+    ...source,
+    query: {
+      engine: "Supabase PostgREST plus local privacy-safe aggregate transform",
+      language: "sql",
+      sql: [
+        "-- SQL-equivalent signatures for the PostgREST requests below; the event-to-durable join runs only in private local process memory.",
+        "select event_name, auth_user_id, session_id, occurred_at, schema_version, distribution_channel, is_internal_user, recording_id, properties->>'surface' as surface, properties->>'processing_status' as processing_status, properties->>'mode' as mode, properties->>'account_state' as account_state, properties->>'state' as state from public.throughline_product_events where occurred_at >= :window_start order by occurred_at, id;",
+        "select id, processing_status from public.throughline_recordings where created_at >= :window_start order by created_at, id;",
+        "select id, processing_status from public.throughline_recordings where id in (:linked_recording_id_chunk) order by created_at, id;",
+        "select source, category, contact_allowed, status from public.throughline_product_feedback where created_at >= :window_start order by created_at desc, id desc;",
+        "select answers->'quality_score' as quality_score, answers->'issue_types' as issue_types, answers->'agent_ready' as agent_ready from public.throughline_feedback where created_at >= :window_start order by created_at desc, id desc;",
+      ].join("\n"),
+      description: "Restricted REST projections feed aggregate product metrics plus a private in-memory event-to-durable reconciliation; row-level join fields are never serialized into report data.",
+      executed_at: canonical.generated_at,
+      filters: ["Demo promotion excluded from first real activation", "Aggregate output only", "Trailing 7-day reliability window", "Schema-v2 references only; no legacy heuristic join"],
+      tables_used: ["throughline_product_events", "throughline_recordings", "throughline_product_feedback", "throughline_feedback"],
+      metric_definitions: [
+        "24-hour activation = signed-in users with a first non-demo home recording_processed within 24 hours / users with auth_succeeded.",
+        "Days 2-7 retention = mature activated users with another recording_processed event 48 hours to 7 days after first activation / mature activated users.",
+        "Recording success rate = 1 - recording_failed / (recording_failed + recording_processed).",
+        "Correct reconciliation rate = matched state-consistent schema-v2 outcomes / matched, event-only, durable-only, mismatch, and duplicate outcomes.",
+      ],
+    },
+  };
+}
+
 export function buildWeeklySnapshot({
-  events,
-  productFeedback,
-  extractionFeedback,
+  events = [],
+  recordings = [],
+  productFeedback = [],
+  extractionFeedback = [],
   reportAt = new Date(),
 }) {
   const now = asDate(reportAt) ?? new Date();
@@ -169,9 +492,9 @@ export function buildWeeklySnapshot({
     );
     const onboardingPath = completedDemoBeforeAuth ? "demo_then_auth" : "auth_without_demo";
     activationByOnboardingPath[onboardingPath].denominator += 1;
-    const authMode = auth.properties?.mode ?? "unknown";
+    const authMode = safeCategory(eventProperty(auth, "mode"), AUTH_MODES);
     authSucceededByMode[authMode] = (authSucceededByMode[authMode] ?? 0) + 1;
-    const accountState = auth.properties?.account_state ?? "unknown";
+    const accountState = safeCategory(eventProperty(auth, "account_state"), ACCOUNT_STATES);
     authSucceededByAccountState[accountState] =
       (authSucceededByAccountState[accountState] ?? 0) + 1;
     const processed = userEvents.find(
@@ -219,7 +542,7 @@ export function buildWeeklySnapshot({
   const homeViewedByState = {};
   for (const state of ["empty", "populated"]) {
     const viewers = normalizedEvents.filter(
-      (event) => event.event_name === "home_viewed" && event.properties?.state === state,
+      (event) => event.event_name === "home_viewed" && eventProperty(event, "state") === state,
     );
     homeViewedByState[state] = unique(
       viewers.map((event) => event.auth_user_id ?? event.session_id),
@@ -227,7 +550,12 @@ export function buildWeeklySnapshot({
   }
 
   const extractionAnswers = extractionFeedback
-    .map((row) => row.feedback?.answers ?? row.answers ?? null)
+    .map((row) => row.feedback?.answers ?? row.answers ?? (
+      Object.hasOwn(row, "quality_score") || Object.hasOwn(row, "issue_types") ||
+        Object.hasOwn(row, "agent_ready")
+        ? row
+        : null
+    ))
     .filter(Boolean);
   const qualityScores = extractionAnswers
     .map((answers) => Number(answers.quality_score))
@@ -235,19 +563,22 @@ export function buildWeeklySnapshot({
   const issueTypes = {};
   for (const answers of extractionAnswers) {
     for (const issue of Array.isArray(answers.issue_types) ? answers.issue_types : []) {
-      issueTypes[issue] = (issueTypes[issue] ?? 0) + 1;
+      const safeIssue = safeCategory(issue, EXTRACTION_ISSUE_TYPES);
+      issueTypes[safeIssue] = (issueTypes[safeIssue] ?? 0) + 1;
     }
   }
 
-  const feedbackInbox = productFeedback.map((feedback) => ({
-    id: feedback.id,
-    created_at: feedback.created_at,
-    source: feedback.source,
-    category: feedback.category,
-    status: feedback.status,
-    contact_allowed: Boolean(feedback.contact_allowed),
-    excerpt: redactFeedback(feedback.message),
-  }));
+  const productFeedbackAggregate = {
+    total: productFeedback.length,
+    by_category: countByAllowed(productFeedback, "category", PRODUCT_FEEDBACK_CATEGORIES),
+    by_source: countByAllowed(productFeedback, "source", PRODUCT_FEEDBACK_SOURCES),
+    by_status: countByAllowed(productFeedback, "status", PRODUCT_FEEDBACK_STATUSES),
+    contact_allowed: productFeedback.filter((feedback) => feedback.contact_allowed === true).length,
+  };
+  const processingReconciliation = buildProcessingReconciliation({
+    events: normalizedEvents,
+    recordings,
+  });
 
   const observedFunnelEvents = FUNNEL.filter((eventName) => eventCounts[eventName]).length;
   const activationReady = activationDenominator >= 5;
@@ -258,7 +589,7 @@ export function buildWeeklySnapshot({
   } else if (!activationReady) {
     recommendations.push("Collect at least five newly signed-in users before treating activation movement as directional.");
   }
-  if (!feedbackInbox.length) {
+  if (!productFeedback.length) {
     recommendations.push("Keep the existing feedback entry point visible; do not add a more aggressive prompt until real usage grows.");
   }
   if (observedFunnelEvents < FUNNEL.length) {
@@ -266,6 +597,8 @@ export function buildWeeklySnapshot({
   }
 
   return {
+    report_schema_version: REPORT_SCHEMA_VERSION,
+    query_contract: REPORT_QUERY_CONTRACT,
     generated_at: now.toISOString(),
     data_readiness: {
       status: activationReady ? "directional" : "collecting_baseline",
@@ -276,6 +609,9 @@ export function buildWeeklySnapshot({
       expected_funnel_events: FUNNEL.length,
       activation_ready: activationReady,
       retention_ready: retentionReady,
+      product_kpi_scope: "mixed_operational_coverage_not_public_baseline",
+      august_17_snapshot: "mixed_legacy_non_decision_grade",
+      honest_processing_baseline: "post_cutover_schema_v2_only",
     },
     kpis: {
       activation_24h: {
@@ -303,7 +639,8 @@ export function buildWeeklySnapshot({
       funnel,
       event_counts: eventCounts,
       home_viewed_by_state: homeViewedByState,
-      new_product_feedback: feedbackInbox.filter((item) => item.status === "new").length,
+      new_product_feedback: productFeedbackAggregate.by_status.new ?? 0,
+      product_feedback: productFeedbackAggregate,
     },
     guardrails: {
       recording_failure_rate_7d: {
@@ -321,7 +658,7 @@ export function buildWeeklySnapshot({
         issue_types: issueTypes,
       },
     },
-    feedback_inbox: feedbackInbox,
+    processing_reconciliation: processingReconciliation,
     recommendations,
   };
 }
@@ -333,6 +670,8 @@ export function renderMarkdown(snapshot) {
   const retention = snapshot.kpis.retention_days_2_7;
   const failure = snapshot.guardrails.recording_failure_rate_7d;
   const quality = snapshot.guardrails.extraction_quality;
+  const reconciliation = snapshot.processing_reconciliation;
+  const productFeedback = snapshot.drivers.product_feedback;
   const lines = [
     "# Throughline weekly product evidence",
     "",
@@ -352,6 +691,7 @@ export function renderMarkdown(snapshot) {
     `- Home viewers by state: ${JSON.stringify(snapshot.drivers.home_viewed_by_state)}`,
     `- Weekly activated users: ${formatCount(snapshot.kpis.weekly_activated_users)}`,
     `- Days 2–7 activated retention: ${formatRate(retention.rate)} (${retention.numerator}/${retention.denominator})`,
+    `- Scope: mixed operational coverage, not a public-product baseline; the August 17 snapshot remains mixed and legacy`,
     "",
     "## Funnel coverage",
     "",
@@ -359,25 +699,61 @@ export function renderMarkdown(snapshot) {
     "| --- | ---: | ---: |",
     ...snapshot.drivers.funnel.map((step) => `| \`${step.event}\` | ${step.entities} | ${step.events} |`),
     "",
+    "## Processing reconciliation",
+    "",
+    `Post-cutover schema-v2 outcomes only; legacy rows are never joined heuristically. Correctly reconciled: ${formatRate(reconciliation.correctly_reconciled_rate)} (${reconciliation.populations.matched}/${reconciliation.populations.total}).`,
+    "",
+    "| Cohort | Matched | Event only | Durable only | State mismatch | Duplicate | Total | Correct rate |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ...RECONCILIATION_COHORTS.map((cohort) => {
+      const values = reconciliation.cohorts[cohort];
+      return `| ${cohort.replaceAll("_", " ")} | ${values.matched} | ${values.event_only} | ${values.durable_only} | ${values.state_mismatch} | ${values.duplicate} | ${values.total} | ${formatRate(values.correctly_reconciled_rate)} |`;
+    }),
+    "",
+    `- Legacy v1 unattributed outcome rows: ${formatCount(reconciliation.legacy_unattributed.outcome_events)}`,
+    `- Final durable recordings without a schema-v2 upload marker: ${formatCount(reconciliation.legacy_unattributed.final_recordings_without_v2_upload_marker)}`,
+    `- Public-baseline eligible outcomes: ${formatCount(reconciliation.public_baseline.eligible_outcomes)} (external, confirmed non-internal, App Store, schema v2, and matched only)`,
+    "",
     "## Guardrails",
     "",
     `- Recording failure rate, trailing 7 days: ${formatRate(failure.rate)} (${failure.failed}/${failure.outcomes})`,
     `- Extraction quality responses: ${quality.responses}; average: ${quality.average_score ?? "not available"}; scores ≤2: ${quality.scores_two_or_lower}; agent-not-ready: ${quality.agent_not_ready}`,
     `- Extraction issue types: ${Object.keys(quality.issue_types).length ? JSON.stringify(quality.issue_types) : "none reported"}`,
     "",
-    "## Product feedback inbox",
+    "## Product feedback intake",
     "",
+    `- Aggregate submissions: ${formatCount(productFeedback.total)}; new: ${formatCount(productFeedback.by_status.new ?? 0)}; contact allowed: ${formatCount(productFeedback.contact_allowed)}`,
+    `- By category: ${Object.keys(productFeedback.by_category).length ? JSON.stringify(productFeedback.by_category) : "none reported"}`,
+    `- By source: ${Object.keys(productFeedback.by_source).length ? JSON.stringify(productFeedback.by_source) : "none reported"}`,
   ];
-  if (snapshot.feedback_inbox.length) {
-    for (const item of snapshot.feedback_inbox) {
-      lines.push(`- ${item.created_at} · ${item.category} · ${item.status} · ${item.excerpt}`);
-    }
-  } else {
-    lines.push("No product-feedback submissions yet.");
-  }
   lines.push("", "## Recommended next actions", "");
   for (const recommendation of snapshot.recommendations) lines.push(`- ${recommendation}`);
   return `${lines.join("\n")}\n`;
+}
+
+async function fetchReconciliationRecordings(events, earliest, config) {
+  const select = "id,processing_status";
+  const windowRows = await fetchRows("throughline_recordings", {
+    select,
+    created_at: `gte.${earliest}`,
+    order: "created_at.asc,id.asc",
+  }, config);
+  const byId = new Map(windowRows.map((row) => [row.id, row]));
+  const missingIds = [...new Set(events
+    .filter((event) => event.schema_version === 2 && RECONCILIATION_EVENT_NAMES.has(event.event_name))
+    .map((event) => event.recording_id)
+    .filter((id) => typeof id === "string" && id && !byId.has(id)))];
+
+  for (let index = 0; index < missingIds.length; index += 25) {
+    const ids = missingIds.slice(index, index + 25);
+    const linkedRows = await fetchRows("throughline_recordings", {
+      select,
+      id: `in.(${ids.join(",")})`,
+      order: "created_at.asc,id.asc",
+    }, config);
+    for (const row of linkedRows) byId.set(row.id, row);
+  }
+  return [...byId.values()];
 }
 
 async function main() {
@@ -390,22 +766,43 @@ async function main() {
   };
   const [events, productFeedback, extractionFeedback] = await Promise.all([
     fetchRows("throughline_product_events", {
-      select: "event_name,auth_user_id,session_id,occurred_at,app_version,build_number,properties",
+      select: [
+        "event_name",
+        "auth_user_id",
+        "session_id",
+        "occurred_at",
+        "schema_version",
+        "distribution_channel",
+        "is_internal_user",
+        "recording_id",
+        "surface:properties->>surface",
+        "processing_status:properties->>processing_status",
+        "mode:properties->>mode",
+        "account_state:properties->>account_state",
+        "state:properties->>state",
+      ].join(","),
       occurred_at: `gte.${earliest}`,
-      order: "occurred_at.asc",
+      order: "occurred_at.asc,id.asc",
     }, config),
     fetchRows("throughline_product_feedback", {
-      select: "id,created_at,source,category,message,contact_allowed,status,app_version,build_number",
+      select: "source,category,contact_allowed,status",
       created_at: `gte.${earliest}`,
-      order: "created_at.desc",
+      order: "created_at.desc,id.desc",
     }, config),
     fetchRows("throughline_feedback", {
-      select: "created_at,status,feedback",
+      select: "quality_score:answers->quality_score,issue_types:answers->issue_types,agent_ready:answers->agent_ready",
       created_at: `gte.${earliest}`,
-      order: "created_at.desc",
+      order: "created_at.desc,id.desc",
     }, config),
   ]);
-  const snapshot = buildWeeklySnapshot({ events, productFeedback, extractionFeedback, reportAt });
+  const recordings = await fetchReconciliationRecordings(events, earliest, config);
+  const snapshot = buildWeeklySnapshot({
+    events,
+    recordings,
+    productFeedback,
+    extractionFeedback,
+    reportAt,
+  });
   const markdown = renderMarkdown(snapshot);
   if (args.stdout) process.stdout.write(markdown);
   const outputDir = path.resolve(args.outputDir);
