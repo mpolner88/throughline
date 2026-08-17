@@ -301,12 +301,12 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
             statusByText[Self.normalizedText(item.text)] = item
         }
 
-        return displayMostImportant.map { text in
-            if let item = statusByText[Self.normalizedText(text)] {
+        return todos.map { todo in
+            if let item = statusByText[Self.normalizedText(todo.text)] {
                 return item
             }
 
-            return ActionItem(id: Self.stableActionID(for: text), text: text, source: "most_important")
+            return ActionItem(id: Self.stableActionID(for: todo.text), text: todo.text, source: "todo")
         }
     }
 

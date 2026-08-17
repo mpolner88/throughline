@@ -17,9 +17,11 @@ struct RootView: View {
         }
         .environmentObject(appState)
         .task {
+            let route = appState.route == .home ? "home" : "onboarding"
+            ProductAnalytics.trackFirstOpen(route: route)
             ProductAnalytics.track(
                 "app_opened",
-                properties: ["route": appState.route == .home ? "home" : "onboarding"]
+                properties: ["route": route]
             )
             ProductAnalytics.flush()
         }

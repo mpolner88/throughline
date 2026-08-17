@@ -1,10 +1,5 @@
 import Foundation
 
-enum AIProcessingPermission {
-    static let storageKey = "throughline.aiProcessingPermissionGranted"
-    static let privacyURL = URL(string: "https://mpolner88.github.io/throughline/privacy/")!
-}
-
 @MainActor
 final class AppState: ObservableObject {
     private static let notesStorageKey = "throughline.cachedNotes"
@@ -45,6 +40,11 @@ final class AppState: ObservableObject {
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--throughline-preview-home") {
+            if ProcessInfo.processInfo.arguments.contains("--throughline-preview-populated-home") {
+                notes = [.sample]
+            } else if ProcessInfo.processInfo.arguments.contains("--throughline-preview-empty-home") {
+                notes = []
+            }
             session = AuthSession(
                 accessToken: "preview",
                 refreshToken: "preview",
@@ -96,7 +96,10 @@ final class AppState: ObservableObject {
     }
 
     func replaceNotes(_ notes: [ThroughlineNote]) {
-        self.notes = notes.sorted { $0.createdAt > $1.createdAt }
+        let localOnlyNotes = self.notes.filter { !$0.id.hasPrefix("rec_") }
+        let remoteIDs = Set(notes.map(\.id))
+        self.notes = (notes + localOnlyNotes.filter { !remoteIDs.contains($0.id) })
+            .sorted { $0.createdAt > $1.createdAt }
         persistNotes()
     }
 

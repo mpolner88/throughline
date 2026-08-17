@@ -189,13 +189,31 @@ struct RecordingPayload: Decodable {
     var throughlineNote: ThroughlineNote? {
         guard let structuredNote else { return nil }
 
+        let normalizedTitle = structuredNote.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fallbackTitle = structuredNote.mostImportant.first
+            ?? structuredNote.priorities.first
+            ?? structuredNote.todos.first?.text
+            ?? structuredNote.actionItems.first?.text
+            ?? "voice note"
+        let title = normalizedTitle.isEmpty ? fallbackTitle : normalizedTitle
+
+        let normalizedSummary = structuredNote.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        let summaryCandidates = structuredNote.mostImportant
+            + structuredNote.priorities
+            + structuredNote.todos.map(\.text)
+            + structuredNote.actionItems.map(\.text)
+        let fallbackSummary = Array(summaryCandidates.prefix(2)).joined(separator: ". ")
+        let summary = normalizedSummary.isEmpty
+            ? (fallbackSummary.isEmpty ? title : fallbackSummary)
+            : normalizedSummary
+
         return ThroughlineNote(
             id: id,
             createdAt: createdAtDate,
             type: structuredNote.type ?? type ?? .freeform,
             processingStatus: processingStatus,
-            title: structuredNote.title,
-            summary: structuredNote.summary,
+            title: title,
+            summary: summary,
             transcript: transcriptRaw ?? "",
             mostImportant: structuredNote.mostImportant,
             actionItems: structuredNote.actionItems,
@@ -441,16 +459,42 @@ struct ProductEvent: Codable, Identifiable {
 }
 
 enum ProductAnalytics {
+    private static let firstOpenedAtKey = "throughline.analytics.firstOpenedAt"
+
     static func track(_ eventName: String, properties: [String: String] = [:]) {
+        guard !isPreviewLaunch else { return }
+
         Task {
             await ProductEventQueue.shared.enqueue(eventName: eventName, properties: properties)
         }
+    }
+
+    static func trackFirstOpen(route: String) {
+        guard !isPreviewLaunch,
+              UserDefaults.standard.string(forKey: firstOpenedAtKey) == nil
+        else {
+            return
+        }
+
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        UserDefaults.standard.set(timestamp, forKey: firstOpenedAtKey)
+        track("first_opened", properties: ["route": route])
     }
 
     static func flush() {
         Task {
             await ProductEventQueue.shared.flush()
         }
+    }
+
+    private static var isPreviewLaunch: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains(where: {
+            $0.hasPrefix("--throughline-preview-") || $0 == "--throughline-onboarding-step"
+        })
+        #else
+        false
+        #endif
     }
 }
 
@@ -582,6 +626,25 @@ struct UploadClient {
         request.setValue(processingMode.rawValue, forHTTPHeaderField: "X-Throughline-Processing-Mode")
         request.setValue(Self.localTimestamp(), forHTTPHeaderField: "X-Throughline-User-Local-Time")
         request.httpBody = try Data(contentsOf: fileURL)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(UploadResponse.self, from: data)
+    }
+
+    func saveDemoNote(_ note: ThroughlineNote, duration: Int) async throws -> UploadResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            DemoNoteSaveRequest(
+                transcript: note.transcript,
+                duration: duration,
+                type: note.type.rawValue,
+                userLocalTime: Self.localTimestamp(),
+                timezone: TimeZone.current.identifier
+            )
+        )
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validate(response: response, data: data)
@@ -811,6 +874,22 @@ private struct ProductEventBatchRequest: Encodable {
     let events: [ProductEvent]
 }
 
+private struct DemoNoteSaveRequest: Encodable {
+    let transcript: String
+    let duration: Int
+    let type: String
+    let userLocalTime: String
+    let timezone: String
+
+    enum CodingKeys: String, CodingKey {
+        case transcript = "transcript_raw"
+        case duration = "duration_seconds"
+        case type
+        case userLocalTime = "user_local_time"
+        case timezone
+    }
+}
+
 private struct ProductFeedbackRequest: Encodable {
     let category: String
     let message: String
@@ -877,11 +956,14 @@ struct FeedbackResponse: Decodable {
 enum UploadClientError: LocalizedError {
     case invalidResponse
     case serverError(Int, String)
+    case processingFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
             "The backend returned an invalid response."
+        case let .processingFailed(status):
+            "Throughline could not structure this recording (\(status)). Please try again."
         case let .serverError(status, body):
             if status == 401 {
                 #if DEBUG

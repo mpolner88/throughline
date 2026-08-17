@@ -16,12 +16,10 @@ private enum FeedbackStatus: Equatable {
 
 struct HomeView: View {
     @EnvironmentObject private var appState: AppState
-    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @StateObject private var recorder = AudioRecorder()
     @State private var uploadError: String?
     @State private var feedbackStatus: [String: FeedbackStatus] = [:]
     @State private var showingSettings = false
-    @State private var showingAIProcessingConsent = false
     @State private var isRefreshing = false
     @State private var isFinishingRecording = false
     @State private var isPreparingRecording = false
@@ -39,49 +37,52 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     dateBlock
 
-                    if !appState.carriedForwardItems.isEmpty {
-                        CarryForwardView(items: appState.carriedForwardItems)
-                    }
+                    if isHomeEmpty {
+                        EmptyHomeContent(isDeemphasized: isShowingRecording || isShowingProcessing)
+                    } else {
+                        Text("Today’s plan")
+                            .font(.throughlineHeading)
 
-                    let importantItems = mostImportantItems
-                    if !importantItems.isEmpty {
-                        MostImportantView(
-                            items: importantItems,
-                            onToggle: { item, isCompleted in
-                                setActionItem(item, isCompleted: isCompleted)
-                            }
-                        )
-                    }
+                        if !appState.carriedForwardItems.isEmpty {
+                            CarryForwardView(items: appState.carriedForwardItems)
+                        }
 
-                    ForEach(appState.latestNotes) { note in
-                        CapturedCard(
-                            note: note,
-                            label: note.type.displayName,
-                            feedbackStatus: feedbackStatus[note.id],
-                            onOpen: {
-                                ProductAnalytics.track("note_opened")
-                                selectedNote = note
-                            },
-                            onToggleImportant: { actionItem, isCompleted in
-                                setActionItem(
-                                    ImportantItem(
-                                        id: "\(note.id)-\(actionItem.id)",
-                                        recordingID: note.id,
-                                        text: actionItem.text,
-                                        noteTitle: note.title,
-                                        createdAt: note.createdAt,
-                                        isCompleted: actionItem.isCompleted
-                                    ),
-                                    isCompleted: isCompleted
-                                )
-                            },
-                            onFeedback: { sendFeedback(for: note, qualityScore: $0) },
-                            onDelete: { delete(note: note) }
-                        )
-                    }
+                        let importantItems = mostImportantItems
+                        if !importantItems.isEmpty {
+                            MostImportantView(
+                                items: importantItems,
+                                onToggle: { item, isCompleted in
+                                    setActionItem(item, isCompleted: isCompleted)
+                                }
+                            )
+                        }
 
-                    if appState.notes.isEmpty && appState.carriedForwardItems.isEmpty {
-                        Spacer(minLength: 220)
+                        ForEach(appState.latestNotes) { note in
+                            CapturedCard(
+                                note: note,
+                                label: note.type.displayName,
+                                feedbackStatus: feedbackStatus[note.id],
+                                onOpen: {
+                                    ProductAnalytics.track("note_opened")
+                                    selectedNote = note
+                                },
+                                onToggleImportant: { actionItem, isCompleted in
+                                    setActionItem(
+                                        ImportantItem(
+                                            id: "\(note.id)-\(actionItem.id)",
+                                            recordingID: note.id,
+                                            text: actionItem.text,
+                                            noteTitle: note.title,
+                                            createdAt: note.createdAt,
+                                            isCompleted: actionItem.isCompleted
+                                        ),
+                                        isCompleted: isCompleted
+                                    )
+                                },
+                                onFeedback: { sendFeedback(for: note, qualityScore: $0) },
+                                onDelete: { delete(note: note) }
+                            )
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,8 +95,16 @@ struct HomeView: View {
             bottomRecorder
         }
         .task {
-            ProductAnalytics.track("home_viewed")
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--throughline-preview-") }) {
+                return
+            }
+            #endif
             await refreshFromBackend()
+            ProductAnalytics.track(
+                "home_viewed",
+                properties: ["state": isHomeEmpty ? "empty" : "populated"]
+            )
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= maxRecordingSeconds {
@@ -104,17 +113,6 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingSettings) {
             AccountSettingsView()
-        }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(isCurrentlyAllowed: hasAIProcessingPermission) { allowed in
-                hasAIProcessingPermission = allowed
-                if allowed {
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(250))
-                        startRecording()
-                    }
-                }
-            }
         }
         .sheet(item: $selectedNote) { note in
             NoteDetailSheet(
@@ -176,7 +174,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             Eyebrow(text: "today")
             Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                .font(.throughlineHeading)
+                .font(.system(size: 16, weight: .medium))
         }
     }
 
@@ -193,16 +191,19 @@ struct HomeView: View {
             }
 
             RecordButton(
-                isRecording: recorder.isRecording,
-                isBusy: isPreparingRecording || isFinishingRecording || isUploading || isProcessing,
+                isRecording: isShowingRecording,
+                isBusy: isPreparingRecording || isFinishingRecording || isUploading || isShowingProcessing,
+                title: recorderButtonTitle,
+                detail: recorderButtonDetail,
+                supportingText: recorderButtonSupportingText,
                 size: 56
             ) {
                 handleRecordTap()
             }
             .disabled(isPreparingRecording || isFinishingRecording || isUploading || isProcessing)
 
-            if !recorderStatusText.isEmpty {
-                Text(recorderStatusText)
+            if !recorderFooterText.isEmpty {
+                Text(recorderFooterText)
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -219,11 +220,6 @@ struct HomeView: View {
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
-            guard hasAIProcessingPermission else {
-                showingAIProcessingConsent = true
-                return
-            }
-
             startRecording()
         }
     }
@@ -247,27 +243,7 @@ struct HomeView: View {
         }
     }
 
-    private var recorderStatusText: String {
-        if isPreparingRecording {
-            return "requesting microphone access"
-        }
-
-        if recorder.isRecording {
-            return "\(recorder.elapsedText) / 5:00"
-        }
-
-        if isFinishingRecording {
-            return "finishing"
-        }
-
-        if isUploading {
-            return "saving"
-        }
-
-        if isProcessing {
-            return "translating"
-        }
-
+    private var recorderFooterText: String {
         if isRefreshing {
             return "syncing"
         }
@@ -277,6 +253,71 @@ struct HomeView: View {
         }
 
         return ""
+    }
+
+    private var isHomeEmpty: Bool {
+        let hasSettledNote = appState.notes.contains {
+            $0.processingStatus == nil || $0.processingStatus == "processed"
+        }
+        return !hasSettledNote && appState.carriedForwardItems.isEmpty
+    }
+
+    private var isShowingRecording: Bool {
+        recorder.isRecording || previewRecordingState
+    }
+
+    private var isShowingProcessing: Bool {
+        isProcessing || previewProcessingState
+    }
+
+    private var recorderButtonTitle: String {
+        if isShowingProcessing {
+            return "Structuring your plan…"
+        }
+        if isUploading {
+            return "Saving your voice note…"
+        }
+        if isFinishingRecording {
+            return "Finishing recording…"
+        }
+        if isPreparingRecording {
+            return "Preparing microphone…"
+        }
+        if isShowingRecording {
+            return "Stop recording"
+        }
+        return isHomeEmpty ? "Record today’s plan" : "Start recording"
+    }
+
+    private var recorderButtonDetail: String? {
+        guard isShowingRecording else { return nil }
+        return previewRecordingState ? "0:18 / 5:00" : "\(recorder.elapsedText) / 5:00"
+    }
+
+    private var recorderButtonSupportingText: String? {
+        if isShowingProcessing {
+            return "Saving your note and extracting to-dos"
+        }
+        if isShowingRecording {
+            return "Listening… Tap when you’re done"
+        }
+        return nil
+    }
+
+    private var previewRecordingState: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("--throughline-preview-empty-home-recording")
+        #else
+        false
+        #endif
+    }
+
+    private var previewProcessingState: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("--throughline-preview-empty-home-processing")
+        #else
+        false
+        #endif
     }
 
     private var mostImportantItems: [ImportantItem] {
@@ -349,12 +390,6 @@ struct HomeView: View {
 
                 isFinishingRecording = false
 
-                guard hasAIProcessingPermission else {
-                    try? FileManager.default.removeItem(at: fileURL)
-                    uploadError = "Allow AI processing before sending a recording to Supabase and Groq."
-                    return
-                }
-
                 isUploading = true
 
                 let response = try await UploadClient().uploadRecording(
@@ -367,7 +402,10 @@ struct HomeView: View {
                 isUploading = false
                 ProductAnalytics.track(
                     "recording_uploaded",
-                    properties: ["duration_bucket": recordingDurationBucket(duration)]
+                    properties: [
+                        "surface": "home",
+                        "duration_bucket": recordingDurationBucket(duration)
+                    ]
                 )
                 appState.addUploadedNote(response.displayNote)
                 uploadError = nil
@@ -379,7 +417,10 @@ struct HomeView: View {
                 if finalStatus == "processed" {
                     ProductAnalytics.track(
                         "recording_processed",
-                        properties: ["processing_status": finalStatus]
+                        properties: [
+                            "surface": "home",
+                            "processing_status": finalStatus
+                        ]
                     )
                 } else if Self.failedProcessingStatuses.contains(finalStatus) {
                     ProductAnalytics.track(
@@ -491,6 +532,7 @@ struct HomeView: View {
         if selectedNote?.id == updatedNote.id {
             selectedNote = updatedNote
         }
+        ProductAnalytics.track("note_edited")
         uploadError = nil
         return updatedNote
     }
@@ -505,6 +547,7 @@ struct HomeView: View {
             do {
                 try await UploadClient().deleteRecording(id: note.id)
                 appState.removeNote(id: note.id)
+                ProductAnalytics.track("note_deleted")
                 uploadError = nil
             } catch {
                 uploadError = error.localizedDescription
@@ -528,6 +571,70 @@ struct HomeView: View {
         "extraction_failed",
         "processing_failed"
     ])
+}
+
+private struct EmptyHomeContent: View {
+    let isDeemphasized: Bool
+
+    private let exampleItems = [
+        "Ship the small thing first",
+        "Walk again tonight",
+        "Keep the morning light"
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 30) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Say today’s to-dos.")
+                    .font(.throughlineHeading)
+
+                Text("Speak naturally. Throughline turns your voice note into a clear, organized task list.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Eyebrow(text: "what you’ll get")
+
+                VStack(spacing: 0) {
+                    ForEach(Array(exampleItems.enumerated()), id: \.offset) { index, item in
+                        HStack(spacing: 14) {
+                            Image(systemName: "circle")
+                                .font(.system(size: 17, weight: .regular))
+                                .foregroundStyle(Theme.blue)
+                                .accessibilityHidden(true)
+
+                            Text(item)
+                                .font(.system(size: 15, weight: .regular))
+
+                            Spacer()
+                        }
+                        .frame(minHeight: 58)
+
+                        if index < exampleItems.count - 1 {
+                            Divider()
+                        }
+                    }
+                }
+            }
+
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: "lock")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+
+                Text("Readable by your AI agent after you connect MCP.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .opacity(isDeemphasized ? 0.38 : 1)
+        .animation(.easeInOut(duration: 0.2), value: isDeemphasized)
+        .accessibilityElement(children: .contain)
+    }
 }
 
 private struct CarryForwardView: View {

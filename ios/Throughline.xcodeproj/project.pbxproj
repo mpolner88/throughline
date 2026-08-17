@@ -20,6 +20,7 @@
 		B00000000000000000000101 /* Services/AuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* Services/AuthClient.swift */; };
 		C00000000000000000000101 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000001 /* Assets.xcassets */; };
 		C00000000000000000000102 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* PrivacyInfo.xcprivacy */; };
+		C00000000000000000000103 /* Resources/GoogleSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000003 /* Resources/GoogleSans-Medium.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 		B00000000000000000000002 /* Config/Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Release.xcconfig; sourceTree = "<group>"; };
 		C00000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C00000000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C00000000000000000000003 /* Resources/GoogleSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/GoogleSans-Medium.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +72,7 @@
 				A00000000000000000000026 /* Info.plist */,
 				C00000000000000000000001 /* Assets.xcassets */,
 				C00000000000000000000002 /* PrivacyInfo.xcprivacy */,
+				C00000000000000000000003 /* Resources/GoogleSans-Medium.ttf */,
 				A00000000000000000000012 /* AppState.swift */,
 				A00000000000000000000014 /* Theme.swift */,
 				A00000000000000000000013 /* Models/ThroughlineNote.swift */,
@@ -108,6 +111,8 @@
 			dependencies = (
 			);
 			name = Throughline;
+			packageProductDependencies = (
+			);
 			productName = Throughline;
 			productReference = A00000000000000000000001 /* Throughline.app */;
 			productType = "com.apple.product-type.application";
@@ -124,6 +129,11 @@
 				TargetAttributes = {
 					A00000000000000000000002 = {
 						CreatedOnToolsVersion = 26.3;
+						SystemCapabilities = {
+							com.apple.SignInWithApple = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -137,6 +147,8 @@
 			);
 			mainGroup = A00000000000000000000006;
 			productRefGroup = A00000000000000000000008 /* Products */;
+			packageReferences = (
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -152,6 +164,7 @@
 			files = (
 				C00000000000000000000101 /* Assets.xcassets in Resources */,
 				C00000000000000000000102 /* PrivacyInfo.xcprivacy in Resources */,
+				C00000000000000000000103 /* Resources/GoogleSans-Medium.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -301,15 +314,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Throughline/Throughline.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2026080601;
+				CURRENT_PROJECT_VERSION = 2026081602;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = RZT3KU8KMY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_KEY_CFBundleDisplayName = Throughline;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline records audio you choose. With your permission, it is sent to Supabase and Groq for transcription and note creation.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline uses the microphone to capture and structure the voice notes you choose to record.";
 				INFOPLIST_KEY_ThroughlineBackendAPIToken = "$(THROUGHLINE_API_TOKEN)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -320,7 +334,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = app.throughline.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -338,15 +352,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Throughline/Throughline.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2026080601;
+				CURRENT_PROJECT_VERSION = 2026081602;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = RZT3KU8KMY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_KEY_CFBundleDisplayName = Throughline;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline records audio you choose. With your permission, it is sent to Supabase and Groq for transcription and note creation.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Throughline uses the microphone to capture and structure the voice notes you choose to record.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -356,7 +371,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = app.throughline.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -390,6 +405,7 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
 	};
 	rootObject = A00000000000000000000009 /* Project object */;
 }

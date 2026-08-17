@@ -1,9 +1,44 @@
+import CryptoKit
 import Foundation
 import Security
 
 struct AuthUser: Codable, Equatable, Sendable {
     let id: String
     let email: String?
+    let createdAt: String?
+    let lastSignInAt: String?
+
+    init(id: String, email: String?, createdAt: String? = nil, lastSignInAt: String? = nil) {
+        self.id = id
+        self.email = email
+        self.createdAt = createdAt
+        self.lastSignInAt = lastSignInAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case email
+        case createdAt = "created_at"
+        case lastSignInAt = "last_sign_in_at"
+    }
+
+    var inferredAccountState: String {
+        guard let createdAt,
+              let lastSignInAt,
+              let createdDate = Self.date(from: createdAt),
+              let lastSignInDate = Self.date(from: lastSignInAt)
+        else {
+            return "unknown"
+        }
+
+        return abs(lastSignInDate.timeIntervalSince(createdDate)) <= 300 ? "new" : "existing"
+    }
+
+    private static func date(from value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+    }
 }
 
 struct AuthSession: Codable, Equatable, Sendable {
@@ -167,6 +202,92 @@ struct AuthClient: Sendable {
         return try response.session()
     }
 
+    func signInWithIDToken(
+        provider: SocialAuthProvider,
+        idToken: String,
+        nonce: String? = nil,
+        accessToken: String? = nil
+    ) async throws -> AuthSession {
+        let response: AuthResponse = try await request(
+            path: "auth/v1/token",
+            queryItems: [URLQueryItem(name: "grant_type", value: "id_token")],
+            method: "POST",
+            body: AuthIDTokenRequest(
+                provider: provider.rawValue,
+                idToken: idToken,
+                nonce: nonce,
+                accessToken: accessToken
+            )
+        )
+        return try response.session()
+    }
+
+    func providerAvailability() async throws -> AuthProviderAvailability {
+        guard let anonKey else {
+            throw AuthClientError.missingAnonKey
+        }
+
+        var request = URLRequest(url: supabaseURL.appendingPathComponent("auth/v1/settings"))
+        request.httpMethod = "GET"
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthClientError.invalidResponse
+        }
+        guard 200..<300 ~= httpResponse.statusCode else {
+            throw AuthClientError.serverError(httpResponse.statusCode, Self.errorMessage(from: data))
+        }
+
+        let settings = try JSONDecoder().decode(AuthSettingsResponse.self, from: data)
+        return AuthProviderAvailability(
+            apple: settings.external[SocialAuthProvider.apple.rawValue] == true,
+            google: settings.external[SocialAuthProvider.google.rawValue] == true
+        )
+    }
+
+    func oauthSignInURL(provider: SocialAuthProvider, redirectTo: URL) throws -> URL {
+        guard anonKey != nil else {
+            throw AuthClientError.missingAnonKey
+        }
+
+        var components = URLComponents(
+            url: supabaseURL.appendingPathComponent("auth/v1/authorize"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [
+            URLQueryItem(name: "provider", value: provider.rawValue),
+            URLQueryItem(name: "redirect_to", value: redirectTo.absoluteString)
+        ]
+
+        guard let url = components.url else {
+            throw AuthClientError.invalidResponse
+        }
+        return url
+    }
+
+    func session(fromOAuthCallback callbackURL: URL) async throws -> AuthSession {
+        let values = Self.callbackValues(from: callbackURL)
+        if let message = values["error_description"] ?? values["error"] {
+            throw AuthClientError.serverError(400, message.replacingOccurrences(of: "+", with: " "))
+        }
+
+        guard let accessToken = values["access_token"],
+              let refreshToken = values["refresh_token"]
+        else {
+            throw AuthClientError.invalidResponse
+        }
+
+        let user = try await currentUser(accessToken: accessToken)
+        let expiresIn = TimeInterval(values["expires_in"] ?? "") ?? 3600
+        return AuthSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: Date().addingTimeInterval(expiresIn),
+            user: user
+        )
+    }
+
     func resendSignUpConfirmation(email: String) async throws {
         let _: AuthEmptyResponse = try await request(
             path: "auth/v1/resend",
@@ -183,6 +304,28 @@ struct AuthClient: Sendable {
             body: AuthRefreshRequest(refreshToken: refreshToken)
         )
         return try response.session()
+    }
+
+    private func currentUser(accessToken: String) async throws -> AuthUser {
+        guard let anonKey else {
+            throw AuthClientError.missingAnonKey
+        }
+
+        var request = URLRequest(url: supabaseURL.appendingPathComponent("auth/v1/user"))
+        request.httpMethod = "GET"
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthClientError.invalidResponse
+        }
+
+        guard 200..<300 ~= httpResponse.statusCode else {
+            throw AuthClientError.serverError(httpResponse.statusCode, Self.errorMessage(from: data))
+        }
+
+        return try JSONDecoder().decode(AuthUser.self, from: data)
     }
 
     private func request<RequestBody: Encodable, ResponseBody: Decodable>(
@@ -227,6 +370,67 @@ struct AuthClient: Sendable {
             ?? (payload["error"] as? String)
             ?? "Unknown auth error"
     }
+
+    private static func callbackValues(from url: URL) -> [String: String] {
+        var values: [String: String] = [:]
+        if let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems {
+            for item in queryItems {
+                if let value = item.value {
+                    values[item.name] = value
+                }
+            }
+        }
+
+        if let fragment = url.fragment,
+           let fragmentItems = URLComponents(string: "?\(fragment)")?.queryItems {
+            for item in fragmentItems {
+                if let value = item.value {
+                    values[item.name] = value
+                }
+            }
+        }
+        return values
+    }
+}
+
+enum SocialAuthProvider: String, Sendable {
+    case apple
+    case google
+}
+
+struct AuthProviderAvailability: Sendable {
+    var apple = false
+    var google = false
+}
+
+enum AuthNonce {
+    static func random(length: Int = 32) throws -> String {
+        precondition(length > 0)
+        let characters = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remaining = length
+
+        while remaining > 0 {
+            var bytes = [UInt8](repeating: 0, count: 16)
+            let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+            guard status == errSecSuccess else {
+                throw AuthClientError.invalidResponse
+            }
+
+            for byte in bytes where remaining > 0 {
+                if byte < characters.count {
+                    result.append(characters[Int(byte)])
+                    remaining -= 1
+                }
+            }
+        }
+
+        return result
+    }
+
+    static func sha256(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
 private struct AuthCredentials: Encodable {
@@ -240,6 +444,24 @@ private struct AuthRefreshRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case refreshToken = "refresh_token"
     }
+}
+
+private struct AuthIDTokenRequest: Encodable {
+    let provider: String
+    let idToken: String
+    let nonce: String?
+    let accessToken: String?
+
+    enum CodingKeys: String, CodingKey {
+        case provider
+        case idToken = "id_token"
+        case nonce
+        case accessToken = "access_token"
+    }
+}
+
+private struct AuthSettingsResponse: Decodable {
+    let external: [String: Bool]
 }
 
 private struct AuthResendRequest: Encodable {
