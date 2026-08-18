@@ -26,7 +26,8 @@
         "reconciliation_status": "events and durable recordings remain unreconciled",
         "cohort_status": "internal and external attribution is not yet available",
         "decision_status": "mixed results are non-decision-grade",
-        "readiness_audit": "distribution and internal-user attribution must be paired with a validated first-party recording link; historical rows remain legacy_unattributed"
+        "readiness_audit": "distribution and internal-user attribution must be paired with a validated first-party recording link; historical rows remain legacy_unattributed",
+        "database_gate": "GitHub Actions run 32107892008 passed the data-less local reconstruction with ordered baseline, attribution, privilege, REST, lint, advisor, and cleanup gates; tracked evidence is docs/evidence/2026-08-17-measurement-database-gate.md and production remains unchanged"
       },
       "funnel_step": "auth_succeeded -> recording_processed",
       "hypothesis": "Traceable cohort attribution and event-to-durable-recording reconciliation will make activation and processing outcomes interpretable without exposing content or identifiers.",
@@ -35,7 +36,7 @@
       "approval_required": false,
       "authority": "Agents may establish measurement and documentation within the approved slice; no provider, pricing, limit, onboarding, or App Store change is authorized.",
       "dependencies": [],
-      "next_action": "Implement the selected measurement-attribution slice in migration -> API -> app -> private allowlist -> aggregate report order, then require 100% reconciliation on controlled canaries before establishing a baseline."
+      "next_action": "After Mike approves one new billable data-less preview, verify the ordered attribution and privilege migrations there; only then may the routine reversible production migration/API canary sequence resume."
     },
     {
       "id": "TL-EVAL-001",
