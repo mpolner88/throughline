@@ -331,6 +331,29 @@ test("accepts only a bodyless successful REST HEAD with exact zero count", () =>
   );
 });
 
+test("uses a schema-valid content-free projection for every REST probe", () => {
+  const serviceRoleRestProbes = requiredExport(
+    databaseGate,
+    "serviceRoleRestProbes",
+  );
+  const baseline = [
+    { table: "throughline_recordings", column: "id" },
+    { table: "throughline_feedback", column: "id" },
+    { table: "throughline_product_events", column: "id" },
+    { table: "throughline_product_feedback", column: "id" },
+  ];
+
+  assert.deepEqual(serviceRoleRestProbes(false), baseline);
+  assert.deepEqual(serviceRoleRestProbes(true), [
+    ...baseline,
+    { table: "throughline_internal_users", column: "auth_user_id" },
+  ]);
+  assert.throws(
+    () => serviceRoleRestProbes("true"),
+    /Boolean allowlist selection/i,
+  );
+});
+
 test("rejects a frozen-input hash mismatch", () => {
   const assertFrozenHash = requiredExport(databaseGate, "assertFrozenHash");
   const expected = "a".repeat(64);
