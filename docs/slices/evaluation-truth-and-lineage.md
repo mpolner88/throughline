@@ -1,0 +1,142 @@
+# Evaluation Truth and Immutable Lineage Slice
+
+**Status:** Selected and planned; runtime work is blocked on the dependency gate below
+**Selected:** 2026-08-17
+**Backlog:** `TL-EVAL-001`
+**Program:** [Core Quality and Learning](../programs/core-quality-learning.md)
+**Verified control:** 2026-08-17; [current state](../CURRENT_STATE.md) and [iOS 1.0.4 / API v22 provenance closure](../releases/2026-08-17-ios-1.0.4-2026081602-provenance.md)
+**Hard runtime dependency:** `TL-DATA-001` Task 6 must have a dated verified migration/API rollout record and passing canaries before this slice's runtime Task 1 begins. The 2026-08-17 [measurement execution ledger](../../.superpowers/sdd/2026-08-17-measurement-attribution/progress.md) records Task 6 as blocked before production; it is not rollout evidence.
+
+## User problem
+
+Throughline cannot honestly say whether transcription or extraction is improving. The current evaluator can copy expected output into predictions, processed recordings lack immutable attempt and contract lineage, and note edits overwrite the model's original result. At the same time, the product needs a narrow, reversible way for the recording owner to contribute a grade or real content correction to private quality evaluation without turning normal use, old feedback, or free text into a corpus.
+
+## Evidence-backed baseline
+
+The 2026-08-17 [current-state record](../CURRENT_STATE.md) verifies from local source that:
+
+- feedback is stored but not consumed;
+- edits overwrite originals;
+- recording rows do not preserve immutable transcription/extraction attempts or exact model and prompt attribution; and
+- the extraction evaluator self-copies expected output when predictions are absent.
+
+The production extraction prompt and historical eval prompt are different. Production prompt bytes remain unchanged in this slice's first runtime task and are locked to SHA-256 `c05627ec47177eb06719267bdeea9c0c2253931f11862d9ccead012f27c52135`. The historical eval prompt SHA-256 `5e6781339777bf3d1e080088d405243a044efc891f4852b50824910adf449321` records drift; it is not the replacement production contract.
+
+## Outcome
+
+Every new recording-processing operation will have an immutable resolved inference contract, separate transcription and extraction attempts including retries, private first-party input/output snapshots, safe failures, usage/cost when available, and an immutable original model revision. User content corrections and action-state changes will create later revisions without destroying the original.
+
+The recording owner can save an idempotent 1–5 grade or a material note-content correction under the current contextual disclosure. The server, not the client, derives whether that action is eligible for private evaluation and extended audio retention. Optional explanations remain in a separately protected quarantine and never enter scoring, candidates, promotion evidence, analytics, fixtures, or tracked artifacts.
+
+An honest private benchmark will begin from an audio-to-task manifest, create predictions without exposing expected outputs to the adapter, and reject incomplete, stale, copied, leaking, or mismatched runs. Golden copying will remain available only as explicitly named plumbing and can never emit a quality or promotion pass.
+
+## Contribution and evaluator boundary
+
+- The user who recorded a note is the only human evaluator for that note. A service-token request cannot submit a human evaluation.
+- Only explicitly saving a 1–5 grade or a material canonical content-fingerprint change under the current disclosure creates eligibility.
+- Opening a note, completing or reopening an action, inactivity, a no-op save, general product feedback, analytics, legacy `should_remember`, and inferred historical behavior never create eligibility.
+- Historical grades and corrections may remain separate legacy aggregate signals. They gain neither corpus eligibility nor extended audio retention unless the owner performs a new qualifying contribution under the current disclosure.
+- A content correction means an edit to the note or transcript that changes the server-computed canonical content fingerprint. A free-text explanation about quality is not a content correction.
+- Evaluations and revisions are immutable. A later save supersedes an earlier evaluation; contribution removal appends a withdrawal event rather than rewriting history.
+
+## Retention and deletion contract
+
+The ordinary audio rule remains 30 days. Still-available audio linked to a current eligible contribution may remain beyond 30 days only while that contribution is active.
+
+- Removing the contribution ends the exception but does not undo the corrected visible note.
+- Deleting the note or account removes the audio and linked evaluation artifacts.
+- If audio is already older than the ordinary window when eligibility ends, Storage deletion happens before the withdrawal is committed. A Storage failure leaves eligibility active and returns a retryable failure; it never creates an unprotected old object.
+- The retention selector distinguishes `standard_expired`, `evaluation_protected`, and `eligibility_ended` candidates. It never infers eligibility from legacy feedback.
+
+## Inference truth and revision model
+
+The implementation uses these immutable concepts:
+
+1. `InferenceContractV1` identifies the resolved provider, model and request configuration plus prompt, schema, and normalizer versions, exact snapshots, and SHA-256 hashes.
+2. `ProcessingOperationV1` identifies one attempt to process a recording.
+3. `InferenceAttemptV1` records each transcription or extraction try, including attempt number, safe result/failure code, latency, available usage/cost, input/output hashes, and private snapshots.
+4. `NoteRevisionV1` preserves `original_model`, `user_content_correction`, and `action_state` revisions. The recording has nullable typed pointers to its current attempts and revision; foreign keys are indexed and use cycle-safe delete actions.
+5. `EvaluationV1` links the owner grade to the exact evaluated revision and processing operation. `EvaluationContributionEventV1` records eligibility creation or withdrawal with server-derived provenance and disclosure versions.
+6. `EvaluationTextQuarantineV1` holds optional free text behind a fail-closed service boundary, separate from structured issue codes and every evaluation/export/report path.
+
+Legacy rows remain `legacy_unattributed`. The system does not invent a run, model, prompt, original output, disclosure, or historical retention opt-in.
+
+## Owner API contract
+
+The compatibility API keeps old routes decodable while adding current contracts:
+
+- `POST /recordings/{recording_id}/evaluations` accepts UUID `idempotency_key`, `rubric_version`, `notice_version`, `disclosure_version`, integer `score` from 1 through 5, bounded `issue_codes`, nullable `agent_ready`, and nullable quarantined `explanation`. `should_remember`, if present, is ignored and authorizes nothing.
+- `PATCH /recordings/{recording_id}` accepts UUID `idempotency_key`, optimistic `base_revision_id`, current notice/disclosure versions when the save is offered as a contribution, and the bounded editable note fields. Only a changed server-derived canonical content fingerprint can create `content_correction` eligibility.
+- `PATCH /recordings/{recording_id}/action-items` appends workflow history only; it cannot create evaluation eligibility.
+- `DELETE /recordings/{recording_id}/evaluation-contribution` accepts UUID `idempotency_key` and appends a withdrawal after required Storage deletion succeeds.
+- Legacy feedback/edit requests may remain accepted for old clients, but without current server-verified disclosure provenance they cannot create eligibility or extend retention.
+
+The bounded structured issue taxonomy is `missed_action`, `unsupported_action`, `wrong_importance`, `meaning_changed`, `weak_summary`, `transcription_error`, `schema_invalid`, and `other_structured`. `other_structured` carries no text; explanation text always goes to quarantine.
+
+## Honest private audio benchmark
+
+Tracked schemas and validators define an ignored `evals/private/` workspace. Each private case contains privately stored content and an immutable manifest with:
+
+- opaque case key;
+- eligibility source `explicit_grade` or `content_correction`;
+- disclosure/policy version;
+- audio reference, SHA-256, duration, and format;
+- reference transcript/output paths and hashes plus label completeness; and
+- immutable `development` or `sealed_holdout` split.
+
+The prediction adapter receives the case key, audio input, audio hash, format/duration, split, and inference-contract hash only. It never receives a reference transcript, expected output, expected hash, or label. Scoring rejects missing, extra, duplicate, stale, golden/copied, split-leaking, or manifest-mismatched predictions. A run below its declared minimum eligible case count reports `insufficient_sample_size` and names no winner.
+
+The old `eval:check` name becomes `eval:plumbing`. It may prove schema, validator, and scorer wiring, but its output is permanently ineligible for a quality or promotion claim. `eval:quality` requires the private manifest and independent prediction bundle.
+
+## Metric and evidence gates
+
+The slice keeps live and offline integrity measures distinct:
+
+- **Complete-lineage coverage:** eligible post-cutover owner evaluations whose referenced recording, operation, contract, attempts, original revision, evaluated revision, disclosure provenance, and contribution event are complete / all eligible post-cutover owner evaluations.
+- **Independent-prediction coverage:** valid private benchmark cases with exactly one independently generated, manifest-matching prediction / eligible cases declared for that run.
+- **Quality-evidence integrity gate:** `pass` only when both coverages are 100%, the benchmark sample threshold is met, sealed-holdout rules pass, and no copied/golden or quarantine content is present. Otherwise it is `fail` or `insufficient_sample_size`; no benchmark winner is claimed.
+
+Reports serialize aggregate counts and rates only. They contain no raw account/session/recording/evaluation IDs, object paths, audio, transcript, note, prompt, feedback, free text, credential, or provider response.
+
+## Disclosure, privacy, and design
+
+Use quiet contextual disclosure next to the grade and content-correction save actions plus full policy detail. Do not change onboarding or add a blocking modal. The recommended copy for Mike's taste review is:
+
+> Private quality check. Saving this grade or a content correction may keep this recording's audio past 30 days until you remove the contribution. Not used to train models. Learn more.
+
+Before iOS implementation, Mike reviews the exact copy, hierarchy, link treatment, and removal control. That checkpoint does not block earlier backend and private-eval tasks.
+
+The implementation plan corrects the local Markdown and HTML policy sources that currently claim a first-recording permission modal and Settings withdrawal flow that do not exist. It separately records ordinary third-party-AI inference permission as an App Store readiness risk; this slice does not invent that UI. `PrivacyInfo.xcprivacy` adds Analytics as a purpose for Audio Data only when evaluation-linked audio ships. Policy publication, App Store privacy-answer changes, upload, TestFlight, submission, and a new binary remain Mike-gated external actions.
+
+## Rollout and rollback
+
+Rollout flags separate contract/lineage writes, evaluation writes, and evaluation-linked retention. The compatibility API accepts old clients while deriving eligibility only from current contracts.
+
+Rollback has two phases:
+
+1. Before any eligible contribution exists, disable the new flags and return to the verified TL-DATA stable API while leaving additive nullable schema in place.
+2. After any eligible contribution exists, rollback must deploy the prebuilt retention-aware compatibility API. It disables new lineage and evaluation writes but continues protecting eligible audio and honoring contribution, note, and account deletion. Rolling back to a retention-unaware API is prohibited.
+
+Production canary evaluation is performed by the recording owner on their own canary recording. Agents may run contract tests and inspect content-free aggregate counts, but they may not invent a grade or correction. Release evidence records source commit, schema/function identities, flags, test/canary outcomes, and rollback target without content or identifiers.
+
+## Guardrails and non-goals
+
+- No model training or fine-tuning, automatic promotion, advertising/tracking use, or new provider sharing.
+- No provider, base-model, production-prompt-byte, pricing, recording-limit, credit, subscription, onboarding, TestFlight, App Store Connect, or submission change.
+- No legacy evaluation backfill that creates eligibility or extended retention.
+- No raw provider bodies in failure messages or logs.
+- No public policy publication or App Store privacy-answer action in this slice without Mike's separate approval.
+- No interpretation of historical golden or transcript-only fixtures as an audio-to-task quality result.
+
+## Acceptance and evidence manifest
+
+- TL-DATA Task 6 dependency evidence is dated and verified before runtime Task 1 starts.
+- Production prompt SHA-256 remains `c05627ec47177eb06719267bdeea9c0c2253931f11862d9ccead012f27c52135` and the historical eval hash remains drift evidence only.
+- Disposable-database tests prove constraints, indexed foreign keys, explicit RLS/revokes/grants, immutable-update rejection, privacy deletion, and service-only fixed-search-path RPCs.
+- Contract/API tests prove retries and separate attempts, immutable originals, owner-only idempotency, material-change eligibility, old-client non-eligibility, quarantine isolation, Storage-first withdrawal, and service-token rejection.
+- Synthetic private-eval tests prove the adapter cannot receive labels and the scorer rejects every incomplete/copy/leak/mismatch class.
+- Retention tests prove historical grades never protect audio without a current disclosed re-contribution.
+- Aggregate reports prove all three integrity measures without serializing private values.
+- A dated release record identifies migration, API digest, contract hash, feature flags, canaries, compatibility target, and both rollback phases.
+
+The task-by-task implementation and exact interfaces are in the [evaluation truth and lineage implementation plan](../superpowers/plans/2026-08-17-evaluation-truth-and-lineage.md).

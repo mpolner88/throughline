@@ -41,7 +41,7 @@
       "id": "TL-EVAL-001",
       "title": "Make evaluation honest and preserve immutable lineage",
       "type": "quality",
-      "state": "collecting_evidence",
+      "state": "approved_for_build",
       "problem": "The extraction evaluator self-copies expected output when predictions are absent, and processed records lack immutable transcription/extraction input, output, model, prompt, and stage lineage.",
       "evidence": {
         "as_of": "2026-08-17",
@@ -56,7 +56,7 @@
       "approval_required": false,
       "authority": "Agents may implement evaluation and lineage evidence within an approved reversible slice; provider or base-model changes remain Mike-approved.",
       "dependencies": ["TL-DATA-001"],
-      "next_action": "Require a predictions artifact for scoring and define the immutable run/contract record before interpreting or promoting a quality result."
+      "next_action": "Begin runtime work only after TL-DATA-001 Task 6 has dated verified migration/API rollout evidence and passing canaries; then freeze the shared current-control inference contract without behavior change and build the honest private audio-manifest and independent-prediction path."
     },
     {
       "id": "TL-TRNS-001",

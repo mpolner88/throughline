@@ -499,3 +499,33 @@ Each decision should explain the call that was made, the alternatives considered
 **Reasoning:** A baseline prevents false improvement claims, while the authority boundary keeps routine reversible progress moving without widening approval-bound work.
 
 **Revisit when:** The workflow authority matrix or canonical metric definitions change through an approved decision.
+
+---
+
+## 2026-08-17 — Evaluation truth and immutable lineage selected
+
+**Decision:** Select `TL-EVAL-001` for build after the verified `TL-DATA-001` migration and API rollout. The slice will preserve immutable inference contracts, processing attempts, original model output, user revisions, and owner-only evaluations before any model benchmark or learning promotion is interpreted.
+
+**Reasoning:** Current feedback is stored but unused, note edits overwrite originals, and the existing golden evaluator proves plumbing rather than model quality. Honest lineage is the dependency for measuring whether a transcription, extraction, or prompt candidate actually improves the voice-to-tasks result.
+
+**Revisit when:** The measurement rollout cannot establish its required compatibility and reconciliation gates, or the evaluation slice's bounded design changes materially.
+
+---
+
+## 2026-08-17 — Explicit evaluation contribution and audio-retention boundary
+
+**Decision:** Only the recording owner explicitly saving a 1–5 grade or a material content correction under the current contextual disclosure may make that recording eligible for Throughline's private evaluation corpus. Opening a note, completing or reopening a task, submitting general product feedback, inactivity, a no-op edit, legacy `should_remember`, or an inferred historical action does not qualify. Eligible audio that is still available may remain beyond the ordinary 30-day window until the user removes the evaluation contribution, deletes the note, or deletes the account. Historical grades may remain legacy aggregate signals but do not gain extended-retention eligibility without a new disclosed contribution action.
+
+**Reasoning:** This makes the recording user the only reviewer and gives Throughline reusable quality evidence without silently turning ordinary recordings or historical feedback into a corpus. It also keeps the retention exception narrow, reversible, and technically enforceable.
+
+**Revisit when:** Mike approves a different corpus trigger, retention duration, withdrawal model, or training use.
+
+---
+
+## 2026-08-17 — Quiet evaluation disclosure and no-training scope
+
+**Decision:** Put a short contextual explanation next to the grade or content-correction action and provide full policy detail, without changing onboarding or adding a blocking modal. Record the disclosure version and contribution action immutably. Evaluation contributions are for private quality evaluation only: no model training or fine-tuning, no automatic promotion, no advertising or tracking use, and no sharing with a model provider beyond the separately disclosed normal transcription and extraction inference. Free-text explanations remain quarantined and excluded from corpus scoring, candidate generation, promotion evidence, analytics, and tracked artifacts.
+
+**Reasoning:** The action-specific disclosure is restrained but clear about the new purpose, associated data, retention exception, and deletion controls. A hidden boolean or policy-only statement would not provide an honest, auditable user action.
+
+**Revisit when:** Mike approves training, fine-tuning, new provider sharing, a different disclosure surface, or another data-use-policy change.
