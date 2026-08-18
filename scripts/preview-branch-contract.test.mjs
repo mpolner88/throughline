@@ -52,36 +52,62 @@ test("selects exactly one branch by exact name", () => {
   );
 });
 
-test("requires a fifth-only local migration dry-run", () => {
+test("requires separate fifth-only and hardening-only local migration dry-runs", () => {
   const assertExactPendingMigration = requiredExport(
     databaseGate,
     "assertExactPendingMigration",
   );
-  const expected = "20260817180709_measurement_attribution.sql";
-  const fifthOnly = [
+  const measurement = "20260817180709_measurement_attribution.sql";
+  const hardening = "20260818061933_measurement_privilege_hardening.sql";
+  const dryRun = (expected) => [
     "DRY RUN: migrations will not be pushed to the database.",
     "Would you like to push these migrations to the local database?",
     ` • ${expected}`,
     "Finished supabase db push.",
   ].join("\n");
 
-  assert.equal(assertExactPendingMigration(fifthOnly, expected), expected);
+  assert.equal(assertExactPendingMigration(dryRun(measurement), measurement), measurement);
+  assert.equal(assertExactPendingMigration(dryRun(hardening), hardening), hardening);
   assert.throws(
     () =>
       assertExactPendingMigration(
-        `${fifthOnly}\n • 20260806044304_product_feedback_and_events.sql`,
-        expected,
+        `${dryRun(measurement)}\n • ${hardening}`,
+        measurement,
       ),
     /exactly one pending migration/i,
   );
   assert.throws(
-    () => assertExactPendingMigration("No pending migrations.", expected),
+    () => assertExactPendingMigration("No pending migrations.", measurement),
     /exactly one pending migration/i,
   );
   assert.throws(
-    () => assertExactPendingMigration(`${fifthOnly}\n • ${expected}`, expected),
+    () =>
+      assertExactPendingMigration(
+        `${dryRun(hardening)}\n • ${hardening}`,
+        hardening,
+      ),
     /exactly one pending migration/i,
   );
+});
+
+test("defines measurement then privilege hardening as two ordered phases", () => {
+  const measurementMigrationPhases = requiredExport(
+    databaseGate,
+    "measurementMigrationPhases",
+  );
+
+  assert.deepEqual(measurementMigrationPhases(), [
+    {
+      migration: "20260817180709_measurement_attribution.sql",
+      test: "measurement_attribution_test.sql",
+      tests: 30,
+    },
+    {
+      migration: "20260818061933_measurement_privilege_hardening.sql",
+      test: "measurement_privilege_hardening_test.sql",
+      tests: 7,
+    },
+  ]);
 });
 
 test("requires exact pgTAP Files=1, Tests=30, Result: PASS", () => {
@@ -129,24 +155,53 @@ test("requires one exact baseline pgTAP summary and result", () => {
   );
   const passing = [
     "All tests successful.",
-    "Files=1, Tests=23,  1 wallclock secs",
+    "Files=1, Tests=21,  1 wallclock secs",
     "Result: PASS",
   ].join("\n");
 
   assert.deepEqual(assertExactBaselinePgTapPass(passing), {
     files: 1,
-    tests: 23,
+    tests: 21,
     result: "PASS",
   });
   for (const adversarial of [
-    `${passing}\nFiles=1, Tests=23,  1 wallclock secs`,
+    `${passing}\nFiles=1, Tests=21,  1 wallclock secs`,
     `${passing}\nResult: PASS`,
     `${passing}\nResult: FAIL`,
     `Files=1, Tests=20,  1 wallclock secs\n${passing}`,
   ]) {
     assert.throws(
       () => assertExactBaselinePgTapPass(adversarial),
-      /Files=1, Tests=23, Result: PASS/,
+      /Files=1, Tests=21, Result: PASS/,
+    );
+  }
+});
+
+test("requires one exact privilege-hardening pgTAP summary and result", () => {
+  const assertExactHardeningPgTapPass = requiredExport(
+    databaseGate,
+    "assertExactHardeningPgTapPass",
+  );
+  const passing = [
+    "All tests successful.",
+    "Files=1, Tests=7,  1 wallclock secs",
+    "Result: PASS",
+  ].join("\n");
+
+  assert.deepEqual(assertExactHardeningPgTapPass(passing), {
+    files: 1,
+    tests: 7,
+    result: "PASS",
+  });
+  for (const adversarial of [
+    `${passing}\nFiles=1, Tests=7,  1 wallclock secs`,
+    `${passing}\nResult: PASS`,
+    `${passing}\nResult: FAIL`,
+    `Files=1, Tests=6,  1 wallclock secs\n${passing}`,
+  ]) {
+    assert.throws(
+      () => assertExactHardeningPgTapPass(adversarial),
+      /Files=1, Tests=7, Result: PASS/,
     );
   }
 });

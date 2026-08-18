@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(21);
 
 select is(
   (
@@ -435,25 +435,6 @@ select ok(
       )
   ),
   'authenticated clients cannot access service-only baseline tables'
-);
-
-select ok(
-  has_table_privilege('authenticated', 'public.throughline_profiles', 'select')
-    and has_table_privilege('authenticated', 'public.throughline_profiles', 'insert')
-    and has_table_privilege('authenticated', 'public.throughline_profiles', 'update')
-    and not has_table_privilege('authenticated', 'public.throughline_profiles', 'delete')
-    and not has_table_privilege('authenticated', 'public.throughline_profiles', 'truncate')
-    and not has_table_privilege('authenticated', 'public.throughline_profiles', 'references')
-    and not has_table_privilege('authenticated', 'public.throughline_profiles', 'trigger'),
-  'authenticated profile privileges match the three policies'
-);
-
-select ok(
-  has_table_privilege('service_role', 'public.throughline_recordings', 'select')
-    and has_table_privilege('service_role', 'public.throughline_feedback', 'select')
-    and has_table_privilege('service_role', 'public.throughline_product_events', 'select')
-    and has_table_privilege('service_role', 'public.throughline_product_feedback', 'select'),
-  'service role can read the four API REST tables'
 );
 
 select is(
