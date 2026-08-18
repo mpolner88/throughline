@@ -37,6 +37,9 @@ const HARDENING_TEST_COUNT = 7;
 const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576;
 const DEFAULT_TERMINATE_GRACE_MS = 250;
 const MAX_DATABASE_FAILURE_SCAN_CHARACTERS = 32_768;
+const MAX_PGTAP_FAILURE_SCAN_CHARACTERS = 32_768;
+const MAX_SAFE_FAILURE_SUMMARY_CHARACTERS = 128;
+const MAX_PGTAP_ASSERTION_NUMBER = 30;
 const BASELINE_MIGRATIONS = [
   "0001_throughline_memory.sql",
   "20260510025558_enable_rls_for_throughline.sql",
@@ -224,6 +227,34 @@ export function summarizePgTapFailure(output) {
     : "failed assertions unavailable";
 }
 
+function isKnownPgTapInvocationFailure(output) {
+  return /\b(?:unknown command|unknown flag|unknown shorthand flag|flag provided but not defined|flag needs an argument|failed to parse connection string|invalid dsn)\b/u.test(
+    output,
+  ) || /(?:^|\n)\s*usage:\s*(?:\r?\n\s*)?supabase\s+(?:db\s+test|test\s+db)\b/imu.test(
+    output,
+  );
+}
+
+function isTapShapedOutput(output) {
+  return /^\s*(?:TAP version \d+|(?:ok|not ok)\b|1\.\.\d+\b|#\s*Failed test\b|Failed tests?:\b|Files=\d+,\s*Tests=\d+\b|Result:\s*(?:PASS|FAIL)\b)/mu.test(
+    output,
+  );
+}
+
+function isSafePgTapAssertionSummary(summary) {
+  if (
+    typeof summary !== "string" ||
+    summary.length > MAX_SAFE_FAILURE_SUMMARY_CHARACTERS ||
+    !/^failed assertions: [1-9]\d*(?:,[1-9]\d*)*$/u.test(summary)
+  ) {
+    return false;
+  }
+  return summary
+    .slice("failed assertions: ".length)
+    .split(",")
+    .every((value) => Number(value) <= MAX_PGTAP_ASSERTION_NUMBER);
+}
+
 export function summarizeDatabaseCommandFailure(output) {
   const clean = stripAnsi(String(output))
     .slice(0, MAX_DATABASE_FAILURE_SCAN_CHARACTERS)
@@ -252,9 +283,37 @@ export function summarizeDatabaseCommandFailure(output) {
   return "database failure category: unknown";
 }
 
+export function summarizePgTapCommandFailure(output) {
+  const completeClean = stripAnsi(String(output));
+  const sourceFitsPgTapScan =
+    completeClean.length <= MAX_PGTAP_FAILURE_SCAN_CHARACTERS;
+  const clean = completeClean.slice(0, MAX_PGTAP_FAILURE_SCAN_CHARACTERS);
+  if (sourceFitsPgTapScan) {
+    const assertionSummary = summarizePgTapFailure(clean);
+    if (isSafePgTapAssertionSummary(assertionSummary)) {
+      return assertionSummary;
+    }
+  }
+
+  const databaseSummary = summarizeDatabaseCommandFailure(clean);
+  if (databaseSummary !== "database failure category: unknown") {
+    return databaseSummary;
+  }
+
+  if (isKnownPgTapInvocationFailure(clean)) {
+    return "pgTAP failure category: invocation";
+  }
+  if (isTapShapedOutput(clean)) {
+    return "pgTAP failure category: malformed_or_no_summary";
+  }
+  return "pgTAP failure category: unknown";
+}
+
 function isAllowedFailureSummary(candidate) {
-  return /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable|database failure category: (?:connection_or_timeout|sql_or_permission_or_catalog|authentication|unknown))$/u
-    .test(candidate);
+  return typeof candidate === "string" &&
+    candidate.length <= MAX_SAFE_FAILURE_SUMMARY_CHARACTERS &&
+    /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable|database failure category: (?:connection_or_timeout|sql_or_permission_or_catalog|authentication|unknown)|pgTAP failure category: (?:invocation|malformed_or_no_summary|unknown))$/u
+      .test(candidate);
 }
 
 export function assertFrozenHash(actual, expected, label) {
@@ -842,7 +901,7 @@ async function applyMigrationPhase(project, phase, ordinal) {
       "--local",
     ],
     `${phase.label} pgTAP`,
-    { summarizeFailure: summarizePgTapFailure },
+    { summarizeFailure: summarizePgTapCommandFailure },
   );
   assertSingleExactPgTapPass(combineCommandOutput(testResult), phase.tests);
 }
@@ -967,7 +1026,7 @@ async function runGate(project) {
       "--local",
     ],
     "baseline pgTAP",
-    { summarizeFailure: summarizePgTapFailure },
+    { summarizeFailure: summarizePgTapCommandFailure },
   );
   assertExactBaselinePgTapPass(combineCommandOutput(baselineTestResult));
   await requireBaselineDatabase(project.workdir);

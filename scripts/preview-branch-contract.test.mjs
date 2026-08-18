@@ -335,6 +335,106 @@ test("summarizes pgTAP failures as assertion numbers only", () => {
   assert.doesNotMatch(summarizePgTapFailure(output), /PRIVATE_SENTINEL/);
 });
 
+test("summarizes pgTAP command failures with fixed content-safe categories", () => {
+  const summarizePgTapCommandFailure = requiredExport(
+    databaseGate,
+    "summarizePgTapCommandFailure",
+  );
+  const fixtures = [
+    {
+      output: [
+        "\u001B[31mnot ok 18 - PRIVATE_SENTINEL credential=top-secret\u001B[0m",
+        "FATAL: password authentication failed for user private-user",
+      ].join("\n"),
+      expected: "failed assertions: 18",
+    },
+    {
+      output: "FATAL: password authentication failed PRIVATE_SENTINEL postgres://secret@private.invalid/db",
+      expected: "database failure category: authentication",
+    },
+    {
+      output: "ERROR: permission denied PRIVATE_SENTINEL select * from private_table",
+      expected: "database failure category: sql_or_permission_or_catalog",
+    },
+    {
+      output: "could not connect to server: Connection refused PRIVATE_SENTINEL https://private.invalid/ref-a1b2c3",
+      expected: "database failure category: connection_or_timeout",
+    },
+    {
+      output: "Error: unknown flag: --local PRIVATE_SENTINEL /private/path",
+      expected: "pgTAP failure category: invocation",
+    },
+    {
+      output: "Usage:\n  supabase db test [flags]\nPRIVATE_SENTINEL --private-flag",
+      expected: "pgTAP failure category: invocation",
+    },
+    {
+      output: "Error: flag needs an argument: --db-url PRIVATE_SENTINEL postgres://secret@private.invalid/db",
+      expected: "pgTAP failure category: invocation",
+    },
+    {
+      output: "failed to parse connection string PRIVATE_SENTINEL postgres://secret@private.invalid/db",
+      expected: "pgTAP failure category: invocation",
+    },
+    {
+      output: "invalid dsn PRIVATE_SENTINEL postgres://secret@private.invalid/db",
+      expected: "pgTAP failure category: invocation",
+    },
+    {
+      output: "Usage:\n  supabase test db [flags]\nPRIVATE_SENTINEL --private-flag",
+      expected: "pgTAP failure category: invocation",
+    },
+    {
+      output: "TAP version 13\n1..21\n# PRIVATE_SENTINEL no safe assertion number",
+      expected: "pgTAP failure category: malformed_or_no_summary",
+    },
+    {
+      output: "PRIVATE_SENTINEL https://private.invalid/ref-a1b2c3 credential=top-secret",
+      expected: "pgTAP failure category: unknown",
+    },
+  ];
+
+  for (const { output, expected } of fixtures) {
+    const summary = summarizePgTapCommandFailure(output);
+    assert.equal(summary, expected);
+    assert.doesNotMatch(
+      summary,
+      /PRIVATE_SENTINEL|private\.invalid|ref-a1b2c3|top-secret|postgres:\/\/|private_table|private-user|private-path/i,
+    );
+    assert.ok(summary.length <= 80, "pgTAP failure summary must stay bounded");
+  }
+
+  assert.equal(
+    summarizePgTapCommandFailure(
+      "not ok 3 - PRIVATE_SENTINEL\nError: unknown command \"test\" for \"supabase\"\nFATAL: password authentication failed",
+    ),
+    "failed assertions: 3",
+  );
+  assert.equal(
+    summarizePgTapCommandFailure(
+      "Error: unknown flag: --local\nFATAL: password authentication failed PRIVATE_SENTINEL",
+    ),
+    "database failure category: authentication",
+  );
+  assert.equal(
+    summarizePgTapCommandFailure(
+      "Usage: unrelated PRIVATE_SENTINEL\nprivate command details",
+    ),
+    "pgTAP failure category: unknown",
+  );
+  assert.equal(
+    summarizePgTapCommandFailure(
+      Array.from({ length: 10_000 }, (_, index) => `not ok ${index + 1}`)
+        .join("\n"),
+    ),
+    "pgTAP failure category: malformed_or_no_summary",
+  );
+  assert.equal(
+    summarizePgTapCommandFailure("not ok 31 - PRIVATE_SENTINEL"),
+    "pgTAP failure category: malformed_or_no_summary",
+  );
+});
+
 test("classifies database command failures into fixed content-safe categories", () => {
   const summarizeDatabaseCommandFailure = requiredExport(
     databaseGate,
@@ -810,29 +910,51 @@ test("bounds stdout and stderr without echoing child output", async () => {
   }
 }, { timeout: 5_000 });
 
-test("uses a safe failure summarizer without echoing child output", async () => {
+test("uses the safe pgTAP command category without echoing child output", async () => {
   const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");
-  const summarizePgTapFailure = requiredExport(
+  const summarizePgTapCommandFailure = requiredExport(
     databaseGate,
-    "summarizePgTapFailure",
+    "summarizePgTapCommandFailure",
   );
   const failure = await captureFailure(
     runBoundedCommand(
       process.execPath,
       [
         "-e",
-        'process.stdout.write("not ok 18 - PRIVATE_SENTINEL\\n"); process.stderr.write("PRIVATE_ERROR\\n"); process.exit(7);',
+        'process.stdout.write("Error: unknown flag: --local PRIVATE_SENTINEL\\n"); process.stderr.write("PRIVATE_ERROR\\n"); process.exit(7);',
       ],
       "pgTAP failure fixture",
-      { summarizeFailure: summarizePgTapFailure },
+      { summarizeFailure: summarizePgTapCommandFailure },
     ),
   );
 
   assert.equal(
     failure.message,
-    "pgTAP failure fixture failed with exit code 7 (failed assertions: 18)",
+    "pgTAP failure fixture failed with exit code 7 (pgTAP failure category: invocation)",
   );
   assert.doesNotMatch(failure.message, /PRIVATE_SENTINEL|PRIVATE_ERROR/);
+});
+
+test("rejects an overlong otherwise-valid failure summary", async () => {
+  const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");
+  const overlongSummary = `failed assertions: ${Array.from(
+    { length: 64 },
+    () => "1",
+  ).join(",")}`;
+  const failure = await captureFailure(
+    runBoundedCommand(
+      process.execPath,
+      ["-e", "process.exit(7);"],
+      "overlong summary fixture",
+      { summarizeFailure: () => overlongSummary },
+    ),
+  );
+
+  assert.equal(
+    failure.message,
+    "overlong summary fixture failed with exit code 7 (failure summary unavailable)",
+  );
+  assert.doesNotMatch(failure.message, /failed assertions|PRIVATE_SENTINEL/);
 });
 
 test("SIGKILL bounds a child that ignores SIGTERM", async () => {
