@@ -20,6 +20,9 @@ const EXPECTED_TEST = "measurement_attribution_test.sql";
 const EXPECTED_TEST_HASH =
   "de319fb4c1997a3c8a6a64cfe102f556d4134a82f22648608461b4fc396e1d4d";
 const BASELINE_TEST = "measurement_attribution_baseline_test.sql";
+const BASELINE_TEST_COUNT = 23;
+const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576;
+const DEFAULT_TERMINATE_GRACE_MS = 250;
 const BASELINE_MIGRATIONS = [
   "0001_throughline_memory.sql",
   "20260510025558_enable_rls_for_throughline.sql",
@@ -67,20 +70,30 @@ export function assertExactPendingMigration(output, expectedFilename) {
   return filenames[0];
 }
 
-export function assertExactPgTapPass(output) {
+function assertSingleExactPgTapPass(output, expectedTests) {
   const clean = stripAnsi(String(output));
-  const summary = clean.match(/^Files=(\d+),\s+Tests=(\d+),.*$/mu);
-  const result = clean.match(/^Result:\s+(PASS|FAIL)\s*$/mu);
+  const summaries = [...clean.matchAll(/^Files=(\d+),\s+Tests=(\d+),.*$/gmu)];
+  const results = [...clean.matchAll(/^Result:\s+(PASS|FAIL)\s*$/gmu)];
   if (
-    summary === null ||
-    result === null ||
-    Number(summary[1]) !== 1 ||
-    Number(summary[2]) !== 30 ||
-    result[1] !== "PASS"
+    summaries.length !== 1 ||
+    results.length !== 1 ||
+    Number(summaries[0][1]) !== 1 ||
+    Number(summaries[0][2]) !== expectedTests ||
+    results[0][1] !== "PASS"
   ) {
-    throw new Error("Expected exact pgTAP Files=1, Tests=30, Result: PASS");
+    throw new Error(
+      `Expected exact pgTAP Files=1, Tests=${expectedTests}, Result: PASS`,
+    );
   }
-  return { files: 1, tests: 30, result: "PASS" };
+  return { files: 1, tests: expectedTests, result: "PASS" };
+}
+
+export function assertExactPgTapPass(output) {
+  return assertSingleExactPgTapPass(output, 30);
+}
+
+export function assertExactBaselinePgTapPass(output) {
+  return assertSingleExactPgTapPass(output, BASELINE_TEST_COUNT);
 }
 
 export function assertFrozenHash(actual, expected, label) {
@@ -113,45 +126,105 @@ export function buildCleanupPlan({ workdir, projectId }) {
   };
 }
 
-async function runCommand(command, args, label, timeoutMs = 300_000) {
+export async function runBoundedCommand(
+  command,
+  args,
+  label,
+  {
+    timeoutMs = 300_000,
+    maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES,
+    terminateGraceMs = DEFAULT_TERMINATE_GRACE_MS,
+  } = {},
+) {
+  if (
+    !Number.isSafeInteger(timeoutMs) ||
+    timeoutMs <= 0 ||
+    !Number.isSafeInteger(maxOutputBytes) ||
+    maxOutputBytes <= 0 ||
+    !Number.isSafeInteger(terminateGraceMs) ||
+    terminateGraceMs <= 0
+  ) {
+    throw new TypeError("Command bounds must be positive safe integers");
+  }
+
   return await new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(command, args, {
       cwd: repositoryRoot,
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    let stdout = "";
-    let stderr = "";
-    let timedOut = false;
-    const timeout = setTimeout(() => {
-      timedOut = true;
+    const stdoutChunks = [];
+    const stderrChunks = [];
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let failure = null;
+    let settled = false;
+    let terminateTimer = null;
+
+    const settle = (action, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (terminateTimer !== null) clearTimeout(terminateTimer);
+      action(value);
+    };
+
+    const terminate = (reason) => {
+      if (failure !== null) return;
+      failure = reason;
       child.kill("SIGTERM");
+      terminateTimer = setTimeout(() => {
+        if (!settled) child.kill("SIGKILL");
+      }, terminateGraceMs);
+    };
+
+    const timeout = setTimeout(() => {
+      terminate(new Error(`${label} exceeded its bounded timeout`));
     }, timeoutMs);
 
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
-      stdout += chunk;
+      if (failure !== null) return;
+      stdoutBytes += chunk.length;
+      if (stdoutBytes > maxOutputBytes) {
+        terminate(new Error(`${label} stdout exceeded bounded output`));
+        return;
+      }
+      stdoutChunks.push(chunk);
     });
     child.stderr.on("data", (chunk) => {
-      stderr += chunk;
+      if (failure !== null) return;
+      stderrBytes += chunk.length;
+      if (stderrBytes > maxOutputBytes) {
+        terminate(new Error(`${label} stderr exceeded bounded output`));
+        return;
+      }
+      stderrChunks.push(chunk);
     });
     child.on("error", (error) => {
-      clearTimeout(timeout);
-      rejectPromise(new Error(`${label} could not start: ${error.code ?? "unknown"}`));
+      settle(
+        rejectPromise,
+        new Error(`${label} could not start: ${error.code ?? "unknown"}`),
+      );
     });
     child.on("close", (code) => {
-      clearTimeout(timeout);
-      if (timedOut) {
-        rejectPromise(new Error(`${label} exceeded its bounded timeout`));
+      if (failure !== null) {
+        settle(rejectPromise, failure);
       } else if (code !== 0) {
-        rejectPromise(new Error(`${label} failed with exit code ${code}`));
+        settle(
+          rejectPromise,
+          new Error(`${label} failed with exit code ${code}`),
+        );
       } else {
-        resolvePromise({ stdout, stderr });
+        settle(resolvePromise, {
+          stdout: Buffer.concat(stdoutChunks, stdoutBytes).toString("utf8"),
+          stderr: Buffer.concat(stderrChunks, stderrBytes).toString("utf8"),
+        });
       }
     });
   });
 }
+
+const runCommand = runBoundedCommand;
 
 async function sha256File(path) {
   const bytes = await readFile(path);
@@ -410,17 +483,19 @@ async function requireStatus(response, expectedStatus, label) {
   }
 }
 
-async function requireEmptyJsonArray(response, label) {
-  await requireStatus(response, 200, label);
-  let value;
-  try {
-    value = await response.json();
-  } catch {
-    throw new Error(`${label} did not return JSON`);
+export function assertEmptyHeadResponse(response, label) {
+  if (response.status !== 200) {
+    throw new Error(`${label} returned status ${response.status}`);
   }
-  if (!Array.isArray(value) || value.length !== 0) {
-    throw new Error(`${label} did not return an empty array`);
+  if (response.body !== null) {
+    throw new Error(`${label} HEAD response unexpectedly included a body`);
   }
+  const contentRange = response.headers.get("content-range");
+  const match = contentRange?.match(/^(?:\*|\d+-\d+)\/(\d+)$/u) ?? null;
+  if (match === null || Number(match[1]) !== 0) {
+    throw new Error(`${label} did not report exact total count zero`);
+  }
+  return 0;
 }
 
 async function fetchLocal(url, options = {}) {
@@ -443,6 +518,7 @@ async function requireLocalServiceProbes(workdir, includeAllowlist) {
     apikey: runtime.serviceRoleKey,
     Authorization: `Bearer ${runtime.serviceRoleKey}`,
   };
+  const countHeaders = { ...headers, Prefer: "count=exact" };
 
   await requireStatus(
     await fetchLocal(`${runtime.apiUrl}/auth/v1/health`),
@@ -458,28 +534,13 @@ async function requireLocalServiceProbes(workdir, includeAllowlist) {
     ? [...API_READ_TABLES, "throughline_internal_users"]
     : API_READ_TABLES;
   for (const table of tables) {
-    await requireEmptyJsonArray(
+    assertEmptyHeadResponse(
       await fetchLocal(
-        `${runtime.apiUrl}/rest/v1/${table}?select=*&limit=1`,
-        { headers },
+        `${runtime.apiUrl}/rest/v1/${table}?select=id&limit=1`,
+        { method: "HEAD", headers: countHeaders },
       ),
       `service-role REST probe for ${table}`,
     );
-  }
-}
-
-function assertBaselinePgTapPass(output) {
-  const clean = stripAnsi(String(output));
-  const summary = clean.match(/^Files=(\d+),\s+Tests=(\d+),.*$/mu);
-  const result = clean.match(/^Result:\s+(PASS|FAIL)\s*$/mu);
-  if (
-    summary === null ||
-    result === null ||
-    Number(summary[1]) !== 1 ||
-    Number(summary[2]) !== 20 ||
-    result[1] !== "PASS"
-  ) {
-    throw new Error("Baseline pgTAP did not pass its exact 20-test plan");
   }
 }
 
@@ -520,7 +581,7 @@ async function runGate(project) {
     ],
     "baseline pgTAP",
   );
-  assertBaselinePgTapPass(combineCommandOutput(baselineTestResult));
+  assertExactBaselinePgTapPass(combineCommandOutput(baselineTestResult));
   await requireBaselineDatabase(project.workdir);
   await requireLocalServiceProbes(project.workdir, false);
 

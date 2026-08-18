@@ -109,6 +109,127 @@ test("requires exact pgTAP Files=1, Tests=30, Result: PASS", () => {
     () => assertExactPgTapPass(passing.replace("Result: PASS", "Result: FAIL")),
     /Files=1, Tests=30, Result: PASS/,
   );
+  for (const adversarial of [
+    `${passing}\nFiles=1, Tests=30,  1 wallclock secs`,
+    `${passing}\nResult: PASS`,
+    `${passing}\nResult: FAIL`,
+    `Files=1, Tests=29,  1 wallclock secs\n${passing}`,
+  ]) {
+    assert.throws(
+      () => assertExactPgTapPass(adversarial),
+      /Files=1, Tests=30, Result: PASS/,
+    );
+  }
+});
+
+test("requires one exact baseline pgTAP summary and result", () => {
+  const assertExactBaselinePgTapPass = requiredExport(
+    databaseGate,
+    "assertExactBaselinePgTapPass",
+  );
+  const passing = [
+    "All tests successful.",
+    "Files=1, Tests=23,  1 wallclock secs",
+    "Result: PASS",
+  ].join("\n");
+
+  assert.deepEqual(assertExactBaselinePgTapPass(passing), {
+    files: 1,
+    tests: 23,
+    result: "PASS",
+  });
+  for (const adversarial of [
+    `${passing}\nFiles=1, Tests=23,  1 wallclock secs`,
+    `${passing}\nResult: PASS`,
+    `${passing}\nResult: FAIL`,
+    `Files=1, Tests=20,  1 wallclock secs\n${passing}`,
+  ]) {
+    assert.throws(
+      () => assertExactBaselinePgTapPass(adversarial),
+      /Files=1, Tests=23, Result: PASS/,
+    );
+  }
+});
+
+const captureFailure = async (promise) => {
+  try {
+    await promise;
+  } catch (error) {
+    return error;
+  }
+  assert.fail("expected promise to reject");
+};
+
+test("bounds stdout and stderr without echoing child output", async () => {
+  const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");
+
+  for (const stream of ["stdout", "stderr"]) {
+    const failure = await captureFailure(
+      runBoundedCommand(
+        process.execPath,
+        [
+          "-e",
+          `process.${stream}.write("DO_NOT_ECHO".repeat(256)); setInterval(() => {}, 1000);`,
+        ],
+        `${stream} overflow fixture`,
+        { timeoutMs: 2_000, maxOutputBytes: 128, terminateGraceMs: 50 },
+      ),
+    );
+
+    assert.match(failure.message, new RegExp(`${stream} exceeded bounded output`));
+    assert.doesNotMatch(failure.message, /DO_NOT_ECHO/);
+  }
+}, { timeout: 5_000 });
+
+test("SIGKILL bounds a child that ignores SIGTERM", async () => {
+  const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");
+  const startedAt = Date.now();
+  const failure = await captureFailure(
+    runBoundedCommand(
+      process.execPath,
+      [
+        "-e",
+        "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);",
+      ],
+      "timeout fixture",
+      { timeoutMs: 150, maxOutputBytes: 128, terminateGraceMs: 50 },
+    ),
+  );
+
+  assert.match(failure.message, /timeout fixture exceeded its bounded timeout/);
+  assert.ok(Date.now() - startedAt < 2_000, "timeout child must be reaped promptly");
+}, { timeout: 3_000 });
+
+test("accepts only a bodyless successful REST HEAD with exact zero count", () => {
+  const assertEmptyHeadResponse = requiredExport(
+    databaseGate,
+    "assertEmptyHeadResponse",
+  );
+  const empty = new Response(null, {
+    status: 200,
+    headers: { "content-range": "*/0" },
+  });
+
+  assert.equal(assertEmptyHeadResponse(empty, "REST fixture"), 0);
+  assert.throws(
+    () =>
+      assertEmptyHeadResponse(
+        new Response(null, {
+          status: 200,
+          headers: { "content-range": "0-0/1" },
+        }),
+        "REST fixture",
+      ),
+    /exact total count zero/,
+  );
+  assert.throws(
+    () =>
+      assertEmptyHeadResponse(
+        new Response(null, { status: 403 }),
+        "REST fixture",
+      ),
+    /returned status 403/,
+  );
 });
 
 test("rejects a frozen-input hash mismatch", () => {
