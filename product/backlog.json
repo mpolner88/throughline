@@ -29,7 +29,8 @@
         "decision_status": "mixed results are non-decision-grade",
         "readiness_audit": "distribution and internal-user attribution must be paired with a validated first-party recording link; historical rows remain legacy_unattributed",
         "database_gate": "GitHub Actions run 32107892008 passed the data-less local reconstruction with ordered baseline, attribution, privilege, REST, lint, advisor, and cleanup gates; tracked evidence is docs/evidence/2026-08-17-measurement-database-gate.md",
-        "hosted_preview_attempt": "On 2026-08-18, one approved data-less preview was created and deleted; a provider-rejected Management API timeout value blocked readiness before migrations, and the independent post-check confirmed zero previews and unchanged production. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-attempt.md"
+        "hosted_preview_attempt": "On 2026-08-18, one approved data-less preview was created and deleted; a provider-rejected Management API timeout value blocked readiness before migrations, and the independent post-check confirmed zero previews and unchanged production. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-attempt.md",
+        "hosted_preview_classification_attempt": "On 2026-08-18, the separately approved runner at SHA-256 6ae07f49d6115e9ee5d404f7b4bd3879d55c0c741b2ab370fd76f207b0b77055 passed four-service provider health and direct readiness using the selected pooler route, then stopped before stable classification or migrations when the richer database probe command was unavailable. Cleanup and an independent post-check confirmed zero previews, unchanged production API v22/control digest, and the exact same ordered migration pair pending. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-classification-attempt.md"
       },
       "funnel_step": "auth_succeeded -> recording_processed",
       "hypothesis": "Traceable cohort attribution and event-to-durable-recording reconciliation will make activation and processing outcomes interpretable without exposing content or identifiers.",
@@ -38,7 +39,7 @@
       "approval_required": false,
       "authority": "Agents may establish measurement and documentation within the approved slice; no provider, pricing, limit, onboarding, or App Store change is authorized.",
       "dependencies": [],
-      "next_action": "The readiness probe is corrected and independently reviewed, but the single approved preview was consumed. After Mike gives fresh explicit approval for one new short-lived billable data-less preview, verify the ordered attribution and privilege migrations there; only then may the routine reversible production migration/API canary sequence resume."
+      "next_action": "Production rollout remains blocked. Repair or replace the unavailable hosted count-only classification probe with a supported, bounded, content-safe database path and independently verify the exact runner without creating a preview. No additional preview is authorized; any further billable data-less preview requires Mike's fresh explicit approval, and production migrations/API rollout must not resume until the full hosted gate passes."
     },
     {
       "id": "TL-EVAL-001",
