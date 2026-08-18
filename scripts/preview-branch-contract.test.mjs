@@ -243,13 +243,28 @@ test("rejects a frozen-input hash mismatch", () => {
   );
 });
 
+test("uses only the trusted platform temporary root", () => {
+  const resolveMeasurementTemporaryRoot = requiredExport(
+    databaseGate,
+    "resolveMeasurementTemporaryRoot",
+  );
+
+  assert.equal(resolveMeasurementTemporaryRoot("darwin"), "/private/tmp");
+  assert.equal(resolveMeasurementTemporaryRoot("linux"), "/tmp");
+  assert.throws(
+    () => resolveMeasurementTemporaryRoot("win32"),
+    /unsupported measurement database platform/i,
+  );
+});
+
 test("builds cleanup only for one matching unique temporary project", () => {
   const buildCleanupPlan = requiredExport(databaseGate, "buildCleanupPlan");
   const suffix = "a1b2c3d4e5f6";
   const projectId = `throughline-measurement-db-${suffix}`;
-  const workdir = `/private/tmp/${projectId}`;
+  const temporaryRoot = "/private/tmp";
+  const workdir = `${temporaryRoot}/${projectId}`;
 
-  assert.deepEqual(buildCleanupPlan({ workdir, projectId }), {
+  assert.deepEqual(buildCleanupPlan({ workdir, projectId, temporaryRoot }), {
     stopArgs: [
       "--workdir",
       workdir,
@@ -262,7 +277,12 @@ test("builds cleanup only for one matching unique temporary project", () => {
     removeDirectory: workdir,
   });
   assert.throws(
-    () => buildCleanupPlan({ workdir: "/private/tmp/unrelated", projectId }),
+    () =>
+      buildCleanupPlan({
+        workdir: "/private/tmp/unrelated",
+        projectId,
+        temporaryRoot,
+      }),
     /validated unique temporary project/i,
   );
   assert.throws(
@@ -270,6 +290,7 @@ test("builds cleanup only for one matching unique temporary project", () => {
       buildCleanupPlan({
         workdir,
         projectId: "throughline-measurement-db-ffffffffffff",
+        temporaryRoot,
       }),
     /validated unique temporary project/i,
   );
@@ -278,6 +299,35 @@ test("builds cleanup only for one matching unique temporary project", () => {
       buildCleanupPlan({
         workdir: "/private/tmp/throughline-measurement-db-",
         projectId: "throughline-measurement-db-",
+        temporaryRoot,
+      }),
+    /validated unique temporary project/i,
+  );
+  assert.deepEqual(
+    buildCleanupPlan({
+      workdir: `/tmp/${projectId}`,
+      projectId,
+      temporaryRoot: "/tmp",
+    }),
+    {
+      stopArgs: [
+        "--workdir",
+        `/tmp/${projectId}`,
+        "--agent=no",
+        "stop",
+        "--project-id",
+        projectId,
+        "--no-backup",
+      ],
+      removeDirectory: `/tmp/${projectId}`,
+    },
+  );
+  assert.throws(
+    () =>
+      buildCleanupPlan({
+        workdir: `/var/tmp/${projectId}`,
+        projectId,
+        temporaryRoot: "/var/tmp",
       }),
     /validated unique temporary project/i,
   );
