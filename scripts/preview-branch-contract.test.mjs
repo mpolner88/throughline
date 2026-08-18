@@ -52,6 +52,113 @@ test("selects exactly one branch by exact name", () => {
   );
 });
 
+test("builds complete starting-state SQL without referencing absent relations", () => {
+  const buildStartingStateClassificationSql = requiredExport(
+    branchContract,
+    "buildStartingStateClassificationSql",
+  );
+  const absentInventory = {
+    migrationHistory: false,
+    authUsers: false,
+    storageObjects: false,
+    storageBuckets: false,
+  };
+  const absentSql = buildStartingStateClassificationSql(absentInventory);
+  const classificationColumns = [
+    "history",
+    "tables",
+    "measurement_column_count",
+    "measurement_constraint_count",
+    "measurement_index_exists",
+    "allowlist_exists",
+    "auth_user_count",
+    "storage_object_count",
+    "bucket_count",
+    "throughline_bucket_count",
+  ];
+
+  for (const column of classificationColumns) {
+    assert.match(absentSql, new RegExp(`\\bas ${column}\\b`, "u"));
+  }
+  assert.doesNotMatch(
+    absentSql,
+    /from\s+(?:supabase_migrations\.schema_migrations|auth\.users|storage\.(?:objects|buckets))/iu,
+  );
+
+  const mixedSql = buildStartingStateClassificationSql({
+    migrationHistory: true,
+    authUsers: false,
+    storageObjects: true,
+    storageBuckets: false,
+  });
+  assert.match(mixedSql, /from\s+supabase_migrations\.schema_migrations/iu);
+  assert.doesNotMatch(mixedSql, /from\s+auth\.users/iu);
+  assert.match(mixedSql, /from\s+storage\.objects/iu);
+  assert.doesNotMatch(mixedSql, /from\s+storage\.buckets/iu);
+});
+
+test("rejects malformed starting-state relation inventories", () => {
+  const buildStartingStateClassificationSql = requiredExport(
+    branchContract,
+    "buildStartingStateClassificationSql",
+  );
+  const valid = {
+    migrationHistory: false,
+    authUsers: false,
+    storageObjects: false,
+    storageBuckets: false,
+  };
+
+  for (const malformed of [
+    null,
+    [],
+    { ...valid, authUsers: "false" },
+    { ...valid, storageBuckets: undefined },
+    { ...valid, unexpected: false },
+    {
+      migrationHistory: false,
+      authUsers: false,
+      storageObjects: false,
+    },
+  ]) {
+    assert.throws(
+      () => buildStartingStateClassificationSql(malformed),
+      /exact Boolean relation inventory/i,
+    );
+  }
+});
+
+test("requires the exact four baseline migrations in order", () => {
+  const assertExactPendingMigrations = requiredExport(
+    databaseGate,
+    "assertExactPendingMigrations",
+  );
+  const baseline = [
+    "0001_throughline_memory.sql",
+    "20260510025558_enable_rls_for_throughline.sql",
+    "20260516173641_user_accounts_and_mcp_tokens.sql",
+    "20260806044304_product_feedback_and_events.sql",
+  ];
+  const dryRun = (migrations) => [
+    "DRY RUN: migrations will not be pushed to the database.",
+    ...migrations.map((migration) => ` • ${migration}`),
+    "Finished supabase db push.",
+  ].join("\n");
+
+  assert.deepEqual(assertExactPendingMigrations(dryRun(baseline), baseline), baseline);
+  for (const adversarial of [
+    baseline.slice(1),
+    [baseline[0], baseline[0], ...baseline.slice(1)],
+    [baseline[1], baseline[0], ...baseline.slice(2)],
+    [...baseline, "20260817180709_measurement_attribution.sql"],
+  ]) {
+    assert.throws(
+      () => assertExactPendingMigrations(dryRun(adversarial), baseline),
+      /exact pending migration sequence/i,
+    );
+  }
+});
+
 test("requires separate fifth-only and hardening-only local migration dry-runs", () => {
   const assertExactPendingMigration = requiredExport(
     databaseGate,
@@ -223,6 +330,116 @@ test("summarizes pgTAP failures as assertion numbers only", () => {
     "failed assertions unavailable",
   );
   assert.doesNotMatch(summarizePgTapFailure(output), /PRIVATE_SENTINEL/);
+});
+
+test("classifies database command failures into fixed content-safe categories", () => {
+  const summarizeDatabaseCommandFailure = requiredExport(
+    databaseGate,
+    "summarizeDatabaseCommandFailure",
+  );
+  const fixtures = [
+    {
+      output: "could not connect to server: Connection refused PRIVATE_SENTINEL https://private.invalid/ref-a1b2c3",
+      expected: "database failure category: connection_or_timeout",
+    },
+    {
+      output: "ERROR: permission denied for relation PRIVATE_SENTINEL credential=top-secret",
+      expected: "database failure category: sql_or_permission_or_catalog",
+    },
+    {
+      output: "FATAL: password authentication failed for user PRIVATE_SENTINEL postgres://secret@private.invalid/db",
+      expected: "database failure category: authentication",
+    },
+    {
+      output: "PRIVATE_SENTINEL ref-a1b2c3 credential=top-secret https://private.invalid",
+      expected: "database failure category: unknown",
+    },
+  ];
+
+  for (const { output, expected } of fixtures) {
+    const summary = summarizeDatabaseCommandFailure(output);
+    assert.equal(summary, expected);
+    assert.doesNotMatch(
+      summary,
+      /PRIVATE_SENTINEL|private\.invalid|ref-a1b2c3|top-secret|postgres:\/\//i,
+    );
+    assert.ok(summary.length <= 64, "database failure summary must stay bounded");
+  }
+});
+
+test("attaches only a fixed database failure category to probe failures", async () => {
+  const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");
+  const summarizeDatabaseCommandFailure = requiredExport(
+    databaseGate,
+    "summarizeDatabaseCommandFailure",
+  );
+  const failure = await captureFailure(
+    runBoundedCommand(
+      process.execPath,
+      [
+        "-e",
+        'process.stdout.write("permission denied PRIVATE_SENTINEL https://private.invalid/ref-a1b2c3\\n"); process.stderr.write("credential=top-secret\\n"); process.exit(9);',
+      ],
+      "database probe fixture",
+      { summarizeFailure: summarizeDatabaseCommandFailure },
+    ),
+  );
+
+  assert.equal(
+    failure.message,
+    "database probe fixture failed with exit code 9 (database failure category: sql_or_permission_or_catalog)",
+  );
+  assert.doesNotMatch(
+    failure.message,
+    /PRIVATE_SENTINEL|private\.invalid|ref-a1b2c3|top-secret|credential/i,
+  );
+});
+
+test("accepts only one exact full-replay data-less starting-state row", () => {
+  const assertFullReplayStartingState = requiredExport(
+    databaseGate,
+    "assertFullReplayStartingState",
+  );
+  const fullReplay = {
+    history: [],
+    tables: [],
+    measurement_column_count: 0,
+    measurement_constraint_count: 0,
+    measurement_index_exists: false,
+    allowlist_exists: false,
+    auth_user_count: 0,
+    storage_object_count: 0,
+    bucket_count: 0,
+    throughline_bucket_count: 0,
+  };
+
+  assert.equal(assertFullReplayStartingState([fullReplay]), "full-replay");
+  for (const malformed of [
+    null,
+    {},
+    [],
+    [fullReplay, fullReplay],
+    [{ ...fullReplay, history: "[]" }],
+    [{ ...fullReplay, auth_user_count: "0" }],
+    [{ ...fullReplay, tables: ["throughline_recordings"] }],
+    [{ ...fullReplay, unexpected: 0 }],
+    [{
+      history: [],
+      tables: [],
+      measurement_column_count: 0,
+      measurement_constraint_count: 0,
+      measurement_index_exists: false,
+      allowlist_exists: false,
+      auth_user_count: 0,
+      storage_object_count: 0,
+      bucket_count: 0,
+    }],
+  ]) {
+    assert.throws(
+      () => assertFullReplayStartingState(malformed),
+      /exact full-replay data-less starting state/i,
+    );
+  }
 });
 
 const captureFailure = async (promise) => {
