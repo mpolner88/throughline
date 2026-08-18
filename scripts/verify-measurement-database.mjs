@@ -98,10 +98,14 @@ export function assertExactBaselinePgTapPass(output) {
 }
 
 export function summarizePgTapFailure(output) {
-  const assertionNumbers = [...stripAnsi(String(output)).matchAll(
-    /^\s*not ok\s+(\d+)\b/gmu,
-  )]
-    .map((match) => Number(match[1]))
+  const clean = stripAnsi(String(output));
+  const directNumbers = [...clean.matchAll(
+    /^\s*(?:not ok|#\s*Failed test)\s+(\d+)\b/gmu,
+  )].map((match) => Number(match[1]));
+  const summaryNumbers = [...clean.matchAll(
+    /^\s*Failed tests?:\s+([0-9][0-9\s,]*)\s*$/gmu,
+  )].flatMap((match) => match[1].split(/[\s,]+/u).map(Number));
+  const assertionNumbers = [...directNumbers, ...summaryNumbers]
     .filter((value) => Number.isSafeInteger(value) && value > 0);
   const unique = [...new Set(assertionNumbers)].sort((left, right) => left - right);
   return unique.length > 0
