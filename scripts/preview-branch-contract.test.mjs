@@ -80,6 +80,9 @@ test("builds complete starting-state SQL without referencing absent relations", 
   for (const column of classificationColumns) {
     assert.match(absentSql, new RegExp(`\\bas ${column}\\b`, "u"));
   }
+  assert.match(absentSql, /from\s+pg_catalog\.pg_tables/iu);
+  assert.match(absentSql, /from\s+pg_catalog\.pg_constraint/iu);
+  assert.doesNotMatch(absentSql, /from\s+(?:pg_tables|pg_constraint)\b/iu);
   assert.doesNotMatch(
     absentSql,
     /from\s+(?:supabase_migrations\.schema_migrations|auth\.users|storage\.(?:objects|buckets))/iu,
@@ -354,6 +357,26 @@ test("classifies database command failures into fixed content-safe categories", 
       output: "PRIVATE_SENTINEL ref-a1b2c3 credential=top-secret https://private.invalid",
       expected: "database failure category: unknown",
     },
+    {
+      output: "failed to connect to postgres: failed to connect to host: Tenant or user not found PRIVATE_SENTINEL",
+      expected: "database failure category: connection_or_timeout",
+    },
+    {
+      output: "failed to query rows: unexpected EOF PRIVATE_SENTINEL",
+      expected: "database failure category: connection_or_timeout",
+    },
+    {
+      output: "query error: driver: bad connection PRIVATE_SENTINEL",
+      expected: "database failure category: connection_or_timeout",
+    },
+    {
+      output: "failed to connect to postgres: SQLSTATE 08006 PRIVATE_SENTINEL",
+      expected: "database failure category: connection_or_timeout",
+    },
+    {
+      output: "failed to parse rows: unsupported value PRIVATE_SENTINEL",
+      expected: "database failure category: unknown",
+    },
   ];
 
   for (const { output, expected } of fixtures) {
@@ -439,6 +462,321 @@ test("accepts only one exact full-replay data-less starting-state row", () => {
       () => assertFullReplayStartingState(malformed),
       /exact full-replay data-less starting state/i,
     );
+  }
+});
+
+test("accepts only the exact populated baseline classification row", () => {
+  const assertDeltaOnlyStartingState = requiredExport(
+    databaseGate,
+    "assertDeltaOnlyStartingState",
+  );
+  const deltaOnly = {
+    history: [
+      "0001",
+      "20260510025558",
+      "20260516173641",
+      "20260806044304",
+    ],
+    tables: [
+      "throughline_feedback",
+      "throughline_mcp_tokens",
+      "throughline_product_events",
+      "throughline_product_feedback",
+      "throughline_profiles",
+      "throughline_recordings",
+    ],
+    measurement_column_count: 0,
+    measurement_constraint_count: 0,
+    measurement_index_exists: false,
+    allowlist_exists: false,
+    auth_user_count: 0,
+    storage_object_count: 0,
+    bucket_count: 1,
+    throughline_bucket_count: 1,
+  };
+
+  assert.equal(assertDeltaOnlyStartingState([deltaOnly]), "delta-only");
+  for (const malformed of [
+    [{ ...deltaOnly, history: [] }],
+    [{ ...deltaOnly, tables: [...deltaOnly.tables, "unexpected_table"] }],
+    [{ ...deltaOnly, bucket_count: 0 }],
+    [{ ...deltaOnly, throughline_bucket_count: "1" }],
+    [{ ...deltaOnly, unexpected: false }],
+  ]) {
+    assert.throws(
+      () => assertDeltaOnlyStartingState(malformed),
+      /exact delta-only data-less starting state/i,
+    );
+  }
+});
+
+test("executes count-only classification against the exact child Management API target", async () => {
+  const management = await import("./hosted-preview-management-query.mjs")
+    .catch(() => ({}));
+  const runChildManagementQuery = requiredExport(
+    management,
+    "runChildManagementQuery",
+  );
+  const parentRef = "abcdefghijklmnopqrst";
+  const childBranch = {
+    name: "measurement-db-a1b2c3",
+    project_ref: "bcdefghijklmnopqrstu",
+    parent_project_ref: parentRef,
+    is_default: false,
+    with_data: false,
+  };
+  const accessToken = `sbp_${"a".repeat(40)}`;
+  const startingStateRelationInventorySql = requiredExport(
+    branchContract,
+    "startingStateRelationInventorySql",
+  );
+  const sql = startingStateRelationInventorySql();
+  let observed = null;
+
+  const rows = await runChildManagementQuery({
+    accessToken,
+    childBranch,
+    parentRef,
+    expectedBranchName: childBranch.name,
+    sql,
+    stage: "classification_inventory",
+    fetchImpl: async (url, init) => {
+      observed = { url: String(url), init };
+      return new Response(JSON.stringify([{ ok: true }]), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  assert.deepEqual(rows, [{ ok: true }]);
+  assert.equal(
+    observed.url,
+    "https://api.supabase.com/v1/projects/bcdefghijklmnopqrstu/database/query/read-only",
+  );
+  assert.equal(observed.init.method, "POST");
+  assert.equal(observed.init.headers.Authorization, `Bearer ${accessToken}`);
+  assert.equal(observed.init.headers["Content-Type"], "application/json");
+  assert.deepEqual(JSON.parse(observed.init.body), { query: sql });
+  assert.ok(observed.init.signal instanceof AbortSignal);
+});
+
+test("reports only fixed Management API query stages and failure classes", async () => {
+  const management = await import("./hosted-preview-management-query.mjs")
+    .catch(() => ({}));
+  const runChildManagementQuery = requiredExport(
+    management,
+    "runChildManagementQuery",
+  );
+  const base = {
+    accessToken: `sbp_${"b".repeat(40)}`,
+    childBranch: {
+      name: "measurement-db-a1b2c3",
+      project_ref: "bcdefghijklmnopqrstu",
+      parent_project_ref: "abcdefghijklmnopqrst",
+      is_default: false,
+      with_data: false,
+    },
+    parentRef: "abcdefghijklmnopqrst",
+    expectedBranchName: "measurement-db-a1b2c3",
+    sql: branchContract.buildStartingStateClassificationSql({
+      migrationHistory: false,
+      authUsers: false,
+      storageObjects: false,
+      storageBuckets: false,
+    }),
+    stage: "classification_snapshot",
+  };
+  const fixtures = [
+    { status: 403, safeReason: "authentication", retryable: false },
+    { status: 404, safeReason: "target_unavailable", retryable: false },
+    { status: 429, safeReason: "provider_unavailable", retryable: true },
+    { status: 503, safeReason: "provider_unavailable", retryable: true },
+    { status: 200, safeReason: "unexpected_status", retryable: false },
+  ];
+
+  const targetFailure = await captureFailure(runChildManagementQuery({
+    ...base,
+    childBranch: { ...base.childBranch, project_ref: base.parentRef },
+    fetchImpl: async () => assert.fail("invalid target must not be fetched"),
+  }));
+  assert.equal(targetFailure.stage, "classification_snapshot");
+  assert.equal(targetFailure.safeReason, "target_validation");
+  assert.equal(targetFailure.retryable, false);
+
+  for (const invalidTarget of [
+    { childBranch: { ...base.childBranch, name: "measurement-db-wrong" } },
+    { childBranch: { ...base.childBranch, is_default: true } },
+    { childBranch: { ...base.childBranch, with_data: true } },
+    {
+      childBranch: {
+        ...base.childBranch,
+        parent_project_ref: "cdefghijklmnopqrstuv",
+      },
+    },
+    { childBranch: { ...base.childBranch, project_ref: "invalid-ref" } },
+    { expectedBranchName: "measurement-db-wrong" },
+  ]) {
+    const failure = await captureFailure(runChildManagementQuery({
+      ...base,
+      ...invalidTarget,
+      fetchImpl: async () => assert.fail("invalid target must not be fetched"),
+    }));
+    assert.equal(failure.safeReason, "target_validation");
+    assert.equal(failure.retryable, false);
+  }
+
+  for (const fixture of fixtures) {
+    const failure = await captureFailure(runChildManagementQuery({
+      ...base,
+      fetchImpl: async () =>
+        new Response("PRIVATE_SENTINEL credential=top-secret", {
+          status: fixture.status,
+        }),
+    }));
+    assert.equal(failure.stage, "classification_snapshot");
+    assert.equal(failure.safeReason, fixture.safeReason);
+    assert.equal(failure.retryable, fixture.retryable);
+    assert.doesNotMatch(
+      failure.message,
+      /PRIVATE_SENTINEL|top-secret|bcdefghijklmnopqrstu|sbp_/,
+    );
+  }
+
+  const connectionFailure = await captureFailure(runChildManagementQuery({
+    ...base,
+    fetchImpl: async () => {
+      throw new Error("PRIVATE_SENTINEL connection detail");
+    },
+  }));
+  assert.equal(connectionFailure.stage, "classification_snapshot");
+  assert.equal(connectionFailure.safeReason, "connection_or_timeout");
+  assert.equal(connectionFailure.retryable, true);
+  assert.doesNotMatch(connectionFailure.message, /PRIVATE_SENTINEL/);
+
+  const cancellationFailure = await captureFailure(runChildManagementQuery({
+    ...base,
+    fetchImpl: async () => ({
+      status: 503,
+      body: {
+        cancel: async () => {
+          throw new Error("PRIVATE_SENTINEL cancellation detail");
+        },
+      },
+    }),
+  }));
+  assert.equal(cancellationFailure.safeReason, "provider_unavailable");
+  assert.equal(cancellationFailure.retryable, true);
+  assert.doesNotMatch(cancellationFailure.message, /PRIVATE_SENTINEL/);
+});
+
+test("fails closed on malformed or oversized Management API query output", async () => {
+  const management = await import("./hosted-preview-management-query.mjs")
+    .catch(() => ({}));
+  const runChildManagementQuery = requiredExport(
+    management,
+    "runChildManagementQuery",
+  );
+  const base = {
+    accessToken: `sbp_${"c".repeat(40)}`,
+    childBranch: {
+      name: "measurement-db-a1b2c3",
+      project_ref: "bcdefghijklmnopqrstu",
+      parent_project_ref: "abcdefghijklmnopqrst",
+      is_default: false,
+      with_data: false,
+    },
+    parentRef: "abcdefghijklmnopqrst",
+    expectedBranchName: "measurement-db-a1b2c3",
+    sql: branchContract.startingStateRelationInventorySql(),
+    stage: "classification_inventory",
+  };
+  const fixtures = [
+    "not-json PRIVATE_SENTINEL",
+    JSON.stringify({ rows: [{ ok: true }], private: "PRIVATE_SENTINEL" }),
+  ];
+
+  for (const body of fixtures) {
+    const failure = await captureFailure(runChildManagementQuery({
+      ...base,
+      fetchImpl: async () => new Response(body, { status: 201 }),
+    }));
+    assert.equal(failure.stage, "classification_inventory");
+    assert.equal(failure.safeReason, "invalid_response");
+    assert.equal(failure.retryable, false);
+    assert.doesNotMatch(failure.message, /PRIVATE_SENTINEL|x{16}/);
+  }
+
+  let pulls = 0;
+  let cancelled = false;
+  const chunk = new Uint8Array(40_000).fill(120);
+  const chunkedBody = new ReadableStream({
+    pull(controller) {
+      pulls += 1;
+      controller.enqueue(chunk);
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const oversizedFailure = await captureFailure(runChildManagementQuery({
+    ...base,
+    fetchImpl: async () => ({
+      status: 201,
+      headers: new Headers(),
+      body: chunkedBody,
+      arrayBuffer: async () => assert.fail("must not buffer the entire response"),
+    }),
+  }));
+  assert.equal(oversizedFailure.safeReason, "invalid_response");
+  assert.equal(cancelled, true);
+  assert.ok(pulls <= 3, "response stream must be cancelled at the byte bound");
+
+  const declaredOversizeFailure = await captureFailure(runChildManagementQuery({
+    ...base,
+    fetchImpl: async () => ({
+      status: 201,
+      headers: new Headers({ "content-length": "70000" }),
+      body: {
+        cancel: async () => {
+          throw new Error("PRIVATE_SENTINEL cancellation detail");
+        },
+      },
+    }),
+  }));
+  assert.equal(declaredOversizeFailure.safeReason, "invalid_response");
+  assert.doesNotMatch(declaredOversizeFailure.message, /PRIVATE_SENTINEL/);
+});
+
+test("rejects unbounded or non-allowlisted Management queries before fetch", async () => {
+  const management = await import("./hosted-preview-management-query.mjs")
+    .catch(() => ({}));
+  const runChildManagementQuery = requiredExport(
+    management,
+    "runChildManagementQuery",
+  );
+  const base = {
+    accessToken: `sbp_${"d".repeat(40)}`,
+    childBranch: {
+      name: "measurement-db-a1b2c3",
+      project_ref: "bcdefghijklmnopqrstu",
+      parent_project_ref: "abcdefghijklmnopqrst",
+      is_default: false,
+      with_data: false,
+    },
+    parentRef: "abcdefghijklmnopqrst",
+    expectedBranchName: "measurement-db-a1b2c3",
+    stage: "classification_inventory",
+    fetchImpl: async () => assert.fail("invalid query must not be fetched"),
+  };
+
+  for (const sql of [
+    "select * from auth.users;",
+    "select true;".repeat(2_000),
+  ]) {
+    const failure = await captureFailure(runChildManagementQuery({ ...base, sql }));
+    assert.equal(failure.safeReason, "invalid_request");
+    assert.equal(failure.retryable, false);
   }
 });
 

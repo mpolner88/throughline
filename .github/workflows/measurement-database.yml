@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/measurement-database.yml"
+      - "scripts/hosted-preview-management-query.mjs"
       - "scripts/preview-branch-contract.mjs"
       - "scripts/preview-branch-contract.test.mjs"
       - "scripts/verify-measurement-database.mjs"

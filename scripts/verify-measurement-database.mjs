@@ -12,7 +12,10 @@ import {
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { buildStartingStateClassificationSql } from "./preview-branch-contract.mjs";
+import {
+  buildStartingStateClassificationSql,
+  startingStateRelationInventorySql,
+} from "./preview-branch-contract.mjs";
 
 const REQUIRED_CLI_VERSION = "2.98.2";
 const EXPECTED_MIGRATION = "20260817180709_measurement_attribution.sql";
@@ -45,6 +48,14 @@ const EXPECTED_HISTORY = [
   "20260510025558",
   "20260516173641",
   "20260806044304",
+];
+const EXPECTED_BASELINE_TABLES = [
+  "throughline_feedback",
+  "throughline_mcp_tokens",
+  "throughline_product_events",
+  "throughline_product_feedback",
+  "throughline_profiles",
+  "throughline_recordings",
 ];
 const MIGRATION_PHASES = [
   {
@@ -89,14 +100,8 @@ const ALLOWLIST_READ_PROBE = {
   table: "throughline_internal_users",
   column: "auth_user_id",
 };
-const STARTING_STATE_RELATION_INVENTORY_SQL = `
-  select
-    (to_regclass('supabase_migrations.schema_migrations') is not null)
-      as migration_history_exists,
-    (to_regclass('auth.users') is not null) as auth_users_exists,
-    (to_regclass('storage.objects') is not null) as storage_objects_exists,
-    (to_regclass('storage.buckets') is not null) as storage_buckets_exists;
-`;
+const STARTING_STATE_RELATION_INVENTORY_SQL =
+  startingStateRelationInventorySql();
 const STARTING_STATE_COLUMNS = [
   "history",
   "tables",
@@ -231,18 +236,18 @@ export function summarizeDatabaseCommandFailure(output) {
     return "database failure category: authentication";
   }
   if (
-    /(?:could not connect|connection (?:refused|reset|terminated|timed out)|server closed the connection|network is unreachable|no route to host|econnrefused|econnreset|etimedout|timed out|\btimeout\b|deadline exceeded|could not translate host name|temporary failure in name resolution|getaddrinfo)/u.test(
-      clean,
-    )
-  ) {
-    return "database failure category: connection_or_timeout";
-  }
-  if (
     /(?:permission denied|insufficient privilege|must be (?:owner|superuser)|syntax error|undefined (?:table|column|function|schema)|does not exist|\b42501\b|\b42p01\b|\b42703\b|\b42883\b|catalog)/u.test(
       clean,
     )
   ) {
     return "database failure category: sql_or_permission_or_catalog";
+  }
+  if (
+    /(?:could not connect|failed to connect to postgres|failed to connect to [`']?host|connection (?:refused|reset|terminated|timed out)|server closed the connection|network is unreachable|no route to host|econnrefused|econnreset|etimedout|timed out|\btimeout\b|deadline exceeded|could not translate host name|temporary failure in name resolution|getaddrinfo|tenant or user not found|unexpected eof|driver:\s*bad connection|\b08[0-9a-z]{3}\b)/u.test(
+      clean,
+    )
+  ) {
+    return "database failure category: connection_or_timeout";
   }
   return "database failure category: unknown";
 }
@@ -542,6 +547,31 @@ export function assertFullReplayStartingState(rows) {
   return "full-replay";
 }
 
+const exactArray = (actual, expected) =>
+  Array.isArray(actual) &&
+  actual.length === expected.length &&
+  actual.every((value, index) => value === expected[index]);
+
+export function assertDeltaOnlyStartingState(rows) {
+  const valid = Array.isArray(rows) &&
+    rows.length === 1 &&
+    hasExactOwnKeys(rows[0], STARTING_STATE_COLUMNS) &&
+    exactArray(rows[0].history, EXPECTED_HISTORY) &&
+    exactArray(rows[0].tables, EXPECTED_BASELINE_TABLES) &&
+    rows[0].measurement_column_count === 0 &&
+    rows[0].measurement_constraint_count === 0 &&
+    rows[0].measurement_index_exists === false &&
+    rows[0].allowlist_exists === false &&
+    rows[0].auth_user_count === 0 &&
+    rows[0].storage_object_count === 0 &&
+    rows[0].bucket_count === 1 &&
+    rows[0].throughline_bucket_count === 1;
+  if (!valid) {
+    throw new Error("Expected exact delta-only data-less starting state");
+  }
+  return "delta-only";
+}
+
 async function runDatabaseProbe(workdir, label, sql) {
   const probeDirectory = join(workdir, "database-probes");
   await mkdir(probeDirectory, { recursive: true, mode: 0o700 });
@@ -581,6 +611,21 @@ async function requireFullReplayDatabase(workdir) {
     buildStartingStateClassificationSql(inventory),
   );
   assertFullReplayStartingState(rows);
+}
+
+async function requireDeltaOnlyClassificationDatabase(workdir) {
+  const inventoryRows = await runDatabaseProbe(
+    workdir,
+    "baseline-relation-inventory",
+    STARTING_STATE_RELATION_INVENTORY_SQL,
+  );
+  const inventory = requireStartingStateRelationInventory(inventoryRows);
+  const rows = await runDatabaseProbe(
+    workdir,
+    "baseline-starting-state",
+    buildStartingStateClassificationSql(inventory),
+  );
+  assertDeltaOnlyStartingState(rows);
 }
 
 function requireSingleTrueRow(rows, expectedFields, label) {
@@ -926,6 +971,7 @@ async function runGate(project) {
   );
   assertExactBaselinePgTapPass(combineCommandOutput(baselineTestResult));
   await requireBaselineDatabase(project.workdir);
+  await requireDeltaOnlyClassificationDatabase(project.workdir);
 
   const [measurementPhase, hardeningPhase] = MIGRATION_PHASES;
   await applyMigrationPhase(project, measurementPhase, "fifth");
