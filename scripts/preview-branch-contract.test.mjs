@@ -151,6 +151,25 @@ test("requires one exact baseline pgTAP summary and result", () => {
   }
 });
 
+test("summarizes pgTAP failures as assertion numbers only", () => {
+  const summarizePgTapFailure = requiredExport(
+    databaseGate,
+    "summarizePgTapFailure",
+  );
+  const output = [
+    "not ok 18 - PRIVATE_SENTINEL service role detail",
+    "not ok 3 - PRIVATE_SENTINEL schema detail",
+    "not ok 18 - duplicate failure detail",
+  ].join("\n");
+
+  assert.equal(summarizePgTapFailure(output), "failed assertions: 3,18");
+  assert.equal(
+    summarizePgTapFailure("pgTAP exited before producing TAP"),
+    "failed assertions unavailable",
+  );
+  assert.doesNotMatch(summarizePgTapFailure(output), /PRIVATE_SENTINEL/);
+});
+
 const captureFailure = async (promise) => {
   try {
     await promise;
@@ -180,6 +199,31 @@ test("bounds stdout and stderr without echoing child output", async () => {
     assert.doesNotMatch(failure.message, /DO_NOT_ECHO/);
   }
 }, { timeout: 5_000 });
+
+test("uses a safe failure summarizer without echoing child output", async () => {
+  const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");
+  const summarizePgTapFailure = requiredExport(
+    databaseGate,
+    "summarizePgTapFailure",
+  );
+  const failure = await captureFailure(
+    runBoundedCommand(
+      process.execPath,
+      [
+        "-e",
+        'process.stdout.write("not ok 18 - PRIVATE_SENTINEL\\n"); process.stderr.write("PRIVATE_ERROR\\n"); process.exit(7);',
+      ],
+      "pgTAP failure fixture",
+      { summarizeFailure: summarizePgTapFailure },
+    ),
+  );
+
+  assert.equal(
+    failure.message,
+    "pgTAP failure fixture failed with exit code 7 (failed assertions: 18)",
+  );
+  assert.doesNotMatch(failure.message, /PRIVATE_SENTINEL|PRIVATE_ERROR/);
+});
 
 test("SIGKILL bounds a child that ignores SIGTERM", async () => {
   const runBoundedCommand = requiredExport(databaseGate, "runBoundedCommand");

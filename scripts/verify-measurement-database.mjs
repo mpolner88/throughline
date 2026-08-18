@@ -97,6 +97,18 @@ export function assertExactBaselinePgTapPass(output) {
   return assertSingleExactPgTapPass(output, BASELINE_TEST_COUNT);
 }
 
+export function summarizePgTapFailure(output) {
+  const assertionNumbers = [...stripAnsi(String(output)).matchAll(
+    /^\s*not ok\s+(\d+)\b/gmu,
+  )]
+    .map((match) => Number(match[1]))
+    .filter((value) => Number.isSafeInteger(value) && value > 0);
+  const unique = [...new Set(assertionNumbers)].sort((left, right) => left - right);
+  return unique.length > 0
+    ? `failed assertions: ${unique.join(",")}`
+    : "failed assertions unavailable";
+}
+
 export function assertFrozenHash(actual, expected, label) {
   if (actual !== expected) {
     throw new Error(`${label} SHA-256 mismatch`);
@@ -143,6 +155,7 @@ export async function runBoundedCommand(
     timeoutMs = 300_000,
     maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES,
     terminateGraceMs = DEFAULT_TERMINATE_GRACE_MS,
+    summarizeFailure = null,
   } = {},
 ) {
   if (
@@ -151,7 +164,8 @@ export async function runBoundedCommand(
     !Number.isSafeInteger(maxOutputBytes) ||
     maxOutputBytes <= 0 ||
     !Number.isSafeInteger(terminateGraceMs) ||
-    terminateGraceMs <= 0
+    terminateGraceMs <= 0 ||
+    (summarizeFailure !== null && typeof summarizeFailure !== "function")
   ) {
     throw new TypeError("Command bounds must be positive safe integers");
   }
@@ -219,9 +233,25 @@ export async function runBoundedCommand(
       if (failure !== null) {
         settle(rejectPromise, failure);
       } else if (code !== 0) {
+        let safeSummary = "";
+        if (summarizeFailure !== null) {
+          try {
+            const candidate = summarizeFailure(
+              `${Buffer.concat(stdoutChunks, stdoutBytes).toString("utf8")}\n${
+                Buffer.concat(stderrChunks, stderrBytes).toString("utf8")
+              }`,
+            );
+            safeSummary = /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable)$/u
+                .test(candidate)
+              ? ` (${candidate})`
+              : " (failure summary unavailable)";
+          } catch {
+            safeSummary = " (failure summary unavailable)";
+          }
+        }
         settle(
           rejectPromise,
-          new Error(`${label} failed with exit code ${code}`),
+          new Error(`${label} failed with exit code ${code}${safeSummary}`),
         );
       } else {
         settle(resolvePromise, {
@@ -596,6 +626,7 @@ async function runGate(project) {
       "--local",
     ],
     "baseline pgTAP",
+    { summarizeFailure: summarizePgTapFailure },
   );
   assertExactBaselinePgTapPass(combineCommandOutput(baselineTestResult));
   await requireBaselineDatabase(project.workdir);
@@ -648,6 +679,7 @@ async function runGate(project) {
       "--local",
     ],
     "candidate pgTAP",
+    { summarizeFailure: summarizePgTapFailure },
   );
   assertExactPgTapPass(combineCommandOutput(candidateTestResult));
   await requirePostMigrationDatabase(project.workdir);
