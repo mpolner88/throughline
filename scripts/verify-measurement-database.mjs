@@ -12,6 +12,8 @@ import {
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { buildStartingStateClassificationSql } from "./preview-branch-contract.mjs";
+
 const REQUIRED_CLI_VERSION = "2.98.2";
 const EXPECTED_MIGRATION = "20260817180709_measurement_attribution.sql";
 const EXPECTED_MIGRATION_HASH =
@@ -31,6 +33,7 @@ const BASELINE_TEST_COUNT = 21;
 const HARDENING_TEST_COUNT = 7;
 const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576;
 const DEFAULT_TERMINATE_GRACE_MS = 250;
+const MAX_DATABASE_FAILURE_SCAN_CHARACTERS = 32_768;
 const BASELINE_MIGRATIONS = [
   "0001_throughline_memory.sql",
   "20260510025558_enable_rls_for_throughline.sql",
@@ -86,6 +89,26 @@ const ALLOWLIST_READ_PROBE = {
   table: "throughline_internal_users",
   column: "auth_user_id",
 };
+const STARTING_STATE_RELATION_INVENTORY_SQL = `
+  select
+    (to_regclass('supabase_migrations.schema_migrations') is not null)
+      as migration_history_exists,
+    (to_regclass('auth.users') is not null) as auth_users_exists,
+    (to_regclass('storage.objects') is not null) as storage_objects_exists,
+    (to_regclass('storage.buckets') is not null) as storage_buckets_exists;
+`;
+const STARTING_STATE_COLUMNS = [
+  "history",
+  "tables",
+  "measurement_column_count",
+  "measurement_constraint_count",
+  "measurement_index_exists",
+  "allowlist_exists",
+  "auth_user_count",
+  "storage_object_count",
+  "bucket_count",
+  "throughline_bucket_count",
+];
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "..");
@@ -93,11 +116,40 @@ const repositoryRoot = resolve(scriptDirectory, "..");
 const stripAnsi = (value) =>
   value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/gu, "");
 
-export function assertExactPendingMigration(output, expectedFilename) {
-  const filenames = [...stripAnsi(String(output)).matchAll(
+function pendingMigrationFilenames(output) {
+  return [...stripAnsi(String(output)).matchAll(
     /^\s*[•*]\s+([0-9][A-Za-z0-9_-]*\.sql)\s*$/gmu,
   )].map((match) => match[1]);
-  if (filenames.length !== 1 || filenames[0] !== expectedFilename) {
+}
+
+export function assertExactPendingMigrations(output, expectedFilenames) {
+  if (
+    !Array.isArray(expectedFilenames) ||
+    expectedFilenames.length === 0 ||
+    expectedFilenames.some((filename) =>
+      typeof filename !== "string" ||
+      !/^[0-9][A-Za-z0-9_-]*\.sql$/u.test(filename)
+    ) ||
+    new Set(expectedFilenames).size !== expectedFilenames.length
+  ) {
+    throw new TypeError("Expected migrations must be unique frozen SQL filenames");
+  }
+  const filenames = pendingMigrationFilenames(output);
+  if (
+    filenames.length !== expectedFilenames.length ||
+    filenames.some((filename, index) => filename !== expectedFilenames[index])
+  ) {
+    throw new Error("Expected exact pending migration sequence in frozen order");
+  }
+  return filenames;
+}
+
+export function assertExactPendingMigration(output, expectedFilename) {
+  let filenames;
+  try {
+    filenames = assertExactPendingMigrations(output, [expectedFilename]);
+  } catch (error) {
+    if (error instanceof TypeError) throw error;
     throw new Error("Expected exactly one pending migration with the frozen filename");
   }
   return filenames[0];
@@ -165,6 +217,39 @@ export function summarizePgTapFailure(output) {
   return unique.length > 0
     ? `failed assertions: ${unique.join(",")}`
     : "failed assertions unavailable";
+}
+
+export function summarizeDatabaseCommandFailure(output) {
+  const clean = stripAnsi(String(output))
+    .slice(0, MAX_DATABASE_FAILURE_SCAN_CHARACTERS)
+    .toLowerCase();
+  if (
+    /(?:password authentication failed|authentication failed|invalid password|no pg_hba\.conf entry|\b28p01\b|\b28000\b)/u.test(
+      clean,
+    )
+  ) {
+    return "database failure category: authentication";
+  }
+  if (
+    /(?:could not connect|connection (?:refused|reset|terminated|timed out)|server closed the connection|network is unreachable|no route to host|econnrefused|econnreset|etimedout|timed out|\btimeout\b|deadline exceeded|could not translate host name|temporary failure in name resolution|getaddrinfo)/u.test(
+      clean,
+    )
+  ) {
+    return "database failure category: connection_or_timeout";
+  }
+  if (
+    /(?:permission denied|insufficient privilege|must be (?:owner|superuser)|syntax error|undefined (?:table|column|function|schema)|does not exist|\b42501\b|\b42p01\b|\b42703\b|\b42883\b|catalog)/u.test(
+      clean,
+    )
+  ) {
+    return "database failure category: sql_or_permission_or_catalog";
+  }
+  return "database failure category: unknown";
+}
+
+function isAllowedFailureSummary(candidate) {
+  return /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable|database failure category: (?:connection_or_timeout|sql_or_permission_or_catalog|authentication|unknown))$/u
+    .test(candidate);
 }
 
 export function assertFrozenHash(actual, expected, label) {
@@ -299,8 +384,7 @@ export async function runBoundedCommand(
                 Buffer.concat(stderrChunks, stderrBytes).toString("utf8")
               }`,
             );
-            safeSummary = /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable)$/u
-                .test(candidate)
+            safeSummary = isAllowedFailureSummary(candidate)
               ? ` (${candidate})`
               : " (failure summary unavailable)";
           } catch {
@@ -368,12 +452,6 @@ async function createIsolatedProject() {
       { mode: 0o600 },
     );
 
-    for (const filename of BASELINE_MIGRATIONS) {
-      await copyFile(
-        join(repositoryRoot, "supabase", "migrations", filename),
-        join(migrationsDirectory, filename),
-      );
-    }
     for (const filename of [BASELINE_TEST, EXPECTED_TEST, HARDENING_TEST]) {
       await copyFile(
         join(repositoryRoot, "supabase", "tests", filename),
@@ -412,6 +490,58 @@ function extractRows(value, label) {
   return rows;
 }
 
+function hasExactOwnKeys(value, expectedKeys) {
+  return value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).sort().join("\n") ===
+      [...expectedKeys].sort().join("\n");
+}
+
+function requireStartingStateRelationInventory(rows) {
+  const fields = [
+    "migration_history_exists",
+    "auth_users_exists",
+    "storage_objects_exists",
+    "storage_buckets_exists",
+  ];
+  if (
+    rows.length !== 1 ||
+    !hasExactOwnKeys(rows[0], fields) ||
+    fields.some((field) => typeof rows[0][field] !== "boolean")
+  ) {
+    throw new Error("Starting-state relation inventory returned an invalid shape");
+  }
+  return {
+    migrationHistory: rows[0].migration_history_exists,
+    authUsers: rows[0].auth_users_exists,
+    storageObjects: rows[0].storage_objects_exists,
+    storageBuckets: rows[0].storage_buckets_exists,
+  };
+}
+
+export function assertFullReplayStartingState(rows) {
+  const valid = Array.isArray(rows) &&
+    rows.length === 1 &&
+    hasExactOwnKeys(rows[0], STARTING_STATE_COLUMNS) &&
+    Array.isArray(rows[0].history) &&
+    rows[0].history.length === 0 &&
+    Array.isArray(rows[0].tables) &&
+    rows[0].tables.length === 0 &&
+    rows[0].measurement_column_count === 0 &&
+    rows[0].measurement_constraint_count === 0 &&
+    rows[0].measurement_index_exists === false &&
+    rows[0].allowlist_exists === false &&
+    rows[0].auth_user_count === 0 &&
+    rows[0].storage_object_count === 0 &&
+    rows[0].bucket_count === 0 &&
+    rows[0].throughline_bucket_count === 0;
+  if (!valid) {
+    throw new Error("Expected exact full-replay data-less starting state");
+  }
+  return "full-replay";
+}
+
 async function runDatabaseProbe(workdir, label, sql) {
   const probeDirectory = join(workdir, "database-probes");
   await mkdir(probeDirectory, { recursive: true, mode: 0o700 });
@@ -433,8 +563,24 @@ async function runDatabaseProbe(workdir, label, sql) {
       sqlFile,
     ],
     `database probe ${label}`,
+    { summarizeFailure: summarizeDatabaseCommandFailure },
   );
   return extractRows(parseJsonWithoutEcho(result.stdout, label), label);
+}
+
+async function requireFullReplayDatabase(workdir) {
+  const inventoryRows = await runDatabaseProbe(
+    workdir,
+    "starting-relation-inventory",
+    STARTING_STATE_RELATION_INVENTORY_SQL,
+  );
+  const inventory = requireStartingStateRelationInventory(inventoryRows);
+  const rows = await runDatabaseProbe(
+    workdir,
+    "starting-state",
+    buildStartingStateClassificationSql(inventory),
+  );
+  assertFullReplayStartingState(rows);
 }
 
 function requireSingleTrueRow(rows, expectedFields, label) {
@@ -561,6 +707,45 @@ async function requirePostMigrationDatabase(workdir, expectedHistory, label) {
       "bucket_ok",
     ],
     `${label} database contract`,
+  );
+}
+
+async function applyBaselineMigrations(project) {
+  for (const filename of BASELINE_MIGRATIONS) {
+    await copyFile(
+      join(repositoryRoot, "supabase", "migrations", filename),
+      join(project.migrationsDirectory, filename),
+    );
+  }
+  const dryRunResult = await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      project.workdir,
+      "--agent=no",
+      "db",
+      "push",
+      "--local",
+      "--dry-run",
+    ],
+    "baseline-only local migration dry-run",
+  );
+  assertExactPendingMigrations(
+    combineCommandOutput(dryRunResult),
+    BASELINE_MIGRATIONS,
+  );
+  await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      project.workdir,
+      "--agent=no",
+      "db",
+      "push",
+      "--local",
+      "--yes",
+    ],
+    "explicit baseline migration apply",
   );
 }
 
@@ -721,6 +906,9 @@ async function runGate(project) {
     "bounded local Supabase start",
   );
   void startResult;
+
+  await requireFullReplayDatabase(project.workdir);
+  await applyBaselineMigrations(project);
 
   const baselineTestResult = await runCommand(
     "supabase",
