@@ -113,10 +113,12 @@
 
 1. Re-run the full local suite, database tests, an unsigned clean-tree iOS Release build, and an authenticated local event-ingestion smoke.
 2. Confirm rollback targets: API v22 commit `5d1fc2f` and the pre-migration nullable/default behavior.
-3. Apply the additive migration, then deploy the backward-compatible API. Record exact migration, function version/digest, source commit, tests, canaries, and rollback evidence without secrets.
-4. Run controlled authenticated legacy-v1 and schema-v2 canaries. Require correct database attribution, valid owner link, and no raw identifier in PostHog.
-5. If any canary fails, revert the API behavior and leave the additive nullable columns in place for diagnosis.
-6. Commit `docs(measurement): record attribution rollout`, then obtain independent deployment-evidence review.
+3. Require the isolated database gate to reconstruct migrations 1–4, apply only the frozen attribution migration as phase five, and then apply only the reviewed privilege-hardening migration as phase six. Both exact dry-runs, pgTAP contracts, empty service-role REST probes, lint, and advisors must pass before any hosted rollout.
+4. On the linked production project, require the dry-run to name the same two migrations in that order. Apply and verify the attribution migration first, then apply and verify privilege hardening; do not deploy the API between phases.
+5. Deploy the backward-compatible API only after both migrations pass. Record exact migrations and hashes, function version/digest, source commit, tests, canaries, and rollback evidence without secrets.
+6. Run controlled authenticated legacy-v1 and schema-v2 canaries. Require correct database attribution, valid owner link, and no raw identifier in PostHog.
+7. If any canary fails, revert the API behavior and leave the nullable evidence columns and explicit least-privilege grants in place for diagnosis.
+8. Commit `docs(measurement): record attribution rollout`, then obtain independent deployment-evidence review.
 
 ## Task 7: Confirm internal accounts and prepare TestFlight evidence
 

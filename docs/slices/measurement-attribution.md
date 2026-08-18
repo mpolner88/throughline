@@ -82,7 +82,7 @@ Split those populations into debug, internal dogfood, external TestFlight, exter
 - No onboarding copy, layout, or flow change.
 - No provider, model, prompt, data-use policy, pricing, recording-limit, subscription, credit, or App Store-submission change.
 - Old clients remain accepted; unknown stays unknown; historical classifications are not fabricated.
-- Migration and API are additive. Rollback reverts app/API behavior while leaving nullable evidence columns intact.
+- The attribution schema and API are additive. A separately ordered privilege-hardening migration makes existing intended access explicit without changing RLS policies; rollback reverts app/API behavior while leaving the nullable evidence columns and safer explicit grants intact.
 
 ## Known caveats
 

@@ -19,8 +19,16 @@ const EXPECTED_MIGRATION_HASH =
 const EXPECTED_TEST = "measurement_attribution_test.sql";
 const EXPECTED_TEST_HASH =
   "de319fb4c1997a3c8a6a64cfe102f556d4134a82f22648608461b4fc396e1d4d";
+const HARDENING_MIGRATION =
+  "20260818061933_measurement_privilege_hardening.sql";
+const HARDENING_MIGRATION_HASH =
+  "2997ea280d6ea825b0561e15adbb54fe4edfbb5e30626840df50cc61d1be3162";
+const HARDENING_TEST = "measurement_privilege_hardening_test.sql";
+const HARDENING_TEST_HASH =
+  "5be986f4815b066d6321127e484da3a574f92ee5c196d777e4fd6286e8bf1e7b";
 const BASELINE_TEST = "measurement_attribution_baseline_test.sql";
-const BASELINE_TEST_COUNT = 23;
+const BASELINE_TEST_COUNT = 21;
+const HARDENING_TEST_COUNT = 7;
 const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576;
 const DEFAULT_TERMINATE_GRACE_MS = 250;
 const BASELINE_MIGRATIONS = [
@@ -34,6 +42,26 @@ const EXPECTED_HISTORY = [
   "20260510025558",
   "20260516173641",
   "20260806044304",
+];
+const MIGRATION_PHASES = [
+  {
+    label: "measurement attribution",
+    migration: EXPECTED_MIGRATION,
+    migrationHash: EXPECTED_MIGRATION_HASH,
+    test: EXPECTED_TEST,
+    testHash: EXPECTED_TEST_HASH,
+    tests: 30,
+    version: "20260817180709",
+  },
+  {
+    label: "privilege hardening",
+    migration: HARDENING_MIGRATION,
+    migrationHash: HARDENING_MIGRATION_HASH,
+    test: HARDENING_TEST,
+    testHash: HARDENING_TEST_HASH,
+    tests: HARDENING_TEST_COUNT,
+    version: "20260818061933",
+  },
 ];
 const TEMP_PREFIX = "throughline-measurement-db-";
 const TRUSTED_TEMP_ROOTS = new Set(["/private/tmp", "/tmp"]);
@@ -95,6 +123,18 @@ export function assertExactPgTapPass(output) {
 
 export function assertExactBaselinePgTapPass(output) {
   return assertSingleExactPgTapPass(output, BASELINE_TEST_COUNT);
+}
+
+export function assertExactHardeningPgTapPass(output) {
+  return assertSingleExactPgTapPass(output, HARDENING_TEST_COUNT);
+}
+
+export function measurementMigrationPhases() {
+  return MIGRATION_PHASES.map(({ migration, test, tests }) => ({
+    migration,
+    test,
+    tests,
+  }));
 }
 
 export function summarizePgTapFailure(output) {
@@ -320,7 +360,7 @@ async function createIsolatedProject() {
         join(migrationsDirectory, filename),
       );
     }
-    for (const filename of [BASELINE_TEST, EXPECTED_TEST]) {
+    for (const filename of [BASELINE_TEST, EXPECTED_TEST, HARDENING_TEST]) {
       await copyFile(
         join(repositoryRoot, "supabase", "tests", filename),
         join(testsDirectory, filename),
@@ -457,15 +497,15 @@ async function requireBaselineDatabase(workdir) {
   );
 }
 
-async function requirePostMigrationDatabase(workdir) {
+async function requirePostMigrationDatabase(workdir, expectedHistory, label) {
   const rows = await runDatabaseProbe(
     workdir,
-    "post-migration",
+    label,
     `
       select
         (select array_agg(version order by version)
           from supabase_migrations.schema_migrations) =
-          array['${[...EXPECTED_HISTORY, "20260817180709"].join("','")}']::text[]
+          array['${expectedHistory.join("','")}']::text[]
           as history_ok,
         to_regclass('public.throughline_internal_users') is not null
           as allowlist_exists,
@@ -506,8 +546,61 @@ async function requirePostMigrationDatabase(workdir) {
       "storage_rows_empty",
       "bucket_ok",
     ],
-    "post-migration database contract",
+    `${label} database contract`,
   );
+}
+
+async function applyMigrationPhase(project, phase, ordinal) {
+  await copyFile(
+    join(repositoryRoot, "supabase", "migrations", phase.migration),
+    join(project.migrationsDirectory, phase.migration),
+  );
+  const dryRunResult = await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      project.workdir,
+      "--agent=no",
+      "db",
+      "push",
+      "--local",
+      "--dry-run",
+    ],
+    `${ordinal}-only local migration dry-run`,
+  );
+  assertExactPendingMigration(
+    combineCommandOutput(dryRunResult),
+    phase.migration,
+  );
+  await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      project.workdir,
+      "--agent=no",
+      "db",
+      "push",
+      "--local",
+      "--yes",
+    ],
+    `explicit ${phase.label} migration apply`,
+  );
+
+  const testResult = await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      project.workdir,
+      "--agent=no",
+      "db",
+      "test",
+      join(project.testsDirectory, phase.test),
+      "--local",
+    ],
+    `${phase.label} pgTAP`,
+    { summarizeFailure: summarizePgTapFailure },
+  );
+  assertSingleExactPgTapPass(combineCommandOutput(testResult), phase.tests);
 }
 
 function localRuntimeFromStatus(status) {
@@ -634,59 +727,21 @@ async function runGate(project) {
   );
   assertExactBaselinePgTapPass(combineCommandOutput(baselineTestResult));
   await requireBaselineDatabase(project.workdir);
-  await requireLocalServiceProbes(project.workdir, false);
 
-  await copyFile(
-    join(repositoryRoot, "supabase", "migrations", EXPECTED_MIGRATION),
-    join(project.migrationsDirectory, EXPECTED_MIGRATION),
-  );
-  const dryRunResult = await runCommand(
-    "supabase",
-    [
-      "--workdir",
-      project.workdir,
-      "--agent=no",
-      "db",
-      "push",
-      "--local",
-      "--dry-run",
-    ],
-    "fifth-only local migration dry-run",
-  );
-  assertExactPendingMigration(
-    combineCommandOutput(dryRunResult),
-    EXPECTED_MIGRATION,
-  );
-  await runCommand(
-    "supabase",
-    [
-      "--workdir",
-      project.workdir,
-      "--agent=no",
-      "db",
-      "push",
-      "--local",
-      "--yes",
-    ],
-    "explicit local migration apply",
+  const [measurementPhase, hardeningPhase] = MIGRATION_PHASES;
+  await applyMigrationPhase(project, measurementPhase, "fifth");
+  await requirePostMigrationDatabase(
+    project.workdir,
+    [...EXPECTED_HISTORY, measurementPhase.version],
+    "post-measurement",
   );
 
-  const candidateTestResult = await runCommand(
-    "supabase",
-    [
-      "--workdir",
-      project.workdir,
-      "--agent=no",
-      "db",
-      "test",
-      join(project.testsDirectory, EXPECTED_TEST),
-      "--local",
-    ],
-    "candidate pgTAP",
-    { summarizeFailure: summarizePgTapFailure },
+  await applyMigrationPhase(project, hardeningPhase, "sixth");
+  await requirePostMigrationDatabase(
+    project.workdir,
+    [...EXPECTED_HISTORY, measurementPhase.version, hardeningPhase.version],
+    "post-hardening",
   );
-  assertExactPgTapPass(combineCommandOutput(candidateTestResult));
-  await requirePostMigrationDatabase(project.workdir);
   await requireLocalServiceProbes(project.workdir, true);
 
   await runCommand(
@@ -748,23 +803,20 @@ async function cleanupProject(project) {
 }
 
 export async function main() {
-  const migrationPath = join(
-    repositoryRoot,
-    "supabase",
-    "migrations",
-    EXPECTED_MIGRATION,
-  );
-  const testPath = join(repositoryRoot, "supabase", "tests", EXPECTED_TEST);
-  assertFrozenHash(
-    await sha256File(migrationPath),
-    EXPECTED_MIGRATION_HASH,
-    "candidate migration",
-  );
-  assertFrozenHash(
-    await sha256File(testPath),
-    EXPECTED_TEST_HASH,
-    "candidate pgTAP",
-  );
+  for (const phase of MIGRATION_PHASES) {
+    assertFrozenHash(
+      await sha256File(
+        join(repositoryRoot, "supabase", "migrations", phase.migration),
+      ),
+      phase.migrationHash,
+      `${phase.label} migration`,
+    );
+    assertFrozenHash(
+      await sha256File(join(repositoryRoot, "supabase", "tests", phase.test)),
+      phase.testHash,
+      `${phase.label} pgTAP`,
+    );
+  }
 
   let project = null;
   let gateFailure = null;
