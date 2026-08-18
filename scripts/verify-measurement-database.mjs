@@ -76,12 +76,16 @@ const LOCAL_SERVICES_TO_EXCLUDE = [
   "vector",
   "supavisor",
 ];
-const API_READ_TABLES = [
-  "throughline_recordings",
-  "throughline_feedback",
-  "throughline_product_events",
-  "throughline_product_feedback",
+const API_READ_PROBES = [
+  { table: "throughline_recordings", column: "id" },
+  { table: "throughline_feedback", column: "id" },
+  { table: "throughline_product_events", column: "id" },
+  { table: "throughline_product_feedback", column: "id" },
 ];
+const ALLOWLIST_READ_PROBE = {
+  table: "throughline_internal_users",
+  column: "auth_user_id",
+};
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "..");
@@ -135,6 +139,16 @@ export function measurementMigrationPhases() {
     test,
     tests,
   }));
+}
+
+export function serviceRoleRestProbes(includeAllowlist) {
+  if (typeof includeAllowlist !== "boolean") {
+    throw new TypeError("REST probes require Boolean allowlist selection");
+  }
+  const probes = includeAllowlist
+    ? [...API_READ_PROBES, ALLOWLIST_READ_PROBE]
+    : API_READ_PROBES;
+  return probes.map(({ table, column }) => ({ table, column }));
 }
 
 export function summarizePgTapFailure(output) {
@@ -673,13 +687,10 @@ async function requireLocalServiceProbes(workdir, includeAllowlist) {
     200,
     "Storage bucket-list probe",
   );
-  const tables = includeAllowlist
-    ? [...API_READ_TABLES, "throughline_internal_users"]
-    : API_READ_TABLES;
-  for (const table of tables) {
+  for (const { table, column } of serviceRoleRestProbes(includeAllowlist)) {
     assertEmptyHeadResponse(
       await fetchLocal(
-        `${runtime.apiUrl}/rest/v1/${table}?select=id&limit=1`,
+        `${runtime.apiUrl}/rest/v1/${table}?select=${column}&limit=1`,
         { method: "HEAD", headers: countHeaders },
       ),
       `service-role REST probe for ${table}`,
