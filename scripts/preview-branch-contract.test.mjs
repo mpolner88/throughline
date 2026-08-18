@@ -157,9 +157,9 @@ test("summarizes pgTAP failures as assertion numbers only", () => {
     "summarizePgTapFailure",
   );
   const output = [
-    "not ok 18 - PRIVATE_SENTINEL service role detail",
-    "not ok 3 - PRIVATE_SENTINEL schema detail",
-    "not ok 18 - duplicate failure detail",
+    "# Failed test 18: PRIVATE_SENTINEL service role detail",
+    "# Failed test 3: PRIVATE_SENTINEL schema detail",
+    "  Failed test:  3 18",
   ].join("\n");
 
   assert.equal(summarizePgTapFailure(output), "failed assertions: 3,18");
