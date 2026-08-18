@@ -36,6 +36,7 @@ const EXPECTED_HISTORY = [
   "20260806044304",
 ];
 const TEMP_PREFIX = "throughline-measurement-db-";
+const TRUSTED_TEMP_ROOTS = new Set(["/private/tmp", "/tmp"]);
 const LOCAL_SERVICES_TO_EXCLUDE = [
   "realtime",
   "imgproxy",
@@ -103,11 +104,19 @@ export function assertFrozenHash(actual, expected, label) {
   return actual;
 }
 
-export function buildCleanupPlan({ workdir, projectId }) {
+export function resolveMeasurementTemporaryRoot(platform = process.platform) {
+  if (platform === "darwin") return "/private/tmp";
+  if (platform === "linux") return "/tmp";
+  throw new Error(`Unsupported measurement database platform: ${platform}`);
+}
+
+export function buildCleanupPlan({ workdir, projectId, temporaryRoot }) {
   const resolvedWorkdir = resolve(workdir);
+  const resolvedTemporaryRoot = resolve(temporaryRoot);
   const uniqueProjectPattern = new RegExp(`^${TEMP_PREFIX}[a-z0-9]{6,}$`, "i");
-  const valid = uniqueProjectPattern.test(projectId) &&
-    resolvedWorkdir === join("/private/tmp", projectId) &&
+  const valid = TRUSTED_TEMP_ROOTS.has(resolvedTemporaryRoot) &&
+    uniqueProjectPattern.test(projectId) &&
+    resolvedWorkdir === join(resolvedTemporaryRoot, projectId) &&
     basename(resolvedWorkdir) === projectId;
   if (!valid) {
     throw new Error("Cleanup requires a validated unique temporary project");
@@ -234,11 +243,18 @@ async function sha256File(path) {
 async function createIsolatedProject() {
   const suffix = randomBytes(8).toString("hex");
   const projectId = `${TEMP_PREFIX}${suffix}`;
-  const workdir = join("/private/tmp", projectId);
+  const temporaryRoot = resolveMeasurementTemporaryRoot();
+  const workdir = join(temporaryRoot, projectId);
   const supabaseDirectory = join(workdir, "supabase");
   const migrationsDirectory = join(supabaseDirectory, "migrations");
   const testsDirectory = join(supabaseDirectory, "tests");
-  const project = { projectId, workdir, migrationsDirectory, testsDirectory };
+  const project = {
+    projectId,
+    temporaryRoot,
+    workdir,
+    migrationsDirectory,
+    testsDirectory,
+  };
 
   try {
     await mkdir(migrationsDirectory, { recursive: true, mode: 0o700 });
