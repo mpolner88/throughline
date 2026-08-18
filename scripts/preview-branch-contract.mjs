@@ -30,6 +30,19 @@ const STARTING_STATE_RELATION_KEYS = [
   "storageBuckets",
 ];
 
+const STARTING_STATE_RELATION_INVENTORY_SQL = `
+  select
+    (to_regclass('supabase_migrations.schema_migrations') is not null)
+      as migration_history_exists,
+    (to_regclass('auth.users') is not null) as auth_users_exists,
+    (to_regclass('storage.objects') is not null) as storage_objects_exists,
+    (to_regclass('storage.buckets') is not null) as storage_buckets_exists;
+`.trim();
+
+export function startingStateRelationInventorySql() {
+  return STARTING_STATE_RELATION_INVENTORY_SQL;
+}
+
 function requireExactRelationInventory(inventory) {
   if (
     inventory === null ||
@@ -72,7 +85,7 @@ export function buildStartingStateClassificationSql(inventory) {
       ${history} as history,
       coalesce((
         select json_agg(tablename order by tablename)
-        from pg_tables
+        from pg_catalog.pg_tables
         where schemaname = 'public'
           and tablename like 'throughline_%'
       ), '[]'::json) as tables,
@@ -83,7 +96,7 @@ export function buildStartingStateClassificationSql(inventory) {
             'schema_version', 'distribution_channel',
             'is_internal_user', 'recording_id'
           )) as measurement_column_count,
-      (select count(*)::int from pg_constraint
+      (select count(*)::int from pg_catalog.pg_constraint
         where conname in (
           'throughline_product_events_schema_version_check',
           'throughline_product_events_distribution_channel_check',
@@ -98,4 +111,24 @@ export function buildStartingStateClassificationSql(inventory) {
       ${bucketCount} as bucket_count,
       ${throughlineBucketCount} as throughline_bucket_count;
   `.trim();
+}
+
+export function isAllowedStartingStateManagementQuery(stage, sql) {
+  if (typeof sql !== "string") return false;
+  const normalized = sql.trim();
+  if (stage === "classification_inventory") {
+    return normalized === STARTING_STATE_RELATION_INVENTORY_SQL;
+  }
+  if (stage !== "classification_snapshot") return false;
+
+  for (let mask = 0; mask < 16; mask += 1) {
+    const candidate = buildStartingStateClassificationSql({
+      migrationHistory: Boolean(mask & 1),
+      authUsers: Boolean(mask & 2),
+      storageObjects: Boolean(mask & 4),
+      storageBuckets: Boolean(mask & 8),
+    });
+    if (normalized === candidate) return true;
+  }
+  return false;
 }
