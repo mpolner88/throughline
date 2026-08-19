@@ -54,7 +54,9 @@ const ASSERTION_10_DIAGNOSTIC_KEYS = [
   "index_count_exact",
   "index_predicates_exact",
   "index_shapes_exact",
-  "legacy_checks_exact",
+  "legacy_event_check_exact",
+  "legacy_platform_check_exact",
+  "legacy_properties_check_exact",
   "no_enabled_user_triggers",
   "no_rewrite_rules",
   "selected_defaults_exact",
@@ -88,26 +90,23 @@ const ASSERTION_10_DIAGNOSTIC_SQL = `
         'properties:''{}''::jsonb',
         'received_at:now()'
       ]::text[] as selected_defaults_exact,
-    (select count(*) = 3 and bool_and(
-        case constraint_record.conname
-          when 'throughline_product_events_event_name_check' then
-            pg_get_expr(constraint_record.conbin, constraint_record.conrelid) =
-              '((char_length(event_name) >= 1) AND (char_length(event_name) <= 80) AND (event_name ~ ''^[a-z][a-z0-9_]*$''::text))'
-          when 'throughline_product_events_platform_check' then
-            pg_get_expr(constraint_record.conbin, constraint_record.conrelid) =
-              '(platform = ''ios''::text)'
-          when 'throughline_product_events_properties_check' then
-            pg_get_expr(constraint_record.conbin, constraint_record.conrelid) =
-              '(jsonb_typeof(properties) = ''object''::text)'
-          else false
-        end)
-      from pg_catalog.pg_constraint as constraint_record
-      where constraint_record.conrelid = 'public.throughline_product_events'::regclass
-        and constraint_record.conname in (
-          'throughline_product_events_event_name_check',
-          'throughline_product_events_platform_check',
-          'throughline_product_events_properties_check'
-        )) as legacy_checks_exact,
+    (select pg_get_expr(conbin, conrelid) =
+        '((char_length(event_name) >= 1) AND (char_length(event_name) <= 80) AND (event_name ~ ''^[a-z][a-z0-9_]*$''::text))'
+      from pg_catalog.pg_constraint
+      where conrelid = 'public.throughline_product_events'::regclass
+        and conname = 'throughline_product_events_event_name_check')
+      as legacy_event_check_exact,
+    (select pg_get_expr(conbin, conrelid) = '(platform = ''ios''::text)'
+      from pg_catalog.pg_constraint
+      where conrelid = 'public.throughline_product_events'::regclass
+        and conname = 'throughline_product_events_platform_check')
+      as legacy_platform_check_exact,
+    (select pg_get_expr(conbin, conrelid) =
+        '(jsonb_typeof(properties) = ''object''::text)'
+      from pg_catalog.pg_constraint
+      where conrelid = 'public.throughline_product_events'::regclass
+        and conname = 'throughline_product_events_properties_check')
+      as legacy_properties_check_exact,
     (select count(*) = 5
       from pg_catalog.pg_index
       where indrelid = 'public.throughline_product_events'::regclass)
