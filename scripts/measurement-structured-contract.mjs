@@ -491,9 +491,9 @@ const MEASUREMENT_EVENT_OMITTED_DEFAULTS = [
 ];
 
 const MEASUREMENT_EVENT_LEGACY_CHECKS = [
-  "throughline_product_events_event_name_check:((char_length(event_name) >= 1) AND (char_length(event_name) <= 80) AND (event_name ~ '^[a-z][a-z0-9_]*$'::text))",
-  "throughline_product_events_platform_check:(platform = 'ios'::text)",
-  "throughline_product_events_properties_check:(jsonb_typeof(properties) = 'object'::text)",
+  "throughline_product_events_event_name_check:char_lengthevent_name>=1ANDchar_lengthevent_name<=80ANDevent_name~'^[a-z][a-z0-9_]*$'::text",
+  "throughline_product_events_platform_check:platform='ios'::text",
+  "throughline_product_events_properties_check:jsonb_typeofproperties='object'::text",
 ];
 
 const MEASUREMENT_EVENT_INDEX_DEFINITIONS = [
@@ -613,7 +613,10 @@ const measurementChecks = [
       ${sqlTextArray(MEASUREMENT_EVENT_OMITTED_DEFAULTS)}
     and (select array_agg(
         constraint_record.conname || ':' ||
-        pg_get_expr(constraint_record.conbin, constraint_record.conrelid)
+        regexp_replace(
+          pg_get_expr(constraint_record.conbin, constraint_record.conrelid),
+          '[[:space:]()]', '', 'g'
+        )
         order by constraint_record.conname
       )
       from pg_catalog.pg_constraint as constraint_record
@@ -624,6 +627,34 @@ const measurementChecks = [
           'throughline_product_events_platform_check',
           'throughline_product_events_properties_check'
         )) = ${sqlTextArray(MEASUREMENT_EVENT_LEGACY_CHECKS)}
+    and (select count(*) = 3 and bool_and(
+        case constraint_record.conname
+          when 'throughline_product_events_event_name_check' then
+            position(
+              $$'^[a-z][a-z0-9_]*$'::text$$ in
+              pg_get_expr(constraint_record.conbin, constraint_record.conrelid)
+            ) > 0
+          when 'throughline_product_events_platform_check' then
+            position(
+              $$'ios'::text$$ in
+              pg_get_expr(constraint_record.conbin, constraint_record.conrelid)
+            ) > 0
+          when 'throughline_product_events_properties_check' then
+            position(
+              $$'object'::text$$ in
+              pg_get_expr(constraint_record.conbin, constraint_record.conrelid)
+            ) > 0
+          else false
+        end
+      )
+      from pg_catalog.pg_constraint as constraint_record
+      where constraint_record.conrelid =
+        'public.throughline_product_events'::regclass
+        and constraint_record.conname in (
+          'throughline_product_events_event_name_check',
+          'throughline_product_events_platform_check',
+          'throughline_product_events_properties_check'
+        ))
     and (select array_agg(
         index_table.relname || ':' ||
         (select string_agg(

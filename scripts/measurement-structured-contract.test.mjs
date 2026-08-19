@@ -134,6 +134,11 @@ test("preserves text literal case and fails closed on the full insert surface", 
   assert.match(sql, /attidentity/u);
   assert.match(
     sql,
+    /position\s*\(\s*\$\$'\^\[a-z\]\[a-z0-9_\]\*\$'::text\$\$/u,
+  );
+  assert.match(sql, /regexp_replace\s*\(\s*pg_get_expr/iu);
+  assert.match(
+    sql,
     /throughline_product_events_pkey:id:predicate=<null>/u,
   );
   assert.match(

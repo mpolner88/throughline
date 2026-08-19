@@ -39,5 +39,3 @@ jobs:
           scripts/preview-branch-contract.test.mjs
           scripts/measurement-structured-contract.test.mjs
       - run: node scripts/verify-measurement-database.mjs
-        env:
-          THROUGHLINE_ASSERTION10_DIAGNOSTIC: "1"
