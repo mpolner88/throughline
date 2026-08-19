@@ -36,7 +36,8 @@
         "classification_management_api_ci_gate": "GitHub Actions run 32181007382 passed 27 of 27 contract tests and the complete local database gate on public CI-only commit 1cfa271d9ba22d28268eb47ae63fe2f0dfb77709. Its five blobs are byte-identical to local commit 256cb8a0002ce461ad8ba69f591613a40ec17c3f. Evidence: docs/evidence/2026-08-18-measurement-classification-management-api-ci.md",
         "next_hosted_preview_runner": "The hosted runner at SHA-256 2f01bd829160e2d557df743f3df26323db7474bf7f842c40d3ddde14c68bad2b and test artifact at SHA-256 d54bc6d00ed270a7cd44e748ad8fa1af7261d3ae25f038d77e962d69856bc33e passed 34 of 34 offline checks with no independent-review findings. Its one approved execution reached stable delta-only classification and then stopped at the baseline pgTAP command before either pending migration. The one-use preview approval was consumed.",
         "hosted_preview_management_classification_attempt": "On 2026-08-18, the one approved runner passed provider and direct readiness and produced a stable delta-only child classification through the read-only Management API. The baseline pgTAP child command then exited 1 before either pending migration; raw output was not retained, so assertion failure and hosted CLI or pooler invocation failure remain indistinguishable. Cleanup and an independent post-check confirmed zero previews, unchanged production API v22 and control digest, and the same exact ordered migration pair pending. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-management-classification-attempt.md",
-        "hosted_pgtap_diagnostic_ready": "Commit 80216be8fbbca17cf2d3af929d58d8d3de4b7305 contains exactly the bounded pgTAP diagnostic and its contract tests; 29 of 29 repository contract tests passed and independent review returned GO with no findings. A frozen future runner at SHA-256 bfd036fad27535346a6a0ad3500b3ac3283c882ab4998d5517fe68cf49b1ee89 and test artifact at SHA-256 0c21bd5cefbf30aeb6e08e5d44c796fd30ecfc166435f3bb14610f69566718c6 passed 11 of 11 focused offline tests. No external action occurred. The prior hosted failure remains unresolved, production unchanged and blocked, and the prior one-use approval consumed. Evidence: docs/evidence/2026-08-18-measurement-hosted-pgtap-diagnostic-ready.md"
+        "hosted_pgtap_diagnostic_ready": "Commit 80216be8fbbca17cf2d3af929d58d8d3de4b7305 contains exactly the bounded pgTAP diagnostic and its contract tests; 29 of 29 repository contract tests passed and independent review returned GO with no findings. A frozen future runner at SHA-256 bfd036fad27535346a6a0ad3500b3ac3283c882ab4998d5517fe68cf49b1ee89 and test artifact at SHA-256 0c21bd5cefbf30aeb6e08e5d44c796fd30ecfc166435f3bb14610f69566718c6 passed 11 of 11 focused offline tests. No external action occurred. The prior hosted failure remains unresolved, production unchanged and blocked, and the prior one-use approval consumed. Evidence: docs/evidence/2026-08-18-measurement-hosted-pgtap-diagnostic-ready.md",
+        "hosted_preview_pgtap_diagnostic_attempt": "On 2026-08-18, the explicitly approved frozen diagnostic runner passed fresh 11-of-11 focused, 29-of-29 repository, and 15-of-15 blob checks; four-of-four provider and four-of-four direct readiness checks; and two identical delta-only snapshots on exactly one data-less preview. The baseline pgTAP child then exited 1 with only the fixed category pgTAP failure category: unknown. Neither pending migration was applied, no function was deployed, cleanup was confirmed, and an independent post-check found zero previews, healthy production, active API v22 at the recorded control, the same ordered migration pair pending, zero remote-only migrations, and no production mutation. The one-use approval is consumed and no retry is authorized. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-pgtap-diagnostic-attempt.md"
       },
       "funnel_step": "auth_succeeded -> recording_processed",
       "hypothesis": "Traceable cohort attribution and event-to-durable-recording reconciliation will make activation and processing outcomes interpretable without exposing content or identifiers.",
@@ -45,7 +46,7 @@
       "approval_required": false,
       "authority": "Agents may establish measurement and documentation within the approved slice; no provider, pricing, limit, onboarding, or App Store change is authorized.",
       "dependencies": [],
-      "next_action": "Production rollout remains blocked and no preview is currently authorized. Request Mike's fresh explicit approval for exactly one billable data-less preview using only the reviewed runner at SHA-256 bfd036fad27535346a6a0ad3500b3ac3283c882ab4998d5517fe68cf49b1ee89; do not retry automatically. Production rollout resumes only after the complete hosted gate passes."
+      "next_action": "Production rollout remains blocked, the one-use preview approval is consumed, and no retry is authorized. Discuss with Mike and obtain his explicit build decision before replacing the hosted db test --db-url path with a non-billable structured-JSON contract executor over the already-working database-query transport. Before any hosted or production use, cross-check that executor locally against the existing 21-, 30-, and 7-assertion pgTAP contracts on passing and deliberately failing fixtures."
     },
     {
       "id": "TL-EVAL-001",
@@ -54,10 +55,11 @@
       "state": "approved_for_build",
       "problem": "The extraction evaluator self-copies expected output when predictions are absent, and processed records lack immutable transcription/extraction input, output, model, prompt, and stage lineage.",
       "evidence": {
-        "as_of": "2026-08-17",
+        "as_of": "2026-08-18",
         "source": "current-state and core-quality program inspection",
         "evaluation_status": "self-copied expected output is not an independent quality result",
-        "lineage_status": "exact model identifiers and prompt hashes are not persisted"
+        "lineage_status": "exact model identifiers and prompt hashes are not persisted",
+        "dependency_status": "Runtime work remains blocked on the incomplete TL-DATA-001 hosted rollout."
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Independent predictions and immutable lineage will make quality, reliability, latency, cost, canary, and rollback gates auditable.",
@@ -66,7 +68,7 @@
       "approval_required": false,
       "authority": "Agents may implement evaluation and lineage evidence within an approved reversible slice; provider or base-model changes remain Mike-approved.",
       "dependencies": ["TL-DATA-001"],
-      "next_action": "Begin runtime work only after TL-DATA-001 Task 6 has dated verified migration/API rollout evidence and passing canaries; then freeze the shared current-control inference contract without behavior change and build the honest private audio-manifest and independent-prediction path."
+      "next_action": "Runtime work remains blocked. Begin only after TL-DATA-001 Task 6 has dated verified migration/API rollout evidence and passing canaries; then freeze the shared current-control inference contract without behavior change and build the honest private audio-manifest and independent-prediction path."
     },
     {
       "id": "TL-TRNS-001",
