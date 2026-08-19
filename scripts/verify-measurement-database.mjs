@@ -47,6 +47,123 @@ const MAX_DATABASE_FAILURE_SCAN_CHARACTERS = 32_768;
 const MAX_PGTAP_FAILURE_SCAN_CHARACTERS = 32_768;
 const MAX_SAFE_FAILURE_SUMMARY_CHARACTERS = 128;
 const MAX_PGTAP_ASSERTION_NUMBER = 30;
+const ASSERTION_10_DIAGNOSTIC_KEYS = [
+  "check_constraints_validated",
+  "column_count_exact",
+  "constraint_count_exact",
+  "index_count_exact",
+  "index_predicates_exact",
+  "index_shapes_exact",
+  "legacy_checks_exact",
+  "no_enabled_user_triggers",
+  "no_rewrite_rules",
+  "selected_defaults_exact",
+];
+const ASSERTION_10_DIAGNOSTIC_SQL = `
+  select
+    (select count(*) = 8
+      from pg_catalog.pg_constraint
+      where conrelid = 'public.throughline_product_events'::regclass)
+      as constraint_count_exact,
+    (select count(*) = 5 and bool_and(convalidated)
+      from pg_catalog.pg_constraint
+      where conrelid = 'public.throughline_product_events'::regclass
+        and contype = 'c') as check_constraints_validated,
+    (select count(*) = 14
+      from pg_catalog.pg_attribute
+      where attrelid = 'public.throughline_product_events'::regclass
+        and attnum > 0 and not attisdropped) as column_count_exact,
+    (select array_agg(
+        attribute.attname || ':' ||
+        pg_get_expr(default_record.adbin, default_record.adrelid)
+        order by attribute.attname)
+      from pg_catalog.pg_attribute as attribute
+      join pg_catalog.pg_attrdef as default_record
+        on default_record.adrelid = attribute.attrelid
+        and default_record.adnum = attribute.attnum
+      where attribute.attrelid = 'public.throughline_product_events'::regclass
+        and attribute.attname in ('received_at', 'platform', 'properties')) =
+      array[
+        'platform:''ios''::text',
+        'properties:''{}''::jsonb',
+        'received_at:now()'
+      ]::text[] as selected_defaults_exact,
+    (select count(*) = 3 and bool_and(
+        case constraint_record.conname
+          when 'throughline_product_events_event_name_check' then
+            pg_get_expr(constraint_record.conbin, constraint_record.conrelid) =
+              '((char_length(event_name) >= 1) AND (char_length(event_name) <= 80) AND (event_name ~ ''^[a-z][a-z0-9_]*$''::text))'
+          when 'throughline_product_events_platform_check' then
+            pg_get_expr(constraint_record.conbin, constraint_record.conrelid) =
+              '(platform = ''ios''::text)'
+          when 'throughline_product_events_properties_check' then
+            pg_get_expr(constraint_record.conbin, constraint_record.conrelid) =
+              '(jsonb_typeof(properties) = ''object''::text)'
+          else false
+        end)
+      from pg_catalog.pg_constraint as constraint_record
+      where constraint_record.conrelid = 'public.throughline_product_events'::regclass
+        and constraint_record.conname in (
+          'throughline_product_events_event_name_check',
+          'throughline_product_events_platform_check',
+          'throughline_product_events_properties_check'
+        )) as legacy_checks_exact,
+    (select count(*) = 5
+      from pg_catalog.pg_index
+      where indrelid = 'public.throughline_product_events'::regclass)
+      as index_count_exact,
+    (select array_agg(
+        index_table.relname || ':' ||
+        (select string_agg(
+            coalesce(index_attribute.attname, '<expression>'), ','
+            order by index_key.ordinality)
+          from unnest(index_record.indkey)
+            with ordinality as index_key(attnum, ordinality)
+          left join pg_catalog.pg_attribute as index_attribute
+            on index_attribute.attrelid = index_record.indrelid
+            and index_attribute.attnum = index_key.attnum
+          where index_key.ordinality <= index_record.indnkeyatts) || ':' ||
+        index_record.indisunique::text || ':' ||
+        index_record.indisprimary::text || ':' ||
+        index_record.indisvalid::text || ':' ||
+        index_record.indisready::text
+        order by index_table.relname)
+      from pg_catalog.pg_index as index_record
+      join pg_catalog.pg_class as index_table
+        on index_table.oid = index_record.indexrelid
+      where index_record.indrelid = 'public.throughline_product_events'::regclass) =
+      array[
+        'throughline_product_events_name_occurred_idx:event_name,occurred_at:false:false:true:true',
+        'throughline_product_events_pkey:id:true:true:true:true',
+        'throughline_product_events_recording_id_idx:recording_id:false:false:true:true',
+        'throughline_product_events_session_occurred_idx:session_id,occurred_at:false:false:true:true',
+        'throughline_product_events_user_occurred_idx:auth_user_id,occurred_at:false:false:true:true'
+      ]::text[] as index_shapes_exact,
+    (select array_agg(
+        index_table.relname || ':' ||
+        coalesce(pg_get_expr(index_record.indpred, index_record.indrelid), '<null>')
+        order by index_table.relname)
+      from pg_catalog.pg_index as index_record
+      join pg_catalog.pg_class as index_table
+        on index_table.oid = index_record.indexrelid
+      where index_record.indrelid = 'public.throughline_product_events'::regclass) =
+      array[
+        'throughline_product_events_name_occurred_idx:<null>',
+        'throughline_product_events_pkey:<null>',
+        'throughline_product_events_recording_id_idx:(recording_id IS NOT NULL)',
+        'throughline_product_events_session_occurred_idx:<null>',
+        'throughline_product_events_user_occurred_idx:(auth_user_id IS NOT NULL)'
+      ]::text[] as index_predicates_exact,
+    not exists (
+      select 1 from pg_catalog.pg_trigger
+      where tgrelid = 'public.throughline_product_events'::regclass
+        and not tgisinternal and tgenabled in ('O', 'A')
+    ) as no_enabled_user_triggers,
+    not exists (
+      select 1 from pg_catalog.pg_rewrite
+      where ev_class = 'public.throughline_product_events'::regclass
+    ) as no_rewrite_rules;
+`;
 const BASELINE_MIGRATIONS = [
   "0001_throughline_memory.sql",
   "20260510025558_enable_rls_for_throughline.sql",
@@ -846,6 +963,40 @@ async function runPhaseOraclePass(project, phase, label) {
     phase,
     `${label}-structured`,
   );
+  const parsed = parseMeasurementContractRows(phase, structuredRows);
+  if (
+    phase === "measurement_attribution" &&
+    parsed.failedAssertions.includes(10) &&
+    process.env.CI === "true" &&
+    process.env.GITHUB_ACTIONS === "true" &&
+    process.env.THROUGHLINE_ASSERTION10_DIAGNOSTIC === "1"
+  ) {
+    try {
+      const rows = await runDatabaseProbe(
+        project.workdir,
+        "measurement-assertion-10-diagnostic",
+        ASSERTION_10_DIAGNOSTIC_SQL,
+      );
+      const row = rows.length === 1 && rows[0] !== null &&
+          typeof rows[0] === "object" && !Array.isArray(rows[0])
+        ? rows[0]
+        : null;
+      const keys = row === null ? [] : Object.keys(row).sort();
+      const valid = row !== null &&
+        keys.length === ASSERTION_10_DIAGNOSTIC_KEYS.length &&
+        keys.every((key, index) => key === ASSERTION_10_DIAGNOSTIC_KEYS[index]) &&
+        keys.every((key) => typeof row[key] === "boolean");
+      if (!valid) {
+        console.error("measurement_assertion_10.diagnostic_available=false");
+      } else {
+        for (const key of keys) {
+          if (!row[key]) console.error(`measurement_assertion_10.${key}=false`);
+        }
+      }
+    } catch {
+      console.error("measurement_assertion_10.diagnostic_available=false");
+    }
+  }
   assertMeasurementContractPass(phase, structuredRows);
 }
 
