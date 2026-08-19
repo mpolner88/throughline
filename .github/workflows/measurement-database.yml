@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/measurement-database.yml"
       - "scripts/hosted-preview-management-query.mjs"
+      - "scripts/measurement-structured-contract.mjs"
+      - "scripts/measurement-structured-contract.test.mjs"
       - "scripts/preview-branch-contract.mjs"
       - "scripts/preview-branch-contract.test.mjs"
       - "scripts/verify-measurement-database.mjs"
@@ -32,5 +34,8 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.98.2
-      - run: node --test scripts/preview-branch-contract.test.mjs
+      - run: >-
+          node --test
+          scripts/preview-branch-contract.test.mjs
+          scripts/measurement-structured-contract.test.mjs
       - run: node scripts/verify-measurement-database.mjs

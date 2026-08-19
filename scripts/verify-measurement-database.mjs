@@ -16,6 +16,11 @@ import {
   buildStartingStateClassificationSql,
   startingStateRelationInventorySql,
 } from "./preview-branch-contract.mjs";
+import {
+  assertMeasurementContractPass,
+  measurementContractDefinition,
+  parseMeasurementContractRows,
+} from "./measurement-structured-contract.mjs";
 
 const REQUIRED_CLI_VERSION = "2.98.2";
 const EXPECTED_MIGRATION = "20260817180709_measurement_attribution.sql";
@@ -32,11 +37,16 @@ const HARDENING_TEST = "measurement_privilege_hardening_test.sql";
 const HARDENING_TEST_HASH =
   "5be986f4815b066d6321127e484da3a574f92ee5c196d777e4fd6286e8bf1e7b";
 const BASELINE_TEST = "measurement_attribution_baseline_test.sql";
+const BASELINE_TEST_HASH =
+  "93a7f6ab1eed1d2974796d39023a05e73b8025d0c3f8224e5f4ddb1d4ba7a7e2";
 const BASELINE_TEST_COUNT = 21;
 const HARDENING_TEST_COUNT = 7;
 const DEFAULT_MAX_OUTPUT_BYTES = 1_048_576;
 const DEFAULT_TERMINATE_GRACE_MS = 250;
 const MAX_DATABASE_FAILURE_SCAN_CHARACTERS = 32_768;
+const MAX_PGTAP_FAILURE_SCAN_CHARACTERS = 32_768;
+const MAX_SAFE_FAILURE_SUMMARY_CHARACTERS = 128;
+const MAX_PGTAP_ASSERTION_NUMBER = 30;
 const BASELINE_MIGRATIONS = [
   "0001_throughline_memory.sql",
   "20260510025558_enable_rls_for_throughline.sql",
@@ -59,6 +69,7 @@ const EXPECTED_BASELINE_TABLES = [
 ];
 const MIGRATION_PHASES = [
   {
+    contractPhase: "measurement_attribution",
     label: "measurement attribution",
     migration: EXPECTED_MIGRATION,
     migrationHash: EXPECTED_MIGRATION_HASH,
@@ -68,6 +79,7 @@ const MIGRATION_PHASES = [
     version: "20260817180709",
   },
   {
+    contractPhase: "privilege_hardening",
     label: "privilege hardening",
     migration: HARDENING_MIGRATION,
     migrationHash: HARDENING_MIGRATION_HASH,
@@ -75,6 +87,89 @@ const MIGRATION_PHASES = [
     testHash: HARDENING_TEST_HASH,
     tests: HARDENING_TEST_COUNT,
     version: "20260818061933",
+  },
+];
+const PHASE_ORACLES = new Map([
+  ["baseline", {
+    test: BASELINE_TEST,
+    tests: BASELINE_TEST_COUNT,
+  }],
+  ...MIGRATION_PHASES.map((phase) => [phase.contractPhase, {
+    test: phase.test,
+    tests: phase.tests,
+  }]),
+]);
+const MEASUREMENT_EQUIVALENCE_FIXTURES = [
+  {
+    phase: "baseline",
+    expectedAssertions: [4],
+    mutationSql:
+      "alter table public.throughline_product_events add column schema_version smallint",
+    restoreSql:
+      "alter table public.throughline_product_events drop column schema_version",
+  },
+  {
+    phase: "measurement_attribution",
+    expectedAssertions: [8],
+    mutationSql: `alter table public.throughline_product_events
+      alter column distribution_channel set default 'UNKNOWN'`,
+    restoreSql: `alter table public.throughline_product_events
+      alter column distribution_channel set default 'unknown'`,
+  },
+  {
+    phase: "measurement_attribution",
+    expectedAssertions: [10],
+    mutationSql: `alter table public.throughline_product_events
+      add constraint throughline_product_events_equivalence_guard
+      check (not (schema_version = 2 and distribution_channel = 'app_store'))
+      not valid`,
+    restoreSql: `alter table public.throughline_product_events
+      drop constraint throughline_product_events_equivalence_guard`,
+  },
+  {
+    phase: "measurement_attribution",
+    expectedAssertions: [10],
+    mutationSql: `create index throughline_product_events_equivalence_expression_idx
+      on public.throughline_product_events
+      ((1 / (schema_version - schema_version)))`,
+    restoreSql:
+      "drop index public.throughline_product_events_equivalence_expression_idx",
+  },
+  {
+    phase: "measurement_attribution",
+    expectedAssertions: [11],
+    mutationSql: `alter table public.throughline_product_events
+      drop constraint throughline_product_events_schema_version_check,
+      add constraint throughline_product_events_schema_version_check
+      check (schema_version in (1, 2, 3))`,
+    restoreSql: `alter table public.throughline_product_events
+      drop constraint throughline_product_events_schema_version_check,
+      add constraint throughline_product_events_schema_version_check
+      check (schema_version in (1, 2))`,
+  },
+  {
+    phase: "measurement_attribution",
+    expectedAssertions: [12],
+    mutationSql: `alter table public.throughline_product_events
+      drop constraint throughline_product_events_distribution_channel_check,
+      add constraint throughline_product_events_distribution_channel_check
+      check (distribution_channel in (
+        'debug', 'testflight', 'app_store', 'unknown', 'sandbox'
+      ))`,
+    restoreSql: `alter table public.throughline_product_events
+      drop constraint throughline_product_events_distribution_channel_check,
+      add constraint throughline_product_events_distribution_channel_check
+      check (distribution_channel in (
+        'debug', 'testflight', 'app_store', 'unknown'
+      ))`,
+  },
+  {
+    phase: "privilege_hardening",
+    expectedAssertions: [2],
+    mutationSql:
+      "grant delete on table public.throughline_profiles to authenticated",
+    restoreSql:
+      "revoke delete on table public.throughline_profiles from authenticated",
   },
 ];
 const TEMP_PREFIX = "throughline-measurement-db-";
@@ -198,6 +293,59 @@ export function measurementMigrationPhases() {
   }));
 }
 
+export function measurementEquivalenceFixtures() {
+  return MEASUREMENT_EQUIVALENCE_FIXTURES.map((fixture) => ({
+    ...fixture,
+    expectedAssertions: [...fixture.expectedAssertions],
+  }));
+}
+
+export function parseSafePgTapFailureAssertions(error) {
+  if (!(error instanceof Error)) {
+    throw new Error("pgTAP equivalence fixture returned an invalid safe failure");
+  }
+  const match = error.message.match(
+    / failed with exit code \d+ \(failed assertions: ([1-9]\d*(?:,[1-9]\d*)*)\)$/u,
+  );
+  const assertions = match?.[1].split(",").map(Number) ?? [];
+  const valid = assertions.length > 0 && assertions.every((value, index) =>
+    Number.isSafeInteger(value) &&
+    value >= 1 &&
+    value <= MAX_PGTAP_ASSERTION_NUMBER &&
+    (index === 0 || assertions[index - 1] < value)
+  );
+  if (!valid) {
+    throw new Error("pgTAP equivalence fixture returned an invalid safe failure");
+  }
+  return assertions;
+}
+
+export function assertEquivalentMeasurementFailures({
+  phase,
+  pgTapError,
+  structuredRows,
+  expectedAssertions,
+}) {
+  const pgTapFailures = parseSafePgTapFailureAssertions(pgTapError);
+  const structuredFailures = parseMeasurementContractRows(
+    phase,
+    structuredRows,
+  ).failedAssertions;
+  const expected = Array.isArray(expectedAssertions)
+    ? expectedAssertions
+    : [];
+  const exact = (left, right) =>
+    left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+  if (
+    !exact(pgTapFailures, expected) ||
+    !exact(structuredFailures, expected)
+  ) {
+    throw new Error("Measurement oracle equivalence mismatch");
+  }
+  return { phase, failedAssertions: [...expected] };
+}
+
 export function serviceRoleRestProbes(includeAllowlist) {
   if (typeof includeAllowlist !== "boolean") {
     throw new TypeError("REST probes require Boolean allowlist selection");
@@ -222,6 +370,34 @@ export function summarizePgTapFailure(output) {
   return unique.length > 0
     ? `failed assertions: ${unique.join(",")}`
     : "failed assertions unavailable";
+}
+
+function isKnownPgTapInvocationFailure(output) {
+  return /\b(?:unknown command|unknown flag|unknown shorthand flag|flag provided but not defined|flag needs an argument|failed to parse connection string|invalid dsn)\b/u.test(
+    output,
+  ) || /(?:^|\n)\s*usage:\s*(?:\r?\n\s*)?supabase\s+(?:db\s+test|test\s+db)\b/imu.test(
+    output,
+  );
+}
+
+function isTapShapedOutput(output) {
+  return /^\s*(?:TAP version \d+|(?:ok|not ok)\b|1\.\.\d+\b|#\s*Failed test\b|Failed tests?:\b|Files=\d+,\s*Tests=\d+\b|Result:\s*(?:PASS|FAIL)\b)/mu.test(
+    output,
+  );
+}
+
+function isSafePgTapAssertionSummary(summary) {
+  if (
+    typeof summary !== "string" ||
+    summary.length > MAX_SAFE_FAILURE_SUMMARY_CHARACTERS ||
+    !/^failed assertions: [1-9]\d*(?:,[1-9]\d*)*$/u.test(summary)
+  ) {
+    return false;
+  }
+  return summary
+    .slice("failed assertions: ".length)
+    .split(",")
+    .every((value) => Number(value) <= MAX_PGTAP_ASSERTION_NUMBER);
 }
 
 export function summarizeDatabaseCommandFailure(output) {
@@ -252,9 +428,37 @@ export function summarizeDatabaseCommandFailure(output) {
   return "database failure category: unknown";
 }
 
+export function summarizePgTapCommandFailure(output) {
+  const completeClean = stripAnsi(String(output));
+  const sourceFitsPgTapScan =
+    completeClean.length <= MAX_PGTAP_FAILURE_SCAN_CHARACTERS;
+  const clean = completeClean.slice(0, MAX_PGTAP_FAILURE_SCAN_CHARACTERS);
+  if (sourceFitsPgTapScan) {
+    const assertionSummary = summarizePgTapFailure(clean);
+    if (isSafePgTapAssertionSummary(assertionSummary)) {
+      return assertionSummary;
+    }
+  }
+
+  const databaseSummary = summarizeDatabaseCommandFailure(clean);
+  if (databaseSummary !== "database failure category: unknown") {
+    return databaseSummary;
+  }
+
+  if (isKnownPgTapInvocationFailure(clean)) {
+    return "pgTAP failure category: invocation";
+  }
+  if (isTapShapedOutput(clean)) {
+    return "pgTAP failure category: malformed_or_no_summary";
+  }
+  return "pgTAP failure category: unknown";
+}
+
 function isAllowedFailureSummary(candidate) {
-  return /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable|database failure category: (?:connection_or_timeout|sql_or_permission_or_catalog|authentication|unknown))$/u
-    .test(candidate);
+  return typeof candidate === "string" &&
+    candidate.length <= MAX_SAFE_FAILURE_SUMMARY_CHARACTERS &&
+    /^(?:failed assertions: [1-9]\d*(?:,[1-9]\d*)*|failed assertions unavailable|database failure category: (?:connection_or_timeout|sql_or_permission_or_catalog|authentication|unknown)|pgTAP failure category: (?:invocation|malformed_or_no_summary|unknown))$/u
+      .test(candidate);
 }
 
 export function assertFrozenHash(actual, expected, label) {
@@ -598,6 +802,152 @@ async function runDatabaseProbe(workdir, label, sql) {
   return extractRows(parseJsonWithoutEcho(result.stdout, label), label);
 }
 
+function requirePhaseOracle(phase) {
+  const oracle = PHASE_ORACLES.get(phase);
+  if (oracle === undefined) {
+    throw new Error("Unknown measurement oracle phase");
+  }
+  return oracle;
+}
+
+async function runPgTapOracle(project, phase, label) {
+  const oracle = requirePhaseOracle(phase);
+  return await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      project.workdir,
+      "--agent=no",
+      "db",
+      "test",
+      join(project.testsDirectory, oracle.test),
+      "--local",
+    ],
+    label,
+    { summarizeFailure: summarizePgTapCommandFailure },
+  );
+}
+
+async function runStructuredContractRows(workdir, phase, label) {
+  const definition = measurementContractDefinition(phase);
+  return await runDatabaseProbe(workdir, label, definition.sql);
+}
+
+async function runPhaseOraclePass(project, phase, label) {
+  const oracle = requirePhaseOracle(phase);
+  const pgTapResult = await runPgTapOracle(
+    project,
+    phase,
+    `${label} pgTAP`,
+  );
+  assertSingleExactPgTapPass(combineCommandOutput(pgTapResult), oracle.tests);
+  const structuredRows = await runStructuredContractRows(
+    project.workdir,
+    phase,
+    `${label}-structured`,
+  );
+  assertMeasurementContractPass(phase, structuredRows);
+}
+
+async function runDatabaseFixtureSql(workdir, label, sql) {
+  if (
+    typeof label !== "string" ||
+    !/^[a-z0-9-]+$/u.test(label) ||
+    typeof sql !== "string" ||
+    sql.trim().length === 0 ||
+    sql.includes(";")
+  ) {
+    throw new Error("Measurement equivalence fixture is not one bounded statement");
+  }
+  const fixtureDirectory = join(workdir, "equivalence-fixtures");
+  await mkdir(fixtureDirectory, { recursive: true, mode: 0o700 });
+  const sqlFile = join(fixtureDirectory, `${label}.sql`);
+  await writeFile(sqlFile, `${sql.trim()};\n`, { mode: 0o600 });
+  await chmod(sqlFile, 0o600);
+  await runCommand(
+    "supabase",
+    [
+      "--workdir",
+      workdir,
+      "--agent=no",
+      "db",
+      "query",
+      "--local",
+      "--file",
+      sqlFile,
+    ],
+    `measurement equivalence fixture ${label}`,
+    { summarizeFailure: summarizeDatabaseCommandFailure },
+  );
+}
+
+async function runEquivalenceFixturesForPhase(project, phase) {
+  const fixtures = measurementEquivalenceFixtures()
+    .filter((fixture) => fixture.phase === phase);
+  for (const [index, fixture] of fixtures.entries()) {
+    const safePhase = phase.replaceAll("_", "-");
+    const fixtureLabel = `${safePhase}-${index + 1}`;
+    let mutationApplied = false;
+    let fixtureFailure = null;
+    let restoreFailure = null;
+    try {
+      await runDatabaseFixtureSql(
+        project.workdir,
+        `${fixtureLabel}-mutate`,
+        fixture.mutationSql,
+      );
+      mutationApplied = true;
+      let pgTapError = null;
+      try {
+        await runPgTapOracle(
+          project,
+          phase,
+          `${fixtureLabel} expected-failure pgTAP`,
+        );
+      } catch (error) {
+        pgTapError = error;
+      }
+      if (pgTapError === null) {
+        throw new Error("Measurement pgTAP equivalence fixture unexpectedly passed");
+      }
+      const structuredRows = await runStructuredContractRows(
+        project.workdir,
+        phase,
+        `${fixtureLabel}-expected-failure-structured`,
+      );
+      assertEquivalentMeasurementFailures({
+        phase,
+        pgTapError,
+        structuredRows,
+        expectedAssertions: fixture.expectedAssertions,
+      });
+    } catch (error) {
+      fixtureFailure = error;
+    } finally {
+      if (mutationApplied) {
+        try {
+          await runDatabaseFixtureSql(
+            project.workdir,
+            `${fixtureLabel}-restore`,
+            fixture.restoreSql,
+          );
+          await runPhaseOraclePass(
+            project,
+            phase,
+            `${fixtureLabel} restored`,
+          );
+        } catch {
+          restoreFailure = new Error(
+            "Measurement equivalence fixture restore verification failed",
+          );
+        }
+      }
+    }
+    if (restoreFailure !== null) throw restoreFailure;
+    if (fixtureFailure !== null) throw fixtureFailure;
+  }
+}
+
 async function requireFullReplayDatabase(workdir) {
   const inventoryRows = await runDatabaseProbe(
     workdir,
@@ -830,21 +1180,8 @@ async function applyMigrationPhase(project, phase, ordinal) {
     `explicit ${phase.label} migration apply`,
   );
 
-  const testResult = await runCommand(
-    "supabase",
-    [
-      "--workdir",
-      project.workdir,
-      "--agent=no",
-      "db",
-      "test",
-      join(project.testsDirectory, phase.test),
-      "--local",
-    ],
-    `${phase.label} pgTAP`,
-    { summarizeFailure: summarizePgTapFailure },
-  );
-  assertSingleExactPgTapPass(combineCommandOutput(testResult), phase.tests);
+  await runPhaseOraclePass(project, phase.contractPhase, phase.label);
+  await runEquivalenceFixturesForPhase(project, phase.contractPhase);
 }
 
 function localRuntimeFromStatus(status) {
@@ -955,21 +1292,8 @@ async function runGate(project) {
   await requireFullReplayDatabase(project.workdir);
   await applyBaselineMigrations(project);
 
-  const baselineTestResult = await runCommand(
-    "supabase",
-    [
-      "--workdir",
-      project.workdir,
-      "--agent=no",
-      "db",
-      "test",
-      join(project.testsDirectory, BASELINE_TEST),
-      "--local",
-    ],
-    "baseline pgTAP",
-    { summarizeFailure: summarizePgTapFailure },
-  );
-  assertExactBaselinePgTapPass(combineCommandOutput(baselineTestResult));
+  await runPhaseOraclePass(project, "baseline", "baseline");
+  await runEquivalenceFixturesForPhase(project, "baseline");
   await requireBaselineDatabase(project.workdir);
   await requireDeltaOnlyClassificationDatabase(project.workdir);
 
@@ -1048,6 +1372,11 @@ async function cleanupProject(project) {
 }
 
 export async function main() {
+  assertFrozenHash(
+    await sha256File(join(repositoryRoot, "supabase", "tests", BASELINE_TEST)),
+    BASELINE_TEST_HASH,
+    "baseline pgTAP",
+  );
   for (const phase of MIGRATION_PHASES) {
     assertFrozenHash(
       await sha256File(
