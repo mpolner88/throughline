@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://throughline.local/schemas/discovery-job.schema.json",
+  "title": "Throughline discovery queue job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "mode",
+    "workstream",
+    "model_alias",
+    "effort",
+    "prompt_file",
+    "plan_file",
+    "inputs",
+    "write_scope",
+    "dependencies",
+    "decision_context",
+    "acceptance",
+    "approval_gate",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(ROOT|DISC)-[0-9]{2}$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["baseline", "execute", "integrate"]
+    },
+    "workstream": {
+      "type": "string",
+      "enum": [
+        "root-coordination",
+        "agent-ecosystem",
+        "owned-surface",
+        "proof-factory",
+        "creator-seeding",
+        "demand-capture"
+      ]
+    },
+    "model_alias": {
+      "type": "string",
+      "enum": ["5.6-sol", "5.6-terra", "5.6-luna"]
+    },
+    "effort": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "prompt_file": {
+      "type": "string",
+      "pattern": "^marketing/orchestration/prompts/[0-9]{2}-[a-z0-9-]+\\.md$"
+    },
+    "plan_file": {
+      "type": "string",
+      "pattern": "^docs/superpowers/(specs|plans)/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\\.md$"
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "write_scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^(ROOT|DISC)-[0-9]{2}$" }
+    },
+    "decision_context": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "acceptance": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "approval_gate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["queued", "running", "review", "complete", "blocked"]
+    }
+  }
+}
