@@ -1,0 +1,35 @@
+name: Measurement database gate
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/measurement-database.yml"
+      - "scripts/preview-branch-contract.mjs"
+      - "scripts/preview-branch-contract.test.mjs"
+      - "scripts/verify-measurement-database.mjs"
+      - "supabase/config.toml"
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: measurement-database-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.98.2
+      - run: node --test scripts/preview-branch-contract.test.mjs
+      - run: node scripts/verify-measurement-database.mjs
