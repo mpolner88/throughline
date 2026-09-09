@@ -2,7 +2,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-throughline-running-list-design.md`
 **Prototype:** `mockup/list-redesign/index.html`
-**Status:** Proposed. Sequenced by uncertainty, not by visual polish. Nothing starts until the spec's open questions Q1, Q6, Q7, Q8 have answers or their defaults are accepted.
+**Status:** Approved 2026-09-09; phase 0 complete, phase 1 next. Sequenced by uncertainty, not by visual polish. The spec's open questions Q1, Q6, Q7, Q8 are resolved by their defaults (spec §13).
 
 ## Global constraints
 
@@ -18,15 +18,18 @@
 
 The whole slice changes what the extractor outputs. If the eval cannot see production's prompt, nothing after this can be judged.
 
-- [ ] Make `supabase/functions/api/index.ts` consume the prompt from `evals/prompts/extract-note-v0.md` and the normaliser from `core/extraction-pipeline.mjs`. Deno can import the `.mjs` directly; if bundling is a problem, add `scripts/sync-extraction-prompt.mjs` that regenerates the TS constant and a check that fails when they differ.
-- [ ] Add `.github/workflows/eval.yml`: on changes under `core/`, `evals/`, `supabase/functions/api/`, run `npm run eval:check` with the fake extractor, and `eval:run:groq` + `eval:score:action` when `GROQ_API_KEY` is present.
-- [ ] Record a fresh baseline run and commit `evals/reports/2026-09-xx-baseline-before-running-list.md`.
+- [x] Make `supabase/functions/api/index.ts` consume the prompt from `evals/prompts/extract-note-v0.md` and the normaliser from `core/extraction-pipeline.mjs`. Deno can import the `.mjs` directly; if bundling is a problem, add `scripts/sync-extraction-prompt.mjs` that regenerates the TS constant and a check that fails when they differ.
+  Done. The pure contract moved to `core/extraction-contract.mjs` (re-exported by `core/extraction-pipeline.mjs`). `scripts/sync-extraction-contract.mjs` generates `supabase/functions/_shared/extraction-contract.mjs` and `supabase/functions/_shared/extraction-prompt.ts`; `index.ts` imports both and its inline copies are deleted. The script is named `sync-extraction-contract.mjs` rather than `sync-extraction-prompt.mjs` because it syncs the normaliser as well as the prompt. `npm run contract:check` fails when either generated file is stale, and `scripts/deploy-supabase.mjs` runs it before deploying.
+- [x] Add `.github/workflows/eval.yml`: on changes under `core/`, `evals/`, `supabase/functions/api/`, run `npm run eval:check` with the fake extractor, and `eval:run:groq` + `eval:score:action` when `GROQ_API_KEY` is present.
+  Done. The workflow runs `npm run check` (contract check, `eval:check`, and the smokes) and a Deno type-check of both Edge Functions on every matching pull request or push to main, and a `groq-quality` job runs the live eval when the secret is set, writing the three profile scores to the job summary and uploading `evals/runs` as an artifact. That job reports only; it does not gate.
+- [x] Record a fresh baseline run and commit `evals/reports/2026-09-xx-baseline-before-running-list.md`.
+  Done as `evals/reports/2026-09-09-baseline-before-running-list.md`. It records the golden self-check (100 on every profile, zero criticals) and restates the 2026-05-02 `openai/gpt-oss-120b` numbers as the standing baseline. A live Groq run was not possible from the build environment.
 
-Acceptance: CI fails when the production prompt and the eval prompt diverge. Baseline numbers exist for full, action, memory.
+Acceptance: CI fails when the production prompt and the eval prompt diverge. Baseline numbers exist for full, action, memory. Groq baseline: pending first CI run with `GROQ_API_KEY`; the 2026-05-02 numbers stand until then.
 
 ### Phase 1 · Extraction: `timeframe`, `priority` rule, todo-free `most_important` (~1 day)
 
-- [ ] `core/extraction-pipeline.mjs`: add `timeframe` to `normalizeTodo`; add `deriveBucket(todo, userLocalDate)` (pure function, exported); change `deriveMostImportant` to exclude todo texts; add `bucket`, `timeframe`, `due` to `deriveActionItems`.
+- [ ] `core/extraction-contract.mjs` (re-exported by `core/extraction-pipeline.mjs`): add `timeframe` to `normalizeTodo`; add `deriveBucket(todo, userLocalDate)` (pure function, exported); change `deriveMostImportant` to exclude todo texts; add `bucket`, `timeframe`, `due` to `deriveActionItems`. After editing, run `npm run contract:sync` and commit the regenerated files under `supabase/functions/_shared/`; `npm run contract:check` fails until they match.
 - [ ] `evals/prompts/extract-note-v0.md`: add the `timeframe` field, the cue table from spec §3.2, and the explicit `priority: "high"` rule. Update the Output JSON block.
 - [ ] `evals/score-extraction.mjs`: score `todos[].timeframe` and derived `bucket` in the action profile; add `most_important` to the memory profile.
 - [ ] Add 8–10 fixtures under `evals/fixtures/labeled/` that exercise: "today" cue, "this week" cue, "sometime" cue, weekday name, "tomorrow", mixed note with all three buckets, a restated task, a done-then-restated task.
@@ -84,7 +87,7 @@ Acceptance: spec §14 bullet 7.
 
 | Area | Files |
 |---|---|
-| Shared extraction and task logic | `core/extraction-pipeline.mjs` (+ new `core/task-list.mjs`) |
+| Shared extraction and task logic | `core/extraction-contract.mjs` (re-exported by `core/extraction-pipeline.mjs`; generated copies under `supabase/functions/_shared/` via `npm run contract:sync`) (+ new `core/task-list.mjs`) |
 | Prompt and evals | `evals/prompts/extract-note-v0.md`, `evals/score-extraction.mjs`, `evals/fixtures/labeled/*`, `.github/workflows/eval.yml` |
 | Local backend | `backend/stub-server.mjs`, `backend/memory-tools.mjs`, `backend/smoke-*.mjs` |
 | Hosted backend | `supabase/functions/api/index.ts`, `supabase/functions/_shared/memory-tools.ts`, `scripts/export-feedback.mjs` |

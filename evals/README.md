@@ -4,7 +4,7 @@ Track A starts here.
 
 The eval suite exists to answer one question before product polish: when a user speaks a messy voice note, does Throughline extract the parts an AI agent needs without inventing anything?
 
-Normalization and deterministic post-processing live in `core/extraction-pipeline.mjs` so the eval runner and backend stub use the same extraction behavior.
+The pure extraction contract, meaning normalization and deterministic post-processing, lives in `core/extraction-contract.mjs`. `core/extraction-pipeline.mjs` re-exports it and adds the command runner, so the eval runner and backend stub use the same behavior. `scripts/sync-extraction-contract.mjs` copies the contract and the prompt into `supabase/functions/_shared/` so the Edge Function runs the same code the eval scores.
 
 ## Current scope
 
@@ -90,7 +90,7 @@ Product feedback now stores extraction grades in Supabase through the API feedba
 2. Low scores or corrections are stored as `needs_review` feedback with the transcript and structured-note snapshot.
 3. A reviewer or agent converts the correction into a sanitized `expected` object.
 4. `npm run eval:import-feedback` turns reviewed feedback into private fixtures.
-5. Prompt or model changes must pass `npm run eval:check` before deploy.
+5. Prompt or model changes must pass `npm run check` before deploy. That runs the contract check, `eval:check`, and the smoke tests. The GitHub Actions workflow in `.github/workflows/eval.yml` runs the same checks, plus a Deno type-check of both Edge Functions, on pull requests and pushes to main that touch `core/`, `evals/`, `backend/`, `supabase/functions/`, `package.json`, the sync and deploy scripts, or the workflow itself, and runs the live Groq eval when `GROQ_API_KEY` is set.
 
 Prediction files should be named `{fixture_id}.json` and contain either the extraction object directly or `{ "actual": { ... } }`.
 
@@ -136,6 +136,27 @@ Environment variables:
 - `GROQ_MAX_RETRIES` optional, defaults to `5`.
 
 The npm script uses a 2.5-second delay between fixtures. The adapter retries 429s, transient fetch failures, and Groq JSON validation failures.
+
+## Contract sync
+
+The Edge Function cannot import from `core/` or `evals/` at deploy time, so it reads generated copies instead. `scripts/sync-extraction-contract.mjs` writes two files:
+
+- `supabase/functions/_shared/extraction-contract.mjs`: the contents of `core/extraction-contract.mjs` with a generated-file header.
+- `supabase/functions/_shared/extraction-prompt.ts`: `EXTRACTION_PROMPT` as the exact bytes of `evals/prompts/extract-note-v0.md`, plus `EXTRACTION_PROMPT_PATH`.
+
+Regenerate them after changing the prompt or the contract, and commit the result:
+
+```bash
+npm run contract:sync
+```
+
+Check that they are current without writing anything:
+
+```bash
+npm run contract:check
+```
+
+`contract:check` exits 1 and names each stale file. CI runs it first and fails the build when the generated files are behind. `npm run supabase:deploy` runs it before deploying for the same reason. Do not edit the generated files by hand.
 
 ## Pass rule
 

@@ -1,0 +1,146 @@
+name: Extraction contract and evals
+
+on:
+  pull_request:
+    paths:
+      - "core/**"
+      - "evals/**"
+      - "!evals/README.md"
+      - "!evals/reports/**"
+      - "supabase/functions/**"
+      - "scripts/sync-extraction-contract.mjs"
+      - "scripts/deploy-supabase.mjs"
+      - "backend/**"
+      - "package.json"
+      - ".github/workflows/eval.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "core/**"
+      - "evals/**"
+      - "!evals/README.md"
+      - "!evals/reports/**"
+      - "supabase/functions/**"
+      - "scripts/sync-extraction-contract.mjs"
+      - "scripts/deploy-supabase.mjs"
+      - "backend/**"
+      - "package.json"
+      - ".github/workflows/eval.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The secrets context is not allowed in a job-level if, so the presence
+  # check is materialised here and read as env.HAS_GROQ in the groq-quality job.
+  HAS_GROQ: ${{ secrets.GROQ_API_KEY != '' }}
+
+jobs:
+  contract-and-evals:
+    name: Contract check and local evals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # No lockfile and no dependencies, so there is no install step.
+      # npm run check = contract:check, eval:check, note:edit:smoke,
+      # agent:smoke and mcp:smoke.
+      - name: Run contract check, eval check and smokes
+        run: npm run check
+
+  edge-typecheck:
+    name: Edge function type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check the api function
+        run: deno check --config supabase/functions/api/deno.json supabase/functions/api/index.ts
+      - name: Type-check the mcp function
+        run: deno check --config supabase/functions/mcp/deno.json supabase/functions/mcp/index.ts
+
+  groq-quality:
+    name: Groq quality report
+    runs-on: ubuntu-latest
+    needs: contract-and-evals
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: env.HAS_GROQ == 'true'
+        with:
+          node-version: 22
+      - name: Run the extraction eval against Groq
+        if: env.HAS_GROQ == 'true'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        # A Groq outage or rate limit should show in the summary, not fail
+        # the workflow, so the summary and artifact steps still run.
+        continue-on-error: true
+        run: npm run eval:run:groq
+      # This job reports; it does not fail the workflow on a below-threshold
+      # score or on a provider failure. The production model already scores
+      # 78.6 (full) and 86.1 (action) against a 90 bar, and the plan's gate
+      # is "not below baseline", which arrives in phase 1. Until then the
+      # scorer's exit code is ignored and the numbers go to the step summary
+      # and artifact.
+      - name: Score the action profile
+        if: env.HAS_GROQ == 'true'
+        run: node evals/score-extraction.mjs --predictions evals/runs/latest --profile action > evals/runs/action-score.json || true
+      - name: Score the full profile
+        if: env.HAS_GROQ == 'true'
+        run: node evals/score-extraction.mjs --predictions evals/runs/latest --profile full > evals/runs/full-score.json || true
+      - name: Score the memory profile
+        if: env.HAS_GROQ == 'true'
+        run: node evals/score-extraction.mjs --predictions evals/runs/latest --profile memory > evals/runs/memory-score.json || true
+      - name: Write the score summary
+        if: env.HAS_GROQ == 'true'
+        shell: bash
+        run: |
+          node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("node:fs");
+          const profiles = ["action", "full", "memory"];
+          const lines = [
+            "## Groq extraction quality",
+            "",
+            "Report only; this job does not gate the workflow.",
+            "",
+            "| Profile | Overall score | Critical hallucinations |",
+            "| --- | --- | --- |",
+          ];
+          for (const profile of profiles) {
+            const path = `evals/runs/${profile}-score.json`;
+            let overall = "n/a";
+            let critical = "n/a";
+            try {
+              // evals/score-extraction.mjs prints { summary: { selected: { overall, criticalHallucinationCount } } }.
+              const report = JSON.parse(fs.readFileSync(path, "utf8"));
+              const selected = report.summary?.selected ?? {};
+              if (typeof selected.overall === "number") overall = selected.overall.toFixed(1);
+              if (typeof selected.criticalHallucinationCount === "number") critical = String(selected.criticalHallucinationCount);
+            } catch (error) {
+              overall = `unreadable (${error.message})`;
+            }
+            lines.push(`| ${profile} | ${overall} | ${critical} |`);
+          }
+          console.log(lines.join("\n"));
+          NODE
+      - name: Note that the Groq report was skipped
+        if: env.HAS_GROQ != 'true'
+        run: echo "Groq quality report skipped because GROQ_API_KEY is not set for this run." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_GROQ == 'true'
+        with:
+          name: eval-runs
+          path: evals/runs
+          retention-days: 30
+          if-no-files-found: warn

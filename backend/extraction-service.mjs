@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import {
   buildExtractionInput,
+  metadataForRecording,
   normalizeExtraction,
   runCommandExtractor,
-  userLocalDateFromTime,
 } from "../core/extraction-pipeline.mjs";
 
 export async function extractRecordingNote(recording, options = {}) {
@@ -48,13 +48,4 @@ export async function extractRecordingNote(recording, options = {}) {
       error: error instanceof Error ? error.message : "Unknown extraction error",
     };
   }
-}
-
-function metadataForRecording(recording) {
-  return {
-    user_local_date: userLocalDateFromTime(recording.user_local_time)
-      || new Date(recording.created_at).toISOString().slice(0, 10),
-    scenario: recording.type || "freeform",
-    recording_context: recording.upload_source || "unknown",
-  };
 }

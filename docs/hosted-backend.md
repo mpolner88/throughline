@@ -64,6 +64,16 @@ If `THROUGHLINE_MCP_TOKEN` is absent, the MCP endpoint uses `THROUGHLINE_API_TOK
 
 The iOS client sends a Supabase Auth JWT after sign-in. We still deploy with Supabase JWT verification disabled because the function validates the JWT itself and also accepts the separate service token for maintenance scripts.
 
+The usual path is the deploy script:
+
+```bash
+npm run supabase:deploy
+```
+
+It runs the extraction contract check (the same check as `npm run contract:check`) before deploying any function and stops if the generated files under `supabase/functions/_shared/` are stale. After changing `evals/prompts/extract-note-v0.md` or `core/extraction-contract.mjs`, run `npm run contract:sync` and commit the generated files before deploying. The Edge Function reads those copies, so this is what keeps production on the same prompt and normaliser the eval scores.
+
+To deploy by hand:
+
 ```bash
 supabase functions deploy api --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv
 supabase functions deploy mcp --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv

@@ -1,6 +1,6 @@
 # Throughline Running List Design
 
-**Status:** Draft for review. Nothing here is locked. Decisions that change earlier entries in `decision-log.md` are drafted in the companion plan and only move into the log once Mike approves.
+**Status:** Approved to build, 2026-09-09. Mike accepted the defaults on every open question in §13 and started phase 0 of the companion plan. Decision-log entries drafted in the plan move into `decision-log.md` when the slice ships (plan phase 6).
 
 **Source:** Mike's raw notes, 2026-09-08. Grounded against the code on `main` at `fd85d01` (iOS `1.0.5`, Supabase Edge Function `api`, `core/extraction-pipeline.mjs`, `evals/`).
 
@@ -286,7 +286,9 @@ New allowlisted events, no content: `tab_selected {tab}`, `task_completed {bucke
 
 ## 13. Open questions
 
-| # | Question | Default if unanswered |
+All nine were decided on 2026-09-09 by accepting the default in the right-hand column. They are kept here so the reasoning stays next to the decision.
+
+| # | Question | Decision (defaults accepted 2026-09-09) |
 |---|---|---|
 | Q1 | Where do the recording cards live once tabs take the home? Options: `notes →` in the top bar (proposed), a fourth tab, or below the list on today. | Top-bar affordance. Three tabs stay three. |
 | Q2 | Fuzzy dedup ("call Marcus" vs "call Marcus about the deck")? | Exact normalised match only. Log near-misses in an eval fixture set before adding fuzziness. |
