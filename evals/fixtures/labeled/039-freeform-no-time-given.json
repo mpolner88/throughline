@@ -1,0 +1,29 @@
+{
+  "id": "039-freeform-no-time-given",
+  "title": "Errands with no time given",
+  "metadata": {
+    "user_local_date": "2026-05-20",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Two things I keep meaning to do. Return the library books, and email Sasha the recipe she asked for. No deadline on either, just want them off my mind.",
+  "expected": {
+    "type": "freeform",
+    "title": "Library books and Sasha's recipe",
+    "summary": "The user wants to return the library books and email Sasha the recipe, with no deadline on either.",
+    "most_important": [],
+    "todos": [
+      { "text": "Return the library books", "priority": null, "due": null, "for_date": null, "timeframe": null, "context": null },
+      { "text": "Email Sasha the recipe she asked for", "priority": null, "due": null, "for_date": null, "timeframe": null, "context": null }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Sasha"],
+    "projects": ["library books", "recipe"],
+    "tags": ["errands", "recipe"],
+    "centers_of_balance": ["relationships"]
+  }
+}

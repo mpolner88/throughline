@@ -58,7 +58,11 @@ export const VALID_MOODS = new Set([
   "sad",
   "neutral",
 ]);
+// "medium" and "low" are still accepted from older notes and edits, but the
+// prompt asks the model for "high" or null only, and the task list collapses
+// anything else to null.
 export const VALID_PRIORITIES = new Set(["high", "medium", "low"]);
+export const VALID_TIMEFRAMES = new Set(["today", "this_week", "later"]);
 export const VALID_CENTERS = new Set(["health", "relationships", "passions", "purpose", "profession"]);
 
 export function buildExtractionInput({ id, metadata = {}, transcript, prompt }) {
@@ -134,7 +138,11 @@ export function deriveActionItems(actual) {
   const items = [];
 
   for (const todo of actual.todos ?? []) {
-    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at);
+    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at, {
+      timeframe: normalizeEnum(todo.timeframe, VALID_TIMEFRAMES),
+      due: todo.due ?? todo.for_date ?? null,
+      priority: normalizeEnum(todo.priority, VALID_PRIORITIES),
+    });
   }
 
   for (const text of actual.most_important ?? []) {
@@ -142,6 +150,29 @@ export function deriveActionItems(actual) {
   }
 
   actual.action_items = items;
+}
+
+// Places a task in today, this_week, or later for the user's local `date`
+// (YYYY-MM-DD) and the Sunday that ends its Monday..Sunday week (`weekEnd`).
+// A resolvable date wins over the spoken timeframe. Completion and the carry
+// ceiling for stale items are handled by the task list, not here, so `status`
+// is accepted for shape compatibility and does not change the result.
+export function deriveBucket(
+  { due = null, for_date = null, timeframe = null, status = "open" } = {},
+  { date, weekEnd } = {},
+) {
+  void status;
+  const dueEffective = isoDateOrNull(due) ?? isoDateOrNull(for_date);
+
+  if (dueEffective && isoDateOrNull(date)) {
+    if (dueEffective <= date) return "today";
+    if (isoDateOrNull(weekEnd) && dueEffective <= weekEnd) return "this_week";
+    return "later";
+  }
+
+  if (timeframe === "today") return "today";
+  if (timeframe === "this_week") return "this_week";
+  return "later";
 }
 
 export function stableActionItemId(text) {
@@ -213,8 +244,13 @@ function normalizeTodo(todo, metadata = {}) {
     priority: normalizeEnum(todo?.priority, VALID_PRIORITIES),
     due: normalizeDateValue(todo?.due, metadata),
     for_date: normalizeDateValue(todo?.for_date, metadata),
+    timeframe: normalizeEnum(todo?.timeframe, VALID_TIMEFRAMES),
     context: nullableString(todo?.context),
   };
+}
+
+function isoDateOrNull(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
 function normalizeDateValue(value, metadata) {
@@ -275,30 +311,24 @@ function deriveTomorrowTodos(actual, metadata) {
   }
 }
 
+// most_important holds what an agent should remember from the note: decisions,
+// constraints, and context. Tasks live in todos and action_items, so anything
+// whose text matches a todo is left out, and there are no fallbacks. An empty
+// list is a valid result.
 function deriveMostImportant(actual) {
+  const todoKeys = new Set(
+    (actual.todos ?? []).map((todo) => normalizeForComparison(todo.text)).filter(Boolean),
+  );
   const values = [];
 
-  addUniqueImportant(values, actual.most_important ?? []);
-  addUniqueImportant(values, actual.priorities ?? []);
-  addUniqueImportant(
-    values,
-    (actual.todos ?? [])
-      .filter((todo) => todo.priority === "high")
-      .map((todo) => todo.text),
-  );
-  addUniqueImportant(values, actual.tomorrow_todos ?? []);
-  addUniqueImportant(values, actual.intentions ?? []);
-  addUniqueImportant(values, actual.accomplishments ?? []);
-  addUniqueImportant(values, (actual.todos ?? []).map((todo) => todo.text));
-
-  if (!values.length && actual.summary) {
-    addUniqueImportant(values, [actual.summary]);
-  }
+  addUniqueImportant(values, actual.most_important ?? [], todoKeys);
+  addUniqueImportant(values, actual.priorities ?? [], todoKeys);
+  addUniqueImportant(values, actual.intentions ?? [], todoKeys);
 
   actual.most_important = values.slice(0, 5);
 }
 
-function addActionItem(items, candidate, source, status = null, completedAt = null) {
+function addActionItem(items, candidate, source, status = null, completedAt = null, extra = null) {
   const text = nullableString(candidate);
   if (!text) return;
 
@@ -312,10 +342,11 @@ function addActionItem(items, candidate, source, status = null, completedAt = nu
     status: normalizedStatus,
     source,
     completed_at: normalizedStatus === "completed" ? nullableString(completedAt) : null,
+    ...(extra ?? {}),
   });
 }
 
-function addUniqueImportant(values, candidates) {
+function addUniqueImportant(values, candidates, exclude = new Set()) {
   const seen = new Set(values.map(normalizeForComparison));
 
   for (const candidate of candidates) {
@@ -323,7 +354,7 @@ function addUniqueImportant(values, candidates) {
     if (!text) continue;
 
     const key = normalizeForComparison(text);
-    if (!key || seen.has(key)) continue;
+    if (!key || seen.has(key) || exclude.has(key)) continue;
 
     values.push(text.slice(0, 180));
     seen.add(key);

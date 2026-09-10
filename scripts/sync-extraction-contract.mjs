@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-// Copies the extraction contract into the Supabase Edge Function tree so
-// production runs the same prompt and normaliser the eval suite scores.
+// Copies the extraction contract, the task list module, and the prompt into the
+// Supabase Edge Function tree so production runs the same prompt, normaliser,
+// and task list logic the eval suite and the local stub use.
 //
 //   node scripts/sync-extraction-contract.mjs          write the generated files
 //   node scripts/sync-extraction-contract.mjs --check  exit 1 if any generated file is stale
@@ -14,8 +15,10 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT_PATH = "scripts/sync-extraction-contract.mjs";
 const CONTRACT_SOURCE = "core/extraction-contract.mjs";
+const TASK_LIST_SOURCE = "core/task-list.mjs";
 const PROMPT_SOURCE = "evals/prompts/extract-note-v0.md";
 const CONTRACT_TARGET = "supabase/functions/_shared/extraction-contract.mjs";
+const TASK_LIST_TARGET = "supabase/functions/_shared/task-list.mjs";
 const PROMPT_TARGET = "supabase/functions/_shared/extraction-prompt.ts";
 
 function header(source) {
@@ -35,12 +38,19 @@ function readSource(relativePath) {
 
 function generatedFiles() {
   const contract = readSource(CONTRACT_SOURCE);
+  const taskList = readSource(TASK_LIST_SOURCE);
   const prompt = readSource(PROMPT_SOURCE);
 
   return [
     {
       target: CONTRACT_TARGET,
       content: header(CONTRACT_SOURCE) + contract,
+    },
+    {
+      // task-list.mjs imports "./extraction-contract.mjs", which resolves to the
+      // generated contract copy once both files sit in _shared/.
+      target: TASK_LIST_TARGET,
+      content: header(TASK_LIST_SOURCE) + taskList,
     },
     {
       target: PROMPT_TARGET,

@@ -2,17 +2,24 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 
 import { listMemoryTools, runMemoryTool } from "../_shared/memory-tools.ts";
 import {
-  deriveActionItems,
   extractJsonFromText,
   metadataForRecording,
   normalizeExtraction,
   normalizeForComparison,
   normalizeStringArray,
   nullableString,
-  stableActionItemId,
   VALID_PRIORITIES,
+  VALID_TIMEFRAMES,
 } from "../_shared/extraction-contract.mjs";
 import { EXTRACTION_PROMPT, EXTRACTION_PROMPT_PATH } from "../_shared/extraction-prompt.ts";
+import {
+  applyTaskMove,
+  buildTaskList,
+  localDateInZone,
+  normalizeIsoDate,
+  refreshActionItems,
+  updateActionItemCompletion,
+} from "../_shared/task-list.mjs";
 
 declare const EdgeRuntime: {
   waitUntil(promise: Promise<unknown>): void;
@@ -55,6 +62,12 @@ const PRODUCT_EVENT_NAMES = new Set([
   "action_item_toggled",
   "feedback_opened",
   "feedback_submitted",
+  "tab_selected",
+  "task_completed",
+  "task_reopened",
+  "task_rebucketed",
+  "saved_confirmation_shown",
+  "notes_view_opened",
 ]);
 const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
 class HttpError extends Error {
@@ -162,7 +175,11 @@ async function handleRequest(req: Request) {
 
   const actionItemsMatch = pathname.match(/^\/recordings\/([^/]+)\/action-items$/);
   if (req.method === "PATCH" && actionItemsMatch) {
-    return handlePatchActionItem(req, context, decodeURIComponent(actionItemsMatch[1]));
+    return handlePatchActionItem(req, context, decodeURIComponent(actionItemsMatch[1]), url);
+  }
+
+  if (req.method === "GET" && pathname === "/tasks") {
+    return handleGetTasks(context, url);
   }
 
   const patchRecordingMatch = pathname.match(/^\/recordings\/([^/]+)$/);
@@ -441,38 +458,188 @@ async function handlePostFeedback(req: Request, context: RequestContext, recordi
   });
 }
 
-async function handlePatchActionItem(req: Request, context: RequestContext, recordingId: string) {
+// PATCH /recordings/:id/action-items with exactly one of:
+//   { text, completed: boolean }                      toggle completion
+//   { text, timeframe, local_date: YYYY-MM-DD }       move to another bucket
+// Both answer { recording, tasks } so the client can redraw the list without a
+// second request. The tz query parameter names the caller's zone.
+async function handlePatchActionItem(req: Request, context: RequestContext, recordingId: string, url: URL) {
   const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
   const text = nullableString(body.text);
   const completed = nullableBoolean(body.completed);
+  const timeframe: string | null = typeof body.timeframe === "string" ? body.timeframe : null;
+  const localDate: string | null = normalizeIsoDate(body.local_date);
+  const timeZone = taskTimeZone(url);
 
   if (!text) {
     throw new HttpError(400, "Action item text is required");
   }
 
-  if (completed === null) {
-    throw new HttpError(400, "Action item completed must be a boolean");
+  if ((completed === null) === (timeframe === null)) {
+    throw new HttpError(400, "Provide exactly one of completed or timeframe");
+  }
+
+  if (timeframe !== null && !VALID_TIMEFRAMES.has(timeframe)) {
+    throw new HttpError(400, "Action item timeframe must be today, this_week, or later");
+  }
+
+  if (timeframe !== null && !localDate) {
+    throw new HttpError(400, "Action item local_date (YYYY-MM-DD) is required with timeframe");
   }
 
   if (!recording.structured_note) {
     throw new HttpError(400, "Recording does not have an extracted note yet");
   }
 
-  updateActionItemCompletion(recording.structured_note, text, completed);
+  // Completion toggles are not corrections, so only a move writes feedback.
+  let snapshot: Record<string, unknown> | null = null;
+
+  if (completed !== null) {
+    updateActionItemCompletion(recording.structured_note, text, completed);
+  } else {
+    snapshot = recordingSnapshot(recording);
+    const move = applyTaskMove(recording.structured_note, text, timeframe, localDate);
+    if (!move.todo) {
+      throw new HttpError(404, "Task not found in this recording");
+    }
+    // Moving a task to the bucket it is already in is not a correction.
+    if (!move.changed) snapshot = null;
+  }
+
   await persistRecording(recording);
 
-  return jsonResponse(200, { recording });
+  const feedbackError = snapshot
+    ? await persistCorrectionFeedback(recording, snapshot, "task_move", context)
+    : null;
+
+  const tasks = buildTaskList(await listFullRecordings(context), {
+    date: localDate || localDateInZone(new Date().toISOString(), timeZone),
+    timeZone,
+  });
+
+  return jsonResponse(200, feedbackError ? { recording, tasks, feedback_error: feedbackError } : { recording, tasks });
+}
+
+// GET /tasks?date=YYYY-MM-DD&tz=Area/City
+async function handleGetTasks(context: RequestContext, url: URL) {
+  const dateParam = url.searchParams.get("date");
+  if (dateParam && !normalizeIsoDate(dateParam)) {
+    throw new HttpError(400, "date must be YYYY-MM-DD");
+  }
+
+  const timeZone = taskTimeZone(url);
+  const tasks = buildTaskList(await listFullRecordings(context), {
+    date: dateParam || localDateInZone(new Date().toISOString(), timeZone),
+    timeZone,
+  });
+
+  return jsonResponse(200, tasks);
+}
+
+function taskTimeZone(url: URL) {
+  return nullableString(url.searchParams.get("tz")) || "UTC";
 }
 
 async function handlePatchRecording(req: Request, context: RequestContext, recordingId: string) {
   const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
 
+  const snapshot = recordingSnapshot(recording);
   applyRecordingEdits(recording, body);
   await persistRecording(recording);
 
-  return jsonResponse(200, { recording });
+  // An edit that changed nothing is not a correction, so it leaves no row.
+  const feedbackError = correctionChanged(snapshot, recording)
+    ? await persistCorrectionFeedback(recording, snapshot, "note_edit", context)
+    : null;
+
+  return jsonResponse(200, feedbackError ? { recording, feedback_error: feedbackError } : { recording });
+}
+
+// The fields of a recording that an extraction eval needs, copied before an
+// edit so the feedback row can pair the pre-edit input with the edited note.
+function recordingSnapshot(recording: any) {
+  return {
+    id: recording.id,
+    user_local_time: recording.user_local_time ?? null,
+    timezone: recording.timezone ?? null,
+    type: recording.type ?? null,
+    transcript_raw: recording.transcript_raw ?? null,
+    structured_note: cloneJson(recording.structured_note),
+  };
+}
+
+// Every note edit and task move is a correction the eval can learn from, so
+// it lands in throughline_feedback as an eval candidate: expected is the note
+// after the change and recording_snapshot is the recording before it. Storage
+// failures must not fail the edit; the message comes back as feedback_error.
+async function persistCorrectionFeedback(
+  recording: any,
+  snapshot: Record<string, unknown>,
+  source: "note_edit" | "task_move",
+  context: RequestContext,
+): Promise<string | null> {
+  const feedback = {
+    id: createFeedbackId(),
+    recording_id: recording.id,
+    user_id: recording.user_id,
+    auth_user_id: recording.auth_user_id ?? context.authUserId,
+    created_at: new Date().toISOString(),
+    source,
+    status: "eval_candidate",
+    answers: {
+      rubric_version: "note_edit_v1",
+      quality_score: null,
+      issue_types: [],
+      correction: null,
+      agent_ready: null,
+      should_remember: true,
+      missing: null,
+      invented: null,
+    },
+    expected: cloneJson(recording.structured_note),
+    recording_snapshot: snapshot,
+  };
+
+  try {
+    await persistFeedback(feedback);
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Feedback could not be stored";
+    console.error(`feedback ${source} for ${recording.id} was not stored: ${message}`);
+    return message;
+  }
+}
+
+function cloneJson<T>(value: T | null | undefined): T | null {
+  return value === undefined || value === null ? null : JSON.parse(JSON.stringify(value)) as T;
+}
+
+// True when an edit changed something an eval could learn from: the transcript,
+// the type, or the note itself. edited_at alone does not count.
+function correctionChanged(snapshot: Record<string, unknown>, recording: any): boolean {
+  return stableJson(correctionView(snapshot)) !== stableJson(correctionView(recording));
+}
+
+function correctionView(recording: any) {
+  const { edited_at: _editedAt, ...note } = recording.structured_note ?? {};
+  return {
+    transcript_raw: recording.transcript_raw ?? null,
+    type: recording.type ?? null,
+    structured_note: recording.structured_note ? note : null,
+  };
+}
+
+// JSON with object keys sorted, so key order (which edits rewrite) cannot make
+// two equal notes look different.
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value ?? null);
 }
 
 async function handleDeleteAccount(context: RequestContext) {
@@ -1268,6 +1435,7 @@ function feedbackSummary(feedback: any) {
     id: feedback.id,
     recording_id: feedback.recording_id,
     created_at: feedback.created_at,
+    source: feedback.source ?? null,
     status: feedback.status,
     quality_score: feedback.answers?.quality_score ?? null,
     issue_types: feedback.answers?.issue_types ?? [],
@@ -1287,43 +1455,6 @@ function feedbackStatus(
   if (issueTypes.length || correction) return "needs_review";
   if (qualityScore !== null) return "graded";
   return "needs_review";
-}
-
-function updateActionItemCompletion(note: any, text: string, completed: boolean) {
-  note.action_items = Array.isArray(note.action_items) ? note.action_items : [];
-
-  if (!note.action_items.length) {
-    deriveActionItems(note);
-  }
-
-  const key = normalizeForComparison(text);
-  const completedAt = completed ? new Date().toISOString() : null;
-  let matched = false;
-
-  for (const item of note.action_items) {
-    if (normalizeForComparison(item.text) !== key) continue;
-
-    item.status = completed ? "completed" : "open";
-    item.completed_at = completedAt;
-    matched = true;
-  }
-
-  if (!matched) {
-    note.action_items.push({
-      id: stableActionItemId(text),
-      text,
-      status: completed ? "completed" : "open",
-      source: "manual",
-      completed_at: completedAt,
-    });
-  }
-
-  for (const todo of note.todos ?? []) {
-    if (normalizeForComparison(todo.text) !== key) continue;
-
-    todo.status = completed ? "completed" : "open";
-    todo.completed_at = completedAt;
-  }
 }
 
 function applyRecordingEdits(recording: any, body: any) {
@@ -1449,6 +1580,7 @@ function normalizeEditedTodos(value: unknown, previousTodos: any[]) {
       priority: normalizeTodoPriority(item?.priority ?? previous?.priority),
       due: nullableString(item?.due ?? previous?.due),
       for_date: nullableString(item?.for_date ?? previous?.for_date),
+      timeframe: normalizeTodoTimeframe(item?.timeframe ?? previous?.timeframe),
       context: nullableString(item?.context ?? previous?.context) || "manual_edit",
       completed_at: status === "completed" ? nullableString(item?.completed_at ?? previous?.completed_at) : null,
     });
@@ -1458,56 +1590,16 @@ function normalizeEditedTodos(value: unknown, previousTodos: any[]) {
   return todos;
 }
 
-function refreshActionItems(note: any) {
-  const previousByText = new Map<string, any>(
-    (note.action_items ?? []).map(
-      (item: any): [string, any] => [normalizeForComparison(item.text), item],
-    ),
-  );
-  const items: any[] = [];
-
-  for (const todo of note.todos ?? []) {
-    addEditedActionItem(items, todo.text, "todo", todo.status, todo.completed_at, previousByText);
-  }
-
-  for (const text of note.most_important ?? []) {
-    addEditedActionItem(items, text, "most_important", null, null, previousByText);
-  }
-
-  note.action_items = items;
-}
-
-function addEditedActionItem(
-  items: any[],
-  candidate: unknown,
-  source: string,
-  status: unknown = null,
-  completedAt: unknown = null,
-  previousByText = new Map<string, any>(),
-) {
-  const text = nullableString(candidate);
-  if (!text) return;
-
-  const key = normalizeForComparison(text);
-  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
-
-  const previous = previousByText.get(key);
-  const normalizedStatus = normalizeCompletionStatus(status ?? previous?.status);
-  items.push({
-    id: previous?.id || stableActionItemId(text),
-    text,
-    status: normalizedStatus,
-    source,
-    completed_at: normalizedStatus === "completed" ? nullableString(completedAt ?? previous?.completed_at) : null,
-  });
-}
-
 function normalizeCompletionStatus(value: unknown) {
   return value === "completed" || value === "done" ? "completed" : "open";
 }
 
 function normalizeTodoPriority(value: unknown) {
   return typeof value === "string" && VALID_PRIORITIES.has(value) ? value : null;
+}
+
+function normalizeTodoTimeframe(value: unknown) {
+  return typeof value === "string" && VALID_TIMEFRAMES.has(value) ? value : null;
 }
 
 async function requestContext(req: Request): Promise<RequestContext | null> {

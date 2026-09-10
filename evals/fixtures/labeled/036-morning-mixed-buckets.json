@@ -1,0 +1,30 @@
+{
+  "id": "036-morning-mixed-buckets",
+  "title": "Morning landing in all three buckets",
+  "metadata": {
+    "user_local_date": "2026-05-18",
+    "scenario": "morning",
+    "recording_context": "stationary"
+  },
+  "transcript": "Okay, morning. Three things. Call Marcus today about the contract, send the deck by Friday, and book the dentist sometime, it's been too long. Marcus first, the rest can flow.",
+  "expected": {
+    "type": "morning",
+    "title": "Marcus, deck, dentist",
+    "summary": "The user will call Marcus about the contract today, send the deck by Friday, and book the dentist sometime, with Marcus first.",
+    "most_important": [],
+    "todos": [
+      { "text": "Call Marcus about the contract", "priority": "high", "due": "2026-05-18", "for_date": null, "timeframe": "today", "context": "today, first" },
+      { "text": "Send the deck", "priority": null, "due": "2026-05-22", "for_date": null, "timeframe": null, "context": "by Friday" },
+      { "text": "Book the dentist", "priority": null, "due": null, "for_date": null, "timeframe": "later", "context": "sometime" }
+    ],
+    "priorities": ["Call Marcus about the contract"],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Marcus"],
+    "projects": ["contract", "deck", "dentist"],
+    "tags": ["contract", "deck", "dentist"],
+    "centers_of_balance": ["profession", "health"]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "033-freeform-sometime-cue",
+  "title": "Walking note with sometime cues",
+  "metadata": {
+    "user_local_date": "2026-05-19",
+    "scenario": "freeform",
+    "recording_context": "walking"
+  },
+  "transcript": "Random thought while walking. At some point I should reorganize the photo library, it's a mess. And eventually I want to get the old laptop wiped and donated. Neither of these matters this month, just don't want to forget.",
+  "expected": {
+    "type": "freeform",
+    "title": "Photo library and old laptop, someday",
+    "summary": "The user wants to reorganize the photo library and wipe and donate the old laptop at some point, with no urgency this month.",
+    "most_important": ["Neither task matters this month"],
+    "todos": [
+      { "text": "Reorganize the photo library", "priority": null, "due": null, "for_date": null, "timeframe": "later", "context": "at some point" },
+      { "text": "Wipe and donate the old laptop", "priority": null, "due": null, "for_date": null, "timeframe": "later", "context": "eventually" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["photo library", "old laptop"],
+    "tags": ["photos", "laptop", "someday"],
+    "centers_of_balance": []
+  }
+}

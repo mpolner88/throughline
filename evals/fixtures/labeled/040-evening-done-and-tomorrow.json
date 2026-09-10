@@ -1,0 +1,28 @@
+{
+  "id": "040-evening-done-and-tomorrow",
+  "title": "Evening with accomplishments and one tomorrow task",
+  "metadata": {
+    "user_local_date": "2026-05-21",
+    "scenario": "evening",
+    "recording_context": "stationary"
+  },
+  "transcript": "Evening wrap. I finished the grant budget and sent it to Helen, and I finally replied to Omar about the venue. Tomorrow, one thing: walk through the onboarding flow with the design team. Decided we're not adding the tutorial screens this release. Feeling relieved.",
+  "expected": {
+    "type": "evening",
+    "title": "Budget sent, onboarding tomorrow",
+    "summary": "The user finished and sent the grant budget to Helen, replied to Omar about the venue, and will walk through the onboarding flow with the design team tomorrow.",
+    "most_important": ["Decided not to add the tutorial screens this release"],
+    "todos": [
+      { "text": "Walk through the onboarding flow with the design team", "priority": null, "due": null, "for_date": "2026-05-22", "timeframe": null, "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": ["Finished the grant budget and sent it to Helen", "Replied to Omar about the venue"],
+    "tomorrow_todos": ["Walk through the onboarding flow with the design team"],
+    "mood": "calm",
+    "people": ["Helen", "Omar"],
+    "projects": ["grant budget", "venue", "onboarding flow", "tutorial screens"],
+    "tags": ["grant", "onboarding", "design"],
+    "centers_of_balance": ["profession"]
+  }
+}

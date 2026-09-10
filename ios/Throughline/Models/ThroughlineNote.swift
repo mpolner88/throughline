@@ -37,6 +37,7 @@ struct Todo: Identifiable, Codable, Hashable {
     var priority: String?
     var due: String?
     var forDate: String?
+    var timeframe: String?
     var context: String?
     var completedAt: String?
 
@@ -47,6 +48,7 @@ struct Todo: Identifiable, Codable, Hashable {
         case priority
         case due
         case forDate = "for_date"
+        case timeframe
         case context
         case completedAt = "completed_at"
     }
@@ -59,7 +61,8 @@ struct Todo: Identifiable, Codable, Hashable {
         due: String?,
         forDate: String?,
         context: String?,
-        completedAt: String? = nil
+        completedAt: String? = nil,
+        timeframe: String? = nil
     ) {
         self.id = id
         self.text = text
@@ -67,6 +70,7 @@ struct Todo: Identifiable, Codable, Hashable {
         self.priority = priority
         self.due = due
         self.forDate = forDate
+        self.timeframe = timeframe
         self.context = context
         self.completedAt = completedAt
     }
@@ -79,6 +83,7 @@ struct Todo: Identifiable, Codable, Hashable {
         priority = try container.decodeIfPresent(String.self, forKey: .priority)
         due = try container.decodeIfPresent(String.self, forKey: .due)
         forDate = try container.decodeIfPresent(String.self, forKey: .forDate)
+        timeframe = try container.decodeIfPresent(String.self, forKey: .timeframe)
         context = try container.decodeIfPresent(String.self, forKey: .context)
         completedAt = try container.decodeIfPresent(String.self, forKey: .completedAt)
     }
@@ -279,18 +284,14 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         return summary
     }
 
+    // Non-task takeaways only ("worth remembering"). Tasks live in the running
+    // list, so any line that matches a todo is excluded here (spec section 6).
     var displayMostImportant: [String] {
+        let todoKeys = Set(todos.map { Self.normalizedText($0.text) })
         var values: [String] = []
-        appendUnique(mostImportant, to: &values)
-        appendUnique(priorities, to: &values)
-        appendUnique(todos.filter { $0.priority == "high" }.map(\.text), to: &values)
-        appendUnique(tomorrowTodos, to: &values)
-        appendUnique(intentions, to: &values)
-        appendUnique(accomplishments, to: &values)
-
-        if values.isEmpty && !summary.isEmpty && processingStatus == "processed" {
-            values.append(summary)
-        }
+        appendUnique(mostImportant, to: &values, excluding: todoKeys)
+        appendUnique(priorities, to: &values, excluding: todoKeys)
+        appendUnique(intentions, to: &values, excluding: todoKeys)
 
         return Array(values.prefix(5))
     }
@@ -310,11 +311,12 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         }
     }
 
-    private func appendUnique(_ candidates: [String], to values: inout [String]) {
+    private func appendUnique(_ candidates: [String], to values: inout [String], excluding excludedKeys: Set<String>) {
         for candidate in candidates {
             let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
             let key = trimmed.lowercased()
+            guard !excludedKeys.contains(key) else { continue }
             guard !values.contains(where: { $0.lowercased() == key }) else { continue }
             values.append(trimmed)
         }

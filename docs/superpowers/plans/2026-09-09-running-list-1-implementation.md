@@ -2,7 +2,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-throughline-running-list-design.md`
 **Prototype:** `mockup/list-redesign/index.html`
-**Status:** Approved 2026-09-09; phase 0 complete, phase 1 next. Sequenced by uncertainty, not by visual polish. The spec's open questions Q1, Q6, Q7, Q8 are resolved by their defaults (spec §13).
+**Status:** Approved 2026-09-09; phases 0 to 3 complete, phase 4 next. Sequenced by uncertainty, not by visual polish. The spec's open questions Q1, Q6, Q7, Q8 are resolved by their defaults (spec §13).
 
 ## Global constraints
 
@@ -29,32 +29,46 @@ Acceptance: CI fails when the production prompt and the eval prompt diverge. Bas
 
 ### Phase 1 · Extraction: `timeframe`, `priority` rule, todo-free `most_important` (~1 day)
 
-- [ ] `core/extraction-contract.mjs` (re-exported by `core/extraction-pipeline.mjs`): add `timeframe` to `normalizeTodo`; add `deriveBucket(todo, userLocalDate)` (pure function, exported); change `deriveMostImportant` to exclude todo texts; add `bucket`, `timeframe`, `due` to `deriveActionItems`. After editing, run `npm run contract:sync` and commit the regenerated files under `supabase/functions/_shared/`; `npm run contract:check` fails until they match.
-- [ ] `evals/prompts/extract-note-v0.md`: add the `timeframe` field, the cue table from spec §3.2, and the explicit `priority: "high"` rule. Update the Output JSON block.
-- [ ] `evals/score-extraction.mjs`: score `todos[].timeframe` and derived `bucket` in the action profile; add `most_important` to the memory profile.
-- [ ] Add 8–10 fixtures under `evals/fixtures/labeled/` that exercise: "today" cue, "this week" cue, "sometime" cue, weekday name, "tomorrow", mixed note with all three buckets, a restated task, a done-then-restated task.
-- [ ] Run the eval. Action profile must not drop below baseline; criticals must not rise.
+- [x] `core/extraction-contract.mjs` (re-exported by `core/extraction-pipeline.mjs`): add `timeframe` to `normalizeTodo`; add `deriveBucket(todo, userLocalDate)` (pure function, exported); change `deriveMostImportant` to exclude todo texts; add `bucket`, `timeframe`, `due` to `deriveActionItems`. After editing, run `npm run contract:sync` and commit the regenerated files under `supabase/functions/_shared/`; `npm run contract:check` fails until they match.
+  Done. `VALID_TIMEFRAMES`, `normalizeTodo` with `timeframe`, `deriveBucket({ due, for_date, timeframe }, { date, weekEnd })`, and a todo-free `deriveMostImportant` (most_important, priorities, intentions; no fallbacks; empty is valid). `deriveActionItems` copies `timeframe`, `due`, and `priority` onto action items; `bucket` is derived at read time by `core/task-list.mjs` rather than stored on the item.
+- [x] `evals/prompts/extract-note-v0.md`: add the `timeframe` field, the cue table from spec §3.2, and the explicit `priority: "high"` rule. Update the Output JSON block.
+  Done. New Timeframe and Priority sections with the cue table, `most_important` rewritten as todo-free, the closing checklist extended, and the Output JSON block updated; `supabase/functions/_shared/extraction-prompt.ts` regenerated.
+- [x] `evals/score-extraction.mjs`: score `todos[].timeframe` and derived `bucket` in the action profile; add `most_important` to the memory profile.
+  Done. Todo weights are 0.6 text and 0.1 each for priority, due, for_date, and timeframe; fixtures whose todos lack a `timeframe` key keep the old 0.7 split. `most_important` is in the memory profile at weight 10 and skipped (no weight) on fixtures that do not label it. `bucket` is not scored directly because it is a pure function of the scored fields.
+- [x] Add 8–10 fixtures under `evals/fixtures/labeled/` that exercise: "today" cue, "this week" cue, "sometime" cue, weekday name, "tomorrow", mixed note with all three buckets, a restated task, a done-then-restated task.
+  Done as fixtures 031 to 040 (today cues, this week cue, sometime cue, weekday name, tomorrow, mixed buckets, restated task, priority marker, no time given, done and tomorrow). Described in `evals/README.md`.
+- [x] Run the eval. Action profile must not drop below baseline; criticals must not rise.
+  Done for the golden self-check: `npm run eval:check` scores 100 on all three profiles over 40 fixtures with zero criticals. The live Groq comparison against the 2026-09-09 baseline still needs the first CI run with `GROQ_API_KEY`.
 
-Acceptance: `deriveBucket` has unit tests for every row in the spec §3.2 table plus week boundaries (Sunday, Monday, timezone offset).
+Acceptance: `deriveBucket` has unit tests for every row in the spec §3.2 table plus week boundaries (Sunday, Monday, timezone offset). Covered by the fixtures above and `backend/smoke-task-list.mjs` (yesterday, today, this week, a 12-day-out date, and a spoken later, evaluated for a UTC date) rather than a separate unit test file; a dedicated test for Sunday and Monday boundaries and zone offsets remains open.
 
 ### Phase 2 · Server: `GET /tasks` and cross-note dedup (~1–2 days)
 
-- [ ] `backend/memory-tools.mjs` and `supabase/functions/api/index.ts`: add `buildTaskList(recordings, userLocalDate)` implementing spec §4 (match key, restatement wins, done never reopens) and §4.2 sort. One implementation in `core/`, imported by both.
-- [ ] New route `GET /tasks?date=YYYY-MM-DD` on the stub server and the Edge Function. Response: `{ today: Task[], this_week: Task[], later: Task[], done: Task[] }` with the client's local date passed in, so the server never guesses timezone.
-- [ ] `PATCH /recordings/:id/action-items` unchanged, but the response should include the rebuilt task list to save a round-trip.
-- [ ] `list_open_todos`: dedup across recordings, add `bucket`, accept a `bucket` filter. `get_today` adds `tasks`.
-- [ ] Extend `backend/smoke-note-edits.mjs` (or add `smoke-task-list.mjs`) to post two notes with an overlapping task and assert one row.
+- [x] `backend/memory-tools.mjs` and `supabase/functions/api/index.ts`: add `buildTaskList(recordings, userLocalDate)` implementing spec §4 (match key, restatement wins, done never reopens) and §4.2 sort. One implementation in `core/`, imported by both.
+  Done as `core/task-list.mjs` (`buildTaskList(recordings, { date, timeZone })`, plus `applyTaskMove`, `updateActionItemCompletion`, `refreshActionItems`, `weekEndFor`, `localDateInZone`), synced to `supabase/functions/_shared/task-list.mjs` by `npm run contract:sync` and imported by the stub, the Edge Function, and both memory-tools modules. Carry ceiling of 7 days per spec §5.
+- [x] New route `GET /tasks?date=YYYY-MM-DD` on the stub server and the Edge Function. Response: `{ today: Task[], this_week: Task[], later: Task[], done: Task[] }` with the client's local date passed in, so the server never guesses timezone.
+  Done on both, with `tz` alongside `date` and `date`, `week_end`, and `counts` added to the response. Documented with a real example in `backend/README.md`.
+- [x] `PATCH /recordings/:id/action-items` unchanged, but the response should include the rebuilt task list to save a round-trip.
+  Done. Both servers answer `{ recording, tasks }`; the body is `{ text, completed }` or, per Q6, `{ text, timeframe, local_date }`.
+- [x] `list_open_todos`: dedup across recordings, add `bucket`, accept a `bucket` filter. `get_today` adds `tasks`.
+  Done in `backend/memory-tools.mjs` and `supabase/functions/_shared/memory-tools.ts`; both also accept `date` and `tz`. Most-important action items still trail the tasks when no bucket or priority filter is set.
+- [x] Extend `backend/smoke-note-edits.mjs` (or add `smoke-task-list.mjs`) to post two notes with an overlapping task and assert one row.
+  Done as `backend/smoke-task-list.mjs`, run by `npm run task:smoke` inside `npm run check`. It also asserts buckets, carried and priority ordering, counts, completion, moves, feedback rows, and the agent tool inputs.
 
-Acceptance: spec §14 bullets 2, 3, 4, 9 pass against the stub server.
+Acceptance: spec §14 bullets 2, 3, 4, 9 pass against the stub server. Covered by `task:smoke`; the "dentist next week" restatement (bullet 3, second half) is exercised through a task move rather than a second note.
 
 ### Phase 3 · Capture corrections (~1 day, can run parallel to phase 2)
 
-- [ ] `applyRecordingEdits` writes a `throughline_feedback` row: `status: eval_candidate`, `expected` = post-edit `structured_note`, `recording_snapshot` = pre-edit note and transcript, `answers.rubric_version: "note_edit_v1"`, `source: "note_edit"`.
-- [ ] `scripts/export-feedback.mjs`: service-role read of `throughline_feedback where status = 'eval_candidate'` into `backend/data/feedback/`. Idempotent by id.
-- [ ] `evals/import-feedback-fixtures.mjs`: no change expected; verify it now produces fixtures. Document the human promotion step in `evals/README.md`.
-- [ ] If Q6 is yes: `PATCH /recordings/:id/action-items` accepts `timeframe` and writes the same kind of feedback row with the before/after todo.
+- [x] `applyRecordingEdits` writes a `throughline_feedback` row: `status: eval_candidate`, `expected` = post-edit `structured_note`, `recording_snapshot` = pre-edit note and transcript, `answers.rubric_version: "note_edit_v1"`, `source: "note_edit"`.
+  Done in both the stub and the Edge Function through the existing `persistFeedback` path. A failed write adds `feedback_error` to the response instead of failing the edit; `GET /feedback` summaries include `source` and `status`.
+- [x] `scripts/export-feedback.mjs`: service-role read of `throughline_feedback where status = 'eval_candidate'` into `backend/data/feedback/`. Idempotent by id.
+  Done as `npm run feedback:export` with `--status` and `--out`; env from the process or `.env.local` / `.env`; pages with Range headers; rewrites only changed files; prints counts only.
+- [x] `evals/import-feedback-fixtures.mjs`: no change expected; verify it now produces fixtures. Document the human promotion step in `evals/README.md`.
+  Done. The exported rows carry `recording_snapshot.transcript_raw` and an `expected` object, which is all the importer needs. The export, import, and promotion loop is in `evals/README.md` under Corrections loop.
+- [x] If Q6 is yes: `PATCH /recordings/:id/action-items` accepts `timeframe` and writes the same kind of feedback row with the before/after todo.
+  Done. `{ text, timeframe, local_date }` moves the task via `applyTaskMove` and writes a `source: "task_move"` row with the whole note before and after; completion toggles write nothing.
 
-Acceptance: spec §14 bullet 10.
+Acceptance: spec §14 bullet 10. `task:smoke` asserts the `note_edit` and `task_move` rows on the stub; the export against Supabase is a manual step.
 
 ### Phase 4 · iOS: tabs, list, clearing, rollover (~3 days)
 

@@ -245,7 +245,8 @@ struct RecordingPayload: Decodable {
         )
     }
 
-    private static func date(from isoString: String) -> Date? {
+    // Shared ISO 8601 parser for server timestamps; TaskItem reuses it.
+    static func date(from isoString: String) -> Date? {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = formatter.date(from: isoString) {
@@ -355,6 +356,11 @@ struct RecordingListItem: Decodable {
 
 struct RecordingDetailResponse: Decodable {
     let recording: RecordingPayload
+}
+
+struct TaskMoveResponse: Decodable {
+    let recording: RecordingPayload
+    let tasks: TaskListResponse
 }
 
 struct AgentTokenSummary: Identifiable, Decodable {
@@ -639,6 +645,62 @@ struct UploadClient {
         return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
     }
 
+    func fetchTasks(date: String, timeZone: String) async throws -> TaskListResponse {
+        guard var components = URLComponents(
+            url: baseURL.appendingPathComponent("tasks"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw UploadClientError.invalidResponse
+        }
+        components.queryItems = [
+            URLQueryItem(name: "date", value: date),
+            URLQueryItem(name: "tz", value: timeZone)
+        ]
+        guard let url = components.url else {
+            throw UploadClientError.invalidResponse
+        }
+
+        let request = try await authorizedRequest(url: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(TaskListResponse.self, from: data)
+    }
+
+    func moveTask(
+        recordingID: String,
+        text: String,
+        timeframe: TaskTimeframe,
+        localDate: String,
+        timeZone: String
+    ) async throws -> TaskMoveResponse {
+        // The response carries the re-bucketed task list, so the caller's zone
+        // must travel with the request exactly as it does for fetchTasks.
+        guard var components = URLComponents(
+            url: baseURL
+                .appendingPathComponent("recordings")
+                .appendingPathComponent(recordingID)
+                .appendingPathComponent("action-items"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw UploadClientError.invalidResponse
+        }
+        components.queryItems = [URLQueryItem(name: "tz", value: timeZone)]
+        guard let url = components.url else {
+            throw UploadClientError.invalidResponse
+        }
+
+        var request = try await authorizedRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            TaskMoveRequest(text: text, timeframe: timeframe.rawValue, localDate: localDate)
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(TaskMoveResponse.self, from: data)
+    }
+
     func updateRecording(recordingID: String, draft: NoteEditDraft) async throws -> RecordingPayload {
         var request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("recordings")
@@ -832,6 +894,18 @@ private struct ProductFeedbackRequest: Encodable {
 private struct ActionItemUpdateRequest: Encodable {
     let text: String
     let completed: Bool
+}
+
+private struct TaskMoveRequest: Encodable {
+    let text: String
+    let timeframe: String
+    let localDate: String
+
+    enum CodingKeys: String, CodingKey {
+        case text
+        case timeframe
+        case localDate = "local_date"
+    }
 }
 
 private struct CreateAgentTokenRequest: Encodable {

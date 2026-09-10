@@ -1,0 +1,29 @@
+{
+  "id": "037-freeform-restated-task",
+  "title": "Task restated with a later timeframe",
+  "metadata": {
+    "user_local_date": "2026-05-19",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Quick note. I need to book the dentist this week. Also order the new filters for the air purifier. Actually, wait, the dentist can wait until next week, the filters are the thing that matters most.",
+  "expected": {
+    "type": "freeform",
+    "title": "Filters first, dentist next week",
+    "summary": "The user needs to order new air purifier filters and has pushed booking the dentist to next week.",
+    "most_important": ["The dentist can wait until next week"],
+    "todos": [
+      { "text": "Book the dentist", "priority": null, "due": null, "for_date": null, "timeframe": "later", "context": "moved to next week" },
+      { "text": "Order new filters for the air purifier", "priority": "high", "due": null, "for_date": null, "timeframe": null, "context": "matters most" }
+    ],
+    "priorities": ["Order new filters for the air purifier"],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": [],
+    "projects": ["dentist", "air purifier"],
+    "tags": ["dentist", "air purifier"],
+    "centers_of_balance": ["health"]
+  }
+}

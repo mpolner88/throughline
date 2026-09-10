@@ -1,3 +1,6 @@
+import { normalizeForComparison } from "./extraction-contract.mjs";
+import { buildTaskList, localDateInZone } from "./task-list.mjs";
+
 const FILTER_PROPERTIES = {
   start_date: {
     type: "string",
@@ -28,12 +31,24 @@ const LIMIT_PROPERTY = {
   description: "Maximum number of items to return.",
 };
 
+const TIME_ZONE_PROPERTY = {
+  type: "string",
+  description: "IANA time zone used to resolve today and day boundaries, for example America/New_York. Defaults to UTC.",
+};
+
+const BUCKET_PROPERTY = {
+  type: "string",
+  enum: ["today", "this_week", "later"],
+  description: "Optional bucket filter: today, this_week, or later.",
+};
+
 const TOOL_DEFINITIONS = [
   {
     name: "get_today",
-    description: "Return all processed notes for a local day.",
+    description: "Return all processed notes for a local day plus the tasks in that day's today bucket, merged across every note.",
     input_schema: objectSchema({
       date: DATE_PROPERTY,
+      tz: TIME_ZONE_PROPERTY,
       type: FILTER_PROPERTIES.type,
     }),
   },
@@ -80,14 +95,21 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "list_open_todos",
-    description: "Return open todos and tomorrow carry-forward items extracted from notes.",
+    description: "Return open tasks merged across notes, each once, with the bucket (today, this_week, later) it falls in for the given local date. Open most-important action items follow the tasks when no bucket or priority filter is set. Set include_completed to also see cleared tasks with status completed.",
     input_schema: objectSchema({
       ...FILTER_PROPERTIES,
+      date: DATE_PROPERTY,
+      tz: TIME_ZONE_PROPERTY,
+      bucket: BUCKET_PROPERTY,
+      include_completed: {
+        type: "boolean",
+        description: "Also return completed tasks, after the open ones, with status completed. Defaults to false.",
+      },
       limit: { ...LIMIT_PROPERTY, maximum: 200 },
       priority: {
         type: "string",
         enum: ["high", "medium", "low"],
-        description: "Optional priority filter.",
+        description: "Optional priority filter. Tasks carry high or null, so medium and low match nothing new.",
       },
     }),
   },
@@ -131,6 +153,8 @@ const TOOL_DEFINITIONS = [
 ];
 
 const TOOL_NAMES = TOOL_DEFINITIONS.map((tool) => tool.name);
+const TASK_BUCKETS = ["today", "this_week", "later"] as const;
+type TaskBucket = (typeof TASK_BUCKETS)[number];
 const CENTERS = ["health", "relationships", "passions", "purpose", "profession"];
 const STOP_TOKENS = new Set([
   "about",
@@ -203,11 +227,14 @@ function sortRecordings(recordings: any[]) {
 }
 
 function getToday(recordings: any[], input: Record<string, unknown>) {
-  const date = normalizeDate(input.date) || todayIsoDate();
+  const timeZone = timeZoneInput(input);
+  const date = normalizeDate(input.date) || todayIsoDate(timeZone);
   const filtered = filterRecordings(recordings, { ...input, start_date: date, end_date: date });
+  const tasks = buildTaskList(recordings, { date, timeZone });
   return {
     recordings: filtered.map(toAgentRecording),
     count: filtered.length,
+    tasks: tasks.today,
   };
 }
 
@@ -283,65 +310,90 @@ function search(recordings: any[], input: Record<string, unknown>) {
 function listOpenTodos(recordings: any[], input: Record<string, unknown>) {
   const limit = clampLimit(input.limit, 50, 200);
   const priority = typeof input.priority === "string" ? input.priority : null;
-  const todos = [];
+  const bucket = TASK_BUCKETS.includes(input.bucket as TaskBucket) ? input.bucket as TaskBucket : null;
+  const includeCompleted = input.include_completed === true;
+  const timeZone = timeZoneInput(input);
+  const date = normalizeDate(input.date) || todayIsoDate(timeZone);
+  const filtered = filterRecordings(recordings, input);
+  const taskList = buildTaskList(filtered, { date, timeZone, includeAllDone: includeCompleted });
+  const todos: any[] = [];
+  const seen = new Set<string>();
 
-  for (const recording of filterRecordings(recordings, input).reverse()) {
-    const note = recording.structured_note;
-    if (!note) continue;
+  for (const bucketName of TASK_BUCKETS) {
+    if (bucket && bucketName !== bucket) continue;
 
-    const seen = new Set<string>();
-    for (const todo of note.todos ?? []) {
-      if (todo.status && todo.status !== "open") continue;
-      if (priority && todo.priority !== priority) continue;
+    for (const task of taskList[bucketName] as any[]) {
+      if (priority && task.priority !== priority) continue;
 
-      seen.add(normalizeForComparison(todo.text));
-      todos.push({
-        ...todo,
-        recording_id: recording.id,
-        recording_created_at: recording.created_at,
-        recording_title: note.title,
-      });
-    }
-
-    for (const text of note.tomorrow_todos ?? []) {
-      const key = normalizeForComparison(text);
-      if (seen.has(key)) continue;
-      todos.push({
-        text,
-        status: "open",
-        priority: null,
-        due: null,
-        for_date: null,
-        context: "tomorrow",
-        recording_id: recording.id,
-        recording_created_at: recording.created_at,
-        recording_title: note.title,
-      });
-    }
-
-    for (const item of note.action_items ?? []) {
-      if (item.status && item.status !== "open") continue;
-      if (priority) continue;
-
-      const key = normalizeForComparison(item.text);
-      if (!key || seen.has(key)) continue;
-
-      seen.add(key);
-      todos.push({
-        text: item.text,
-        status: item.status ?? "open",
-        priority: null,
-        due: null,
-        for_date: null,
-        context: item.source ?? "most_important",
-        recording_id: recording.id,
-        recording_created_at: recording.created_at,
-        recording_title: note.title,
-      });
+      seen.add(normalizeForComparison(task.text));
+      todos.push(taskToTodo(task));
     }
   }
 
-  return { todos: todos.slice(0, limit) };
+  // Cleared tasks leave the app's list at the day boundary but stay visible
+  // here on request, in the bucket they would fall in, after the open ones.
+  if (includeCompleted) {
+    for (const task of taskList.done as any[]) {
+      if (bucket && task.bucket !== bucket) continue;
+      if (priority && task.priority !== priority) continue;
+
+      seen.add(normalizeForComparison(task.text));
+      todos.push(taskToTodo(task));
+    }
+  }
+
+  // Most-important action items are not tasks, but agents have always seen them
+  // here. They keep their place at the end when no task filter is set.
+  if (!bucket && !priority) {
+    for (const recording of filtered) {
+      const note = recording.structured_note;
+      if (!note) continue;
+
+      for (const item of note.action_items ?? []) {
+        if (item.status && item.status !== "open") continue;
+        if (item.source === "todo" || item.source === "manual") continue;
+
+        const key = normalizeForComparison(item.text);
+        if (!key || seen.has(key)) continue;
+
+        seen.add(key);
+        todos.push({
+          id: item.id ?? null,
+          text: item.text,
+          status: item.status ?? "open",
+          bucket: null,
+          timeframe: null,
+          due: null,
+          priority: null,
+          carried: false,
+          context: item.source ?? "most_important",
+          recording_id: recording.id,
+          recording_created_at: recording.created_at,
+          recording_title: note.title,
+        });
+      }
+    }
+  }
+
+  return { date, todos: todos.slice(0, limit) };
+}
+
+function taskToTodo(task: any) {
+  return {
+    id: task.id,
+    text: task.text,
+    status: task.status,
+    bucket: task.bucket,
+    timeframe: task.timeframe,
+    due: task.due,
+    priority: task.priority,
+    carried: task.carried,
+    first_seen_local_date: task.first_seen_local_date,
+    context: task.context,
+    recording_id: task.recording_id,
+    recording_created_at: task.recording_created_at,
+    recording_title: task.recording_title,
+  };
 }
 
 function getRecentReflections(recordings: any[], input: Record<string, unknown>) {
@@ -637,8 +689,13 @@ function normalizeDate(value: unknown) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
+function todayIsoDate(timeZone = "UTC"): string {
+  const now = new Date().toISOString();
+  return localDateInZone(now, timeZone) ?? now.slice(0, 10);
+}
+
+function timeZoneInput(input: Record<string, unknown>) {
+  return typeof input.tz === "string" && input.tz.trim() ? input.tz.trim() : "UTC";
 }
 
 function addDays(isoDate: string, days: number) {
@@ -656,12 +713,4 @@ function clampLimit(value: unknown, defaultLimit: number, maxLimit: number) {
 function excerpt(value: unknown) {
   const text = String(value ?? "").replace(/\s+/g, " ").trim();
   return text.length > 180 ? `${text.slice(0, 177)}...` : text;
-}
-
-function normalizeForComparison(value: unknown) {
-  return String(value ?? "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }

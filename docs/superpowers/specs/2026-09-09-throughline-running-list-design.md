@@ -308,7 +308,7 @@ All nine were decided on 2026-09-09 by accepting the default in the right-hand c
 - A note containing "call Marcus today, send the deck by Friday, book the dentist sometime" produces exactly one row in each tab, in that order of tabs, with correct due labels.
 - Recording a second note that repeats "call Marcus" adds zero rows for it; a second note that says "dentist next week" moves the dentist row to later without duplicating it.
 - Within today, carried-over rows precede priority rows precede the rest; the order is stable across refreshes.
-- Tapping a row's circle moves it to the done group with undo; on the next local day it is gone from the tab and still present in the note detail and in `list_open_todos` with `status: completed`.
+- Tapping a row's circle moves it to the done group with undo; on the next local day it is gone from the tab and still present in the note detail and in `list_open_todos` with `status: completed` when the agent passes `include_completed: true` (the default answer stays open tasks only, as the tool name says).
 - A "tomorrow" item recorded this morning appears in this week labelled "tomorrow", never in today, and never under any "last night" label. The string "unfinished from last night" no longer exists in the app.
 - After stopping a recording, "saved" appears within 300 ms of upload success in primary colour with the hold bar, stays at least 2.6 s, and is followed by "+n" pills on the tabs that received items.
 - The note detail shows no line in both "worth remembering" and "to-dos".

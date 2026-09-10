@@ -1,0 +1,30 @@
+{
+  "id": "034-morning-weekday-name",
+  "title": "Morning with weekday names",
+  "metadata": {
+    "user_local_date": "2026-05-18",
+    "scenario": "morning",
+    "recording_context": "stationary"
+  },
+  "transcript": "Morning plan. The grant report has to go to Helen by Friday, so I'll block Thursday afternoon for it. Then a quick check-in with the design team about the onboarding flow. Feeling calm about the week.",
+  "expected": {
+    "type": "morning",
+    "title": "Grant report by Friday",
+    "summary": "The user needs to send Helen the grant report by Friday, will block Thursday afternoon for it, and plans a check-in with the design team about onboarding.",
+    "most_important": ["Grant report to Helen by Friday"],
+    "todos": [
+      { "text": "Send the grant report to Helen", "priority": null, "due": "2026-05-22", "for_date": null, "timeframe": null, "context": "by Friday" },
+      { "text": "Block Thursday afternoon for the grant report", "priority": null, "due": null, "for_date": "2026-05-21", "timeframe": null, "context": "Thursday afternoon" },
+      { "text": "Check in with the design team about the onboarding flow", "priority": null, "due": null, "for_date": null, "timeframe": null, "context": "after the grant report" }
+    ],
+    "priorities": ["Grant report to Helen by Friday"],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "calm",
+    "people": ["Helen"],
+    "projects": ["grant report", "onboarding flow"],
+    "tags": ["grant", "onboarding", "design"],
+    "centers_of_balance": ["profession"]
+  }
+}

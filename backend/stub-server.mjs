@@ -4,6 +4,16 @@ import crypto from "node:crypto";
 import http from "node:http";
 import process from "node:process";
 import { URL } from "node:url";
+import { normalizeForComparison, nullableString, VALID_PRIORITIES } from "../core/extraction-contract.mjs";
+import {
+  applyTaskMove,
+  buildTaskList,
+  localDateInZone,
+  normalizeIsoDate,
+  refreshActionItems,
+  TASK_TIMEFRAMES,
+  updateActionItemCompletion,
+} from "../core/task-list.mjs";
 import { extractRecordingNote } from "./extraction-service.mjs";
 import { listMemoryTools, runMemoryTool } from "./memory-tools.mjs";
 import { createStorage } from "./storage/index.mjs";
@@ -86,10 +96,6 @@ function parseJsonBody(buffer) {
   return JSON.parse(buffer.toString("utf8"));
 }
 
-function nullableString(value) {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
 function nullableNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
@@ -134,6 +140,27 @@ async function listRecordings() {
 
 async function listFeedback() {
   return STORAGE.listFeedback();
+}
+
+// Storage summaries predate correction capture and omit source, so read it
+// back from the full row for each summary.
+async function listFeedbackWithSource() {
+  const summaries = await listFeedback();
+  const feedback = [];
+
+  for (const summary of summaries) {
+    let source = summary.source ?? null;
+    if (source === null) {
+      try {
+        source = (await readFeedback(summary.id))?.source ?? null;
+      } catch {
+        source = null;
+      }
+    }
+    feedback.push({ ...summary, source });
+  }
+
+  return feedback;
 }
 
 async function createRecordingFromJson(body) {
@@ -363,6 +390,7 @@ async function handlePatchRecording(req, res, recordingId) {
     throw error;
   }
 
+  const snapshot = recordingSnapshot(recording);
   try {
     applyRecordingEdits(recording, parseJsonBody(await readBody(req)));
   } catch (error) {
@@ -371,7 +399,110 @@ async function handlePatchRecording(req, res, recordingId) {
   }
 
   await persistRecording(recording);
-  sendJson(res, 200, { recording });
+
+  // An edit that changed nothing is not a correction, so it leaves no row.
+  const feedbackError = correctionChanged(snapshot, recording)
+    ? await persistCorrectionFeedback(recording, snapshot, "note_edit")
+    : null;
+  sendJson(res, 200, feedbackError ? { recording, feedback_error: feedbackError } : { recording });
+}
+
+// PATCH /recordings/:id/action-items with exactly one of:
+//   { text, completed: boolean }                      toggle completion
+//   { text, timeframe, local_date: YYYY-MM-DD }       move to another bucket
+// Both answer { recording, tasks } so the client can redraw the list without a
+// second request. The tz query parameter names the caller's zone.
+async function handlePatchActionItem(req, res, recordingId, url) {
+  let recording;
+  try {
+    recording = await readRecording(recordingId);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      sendError(res, 404, "Recording not found");
+      return;
+    }
+    throw error;
+  }
+
+  const body = parseJsonBody(await readBody(req));
+  const text = nullableString(body.text);
+  const completed = nullableBoolean(body.completed);
+  const timeframe = typeof body.timeframe === "string" ? body.timeframe : null;
+  const localDate = normalizeIsoDate(body.local_date);
+  const timeZone = taskTimeZone(url);
+
+  if (!text) {
+    sendError(res, 400, "Action item text is required");
+    return;
+  }
+
+  if ((completed === null) === (timeframe === null)) {
+    sendError(res, 400, "Provide exactly one of completed or timeframe");
+    return;
+  }
+
+  if (timeframe !== null && !TASK_TIMEFRAMES.has(timeframe)) {
+    sendError(res, 400, "Action item timeframe must be today, this_week, or later");
+    return;
+  }
+
+  if (timeframe !== null && !localDate) {
+    sendError(res, 400, "Action item local_date (YYYY-MM-DD) is required with timeframe");
+    return;
+  }
+
+  if (!recording.structured_note) {
+    sendError(res, 400, "Recording does not have an extracted note yet");
+    return;
+  }
+
+  // Completion toggles are not corrections, so only a move writes feedback.
+  let snapshot = null;
+
+  if (completed !== null) {
+    updateActionItemCompletion(recording.structured_note, text, completed);
+  } else {
+    snapshot = recordingSnapshot(recording);
+    const move = applyTaskMove(recording.structured_note, text, timeframe, localDate);
+    if (!move.todo) {
+      sendError(res, 404, "Task not found in this recording");
+      return;
+    }
+    // Moving a task to the bucket it is already in is not a correction.
+    if (!move.changed) snapshot = null;
+  }
+
+  await persistRecording(recording);
+
+  const feedbackError = snapshot
+    ? await persistCorrectionFeedback(recording, snapshot, "task_move")
+    : null;
+
+  const tasks = buildTaskList(await STORAGE.listFullRecordings(), {
+    date: localDate || localDateInZone(new Date().toISOString(), timeZone),
+    timeZone,
+  });
+  sendJson(res, 200, feedbackError ? { recording, tasks, feedback_error: feedbackError } : { recording, tasks });
+}
+
+// GET /tasks?date=YYYY-MM-DD&tz=Area/City
+async function handleGetTasks(res, url) {
+  const dateParam = url.searchParams.get("date");
+  if (dateParam && !normalizeIsoDate(dateParam)) {
+    sendError(res, 400, "date must be YYYY-MM-DD");
+    return;
+  }
+
+  const timeZone = taskTimeZone(url);
+  const tasks = buildTaskList(await STORAGE.listFullRecordings(), {
+    date: dateParam || localDateInZone(new Date().toISOString(), timeZone),
+    timeZone,
+  });
+  sendJson(res, 200, tasks);
+}
+
+function taskTimeZone(url) {
+  return nullableString(url.searchParams.get("tz")) || "UTC";
 }
 
 async function handleMemoryTool(req, res, toolName) {
@@ -390,6 +521,84 @@ function createFeedbackId() {
   const timestamp = Date.now().toString(36);
   const suffix = crypto.randomBytes(6).toString("hex");
   return `fb_${timestamp}_${suffix}`;
+}
+
+// The fields of a recording that an extraction eval needs, copied before an
+// edit so the feedback row can pair the pre-edit input with the edited note.
+function recordingSnapshot(recording) {
+  return {
+    id: recording.id,
+    user_local_time: recording.user_local_time ?? null,
+    timezone: recording.timezone ?? null,
+    type: recording.type ?? null,
+    transcript_raw: recording.transcript_raw ?? null,
+    structured_note: cloneJson(recording.structured_note),
+  };
+}
+
+// Every note edit and task move is a correction the eval can learn from, so
+// it lands in feedback as an eval candidate: expected is the note after the
+// change and recording_snapshot is the recording before it. Storage failures
+// must not fail the edit; the message comes back as feedback_error instead.
+async function persistCorrectionFeedback(recording, snapshot, source) {
+  const feedback = {
+    id: createFeedbackId(),
+    recording_id: recording.id,
+    user_id: recording.user_id,
+    created_at: new Date().toISOString(),
+    source,
+    status: "eval_candidate",
+    answers: {
+      rubric_version: "note_edit_v1",
+      quality_score: null,
+      issue_types: [],
+      correction: null,
+      agent_ready: null,
+      should_remember: true,
+      missing: null,
+      invented: null,
+    },
+    expected: cloneJson(recording.structured_note),
+    recording_snapshot: snapshot,
+  };
+
+  try {
+    await persistFeedback(feedback);
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Feedback could not be stored";
+    console.error(`feedback ${source} for ${recording.id} was not stored: ${message}`);
+    return message;
+  }
+}
+
+function cloneJson(value) {
+  return value === undefined || value === null ? null : JSON.parse(JSON.stringify(value));
+}
+
+// True when an edit changed something an eval could learn from: the transcript,
+// the type, or the note itself. edited_at alone does not count.
+function correctionChanged(snapshot, recording) {
+  return stableJson(correctionView(snapshot)) !== stableJson(correctionView(recording));
+}
+
+function correctionView(recording) {
+  const { edited_at: _editedAt, ...note } = recording.structured_note ?? {};
+  return {
+    transcript_raw: recording.transcript_raw ?? null,
+    type: recording.type ?? null,
+    structured_note: recording.structured_note ? note : null,
+  };
+}
+
+// JSON with object keys sorted, so key order (which edits rewrite) cannot make
+// two equal notes look different.
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value ?? null);
 }
 
 function nullableBoolean(value) {
@@ -519,6 +728,7 @@ function normalizeEditedTodos(value, previousTodos) {
       priority: normalizeTodoPriority(item?.priority ?? previous?.priority),
       due: nullableString(item?.due ?? previous?.due),
       for_date: nullableString(item?.for_date ?? previous?.for_date),
+      timeframe: normalizeTodoTimeframe(item?.timeframe ?? previous?.timeframe),
       context: nullableString(item?.context ?? previous?.context) || "manual_edit",
       completed_at: status === "completed" ? nullableString(item?.completed_at ?? previous?.completed_at) : null,
     });
@@ -528,57 +738,16 @@ function normalizeEditedTodos(value, previousTodos) {
   return todos;
 }
 
-function refreshActionItems(note) {
-  const previousByText = new Map((note.action_items ?? []).map((item) => [normalizeForComparison(item.text), item]));
-  const items = [];
-
-  for (const todo of note.todos ?? []) {
-    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at, previousByText);
-  }
-
-  for (const text of note.most_important ?? []) {
-    addActionItem(items, text, "most_important", null, null, previousByText);
-  }
-
-  note.action_items = items;
-}
-
-function addActionItem(items, candidate, source, status = null, completedAt = null, previousByText = new Map()) {
-  const text = nullableString(candidate);
-  if (!text) return;
-
-  const key = normalizeForComparison(text);
-  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
-
-  const previous = previousByText.get(key);
-  const normalizedStatus = normalizeCompletionStatus(status ?? previous?.status);
-  items.push({
-    id: previous?.id || stableActionItemId(text),
-    text,
-    status: normalizedStatus,
-    source,
-    completed_at: normalizedStatus === "completed" ? nullableString(completedAt ?? previous?.completed_at) : null,
-  });
-}
-
 function normalizeCompletionStatus(value) {
   return value === "completed" || value === "done" ? "completed" : "open";
 }
 
 function normalizeTodoPriority(value) {
-  return ["high", "medium", "low"].includes(value) ? value : null;
+  return typeof value === "string" && VALID_PRIORITIES.has(value) ? value : null;
 }
 
-function normalizeForComparison(text) {
-  return String(text ?? "").trim().toLowerCase();
-}
-
-function stableActionItemId(text) {
-  const normalized = normalizeForComparison(text)
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .replace(/\s+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `act_${normalized.slice(0, 80) || crypto.randomBytes(4).toString("hex")}`;
+function normalizeTodoTimeframe(value) {
+  return typeof value === "string" && TASK_TIMEFRAMES.has(value) ? value : null;
 }
 
 async function handleRequest(req, res) {
@@ -634,6 +803,17 @@ async function handleRequest(req, res) {
     return;
   }
 
+  const actionItemsMatch = pathname.match(/^\/recordings\/([^/]+)\/action-items$/);
+  if (req.method === "PATCH" && actionItemsMatch) {
+    await handlePatchActionItem(req, res, actionItemsMatch[1], url);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/tasks") {
+    await handleGetTasks(res, url);
+    return;
+  }
+
   const patchRecordingMatch = pathname.match(/^\/recordings\/([^/]+)$/);
   if (req.method === "PATCH" && patchRecordingMatch) {
     await handlePatchRecording(req, res, patchRecordingMatch[1]);
@@ -647,7 +827,7 @@ async function handleRequest(req, res) {
   }
 
   if (req.method === "GET" && pathname === "/feedback") {
-    const feedback = await listFeedback();
+    const feedback = await listFeedbackWithSource();
     sendJson(res, 200, { feedback, count: feedback.length });
     return;
   }
