@@ -74,6 +74,8 @@ It runs the extraction contract check (the same check as `npm run contract:check
 
 To deploy by hand:
 
+The `Deploy Supabase functions` GitHub Actions workflow runs the same deploy from CI with the `SUPABASE_ACCESS_TOKEN` repository secret, for machines without the Supabase CLI.
+
 ```bash
 supabase functions deploy api --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv
 supabase functions deploy mcp --no-verify-jwt --use-api --project-ref ywsenspsfyrdhgyxgcrv

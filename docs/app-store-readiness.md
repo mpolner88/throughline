@@ -38,9 +38,9 @@ Prepared on 2026-09-10 from branch `claude/throughline-ux-specs-y64fml` (PR #2).
 
 Order of operations on a Mac:
 
-1. Deploy the backend first. `npm run supabase:deploy` runs the extraction contract check, then deploys the `api` and `mcp` Edge Functions. The app needs `GET /tasks` and the timeframe move on `PATCH /recordings/:id/action-items` in production before 1.1.0 is useful.
+1. Deploy the backend first. Run the `Deploy Supabase functions` GitHub Actions workflow from the branch (needs the `SUPABASE_ACCESS_TOKEN` repository secret), or run `npm run supabase:deploy` locally. Either path runs the extraction contract check, then deploys the `api` and `mcp` Edge Functions. The app needs `GET /tasks` and the timeframe move on `PATCH /recordings/:id/action-items` in production before 1.1.0 is useful.
 2. `git checkout claude/throughline-ux-specs-y64fml && npm run ios:sync-config`.
-3. Open `ios/Throughline.xcodeproj` in Xcode and build for a simulator. Fix any compile errors in `Models/TaskItem.swift`, `Views/TaskListView.swift`, `Views/NotesView.swift`, `Views/HomeView.swift`, `AppState.swift`, or `Services/UploadClient.swift`; those files carry the new work.
+3. The `iOS build` GitHub Actions workflow compiles the app for a simulator on every pull request touching `ios/`, so compile errors surface before the Mac session. Open `ios/Throughline.xcodeproj` in Xcode and build for a simulator. Fix any compile errors in `Models/TaskItem.swift`, `Views/TaskListView.swift`, `Views/NotesView.swift`, `Views/HomeView.swift`, `AppState.swift`, or `Services/UploadClient.swift`; those files carry the new work.
 4. Run the manual acceptance walk from the spec (section 14): record a note with a today item, a Friday item, and a "sometime" item; record a second note that repeats one of them; clear an item; move an item with a long press; check the saved state holds; open notes and confirm delete, grade, and edit still work.
 5. Bump nothing: the project already carries marketing version 1.1.0 and build 2026090901.
 6. Archive with the Throughline scheme, upload to App Store Connect, and add the build to the Internal QA TestFlight group.
