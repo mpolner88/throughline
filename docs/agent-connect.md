@@ -36,7 +36,7 @@ The MCP server also exposes a `read_throughline` MCP prompt for clients that sup
 Both starting tools take the user's local date and zone so the answer matches what the app shows:
 
 - `get_today` accepts `date` (`YYYY-MM-DD`), `tz` (an IANA zone such as `America/New_York`, default `UTC`), and `type`. Its output includes `tasks`, the today bucket of the running list merged across every note, alongside the day's `recordings`.
-- `list_open_todos` accepts `date`, `tz`, `bucket` (`today`, `this_week`, or `later`), `priority` (`high`), `limit`, and the usual date and type filters. Each open task appears once across all recordings with `bucket`, `timeframe`, `due`, `priority`, and `carried`. Without a `bucket` or `priority` filter, open most-important items follow the tasks with `bucket: null`.
+- `list_open_todos` accepts `date`, `tz`, `bucket` (`today`, `this_week`, or `later`), `priority` (`high`), `limit`, `include_completed` (returns cleared tasks after the open ones with `status: completed`), and the usual date and type filters. Each open task appears once across all recordings with `bucket`, `timeframe`, `due`, `priority`, and `carried`. Without a `bucket` or `priority` filter, open most-important items follow the tasks with `bucket: null`.
 
 Example call from an agent:
 

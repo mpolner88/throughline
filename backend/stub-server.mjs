@@ -145,20 +145,8 @@ async function listFeedback() {
 // Storage summaries predate correction capture and omit source, so read it
 // back from the full row for each summary.
 async function listFeedbackWithSource() {
-  const summaries = await listFeedback();
-  const feedback = [];
-
-  for (const summary of summaries) {
-    let source = summary.source ?? null;
-    if (source === null) {
-      try {
-        source = (await readFeedback(summary.id))?.source ?? null;
-      } catch {
-        source = null;
-      }
-    }
-    feedback.push({ ...summary, source });
-  }
+  // feedbackSummary now includes source, so the summaries are complete as is.
+  const feedback = await listFeedback();
 
   return feedback;
 }
@@ -390,9 +378,17 @@ async function handlePatchRecording(req, res, recordingId) {
     throw error;
   }
 
+  let editBody;
+  try {
+    editBody = parseJsonBody(await readBody(req));
+  } catch {
+    sendError(res, 400, "Request body must be valid JSON");
+    return;
+  }
+
   const snapshot = recordingSnapshot(recording);
   try {
-    applyRecordingEdits(recording, parseJsonBody(await readBody(req)));
+    applyRecordingEdits(recording, editBody);
   } catch (error) {
     sendError(res, 400, error instanceof Error ? error.message : "Invalid recording edit");
     return;
@@ -424,7 +420,13 @@ async function handlePatchActionItem(req, res, recordingId, url) {
     throw error;
   }
 
-  const body = parseJsonBody(await readBody(req));
+  let body;
+  try {
+    body = parseJsonBody(await readBody(req));
+  } catch {
+    sendError(res, 400, "Request body must be valid JSON");
+    return;
+  }
   const text = nullableString(body.text);
   const completed = nullableBoolean(body.completed);
   const timeframe = typeof body.timeframe === "string" ? body.timeframe : null;

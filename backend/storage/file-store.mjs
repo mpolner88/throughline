@@ -121,10 +121,12 @@ export function feedbackSummary(item) {
     id: item.id,
     recording_id: item.recording_id,
     created_at: item.created_at,
+    source: item.source ?? null,
     status: item.status,
+    quality_score: item.answers?.quality_score ?? null,
+    issue_types: item.answers?.issue_types ?? [],
     agent_ready: item.answers?.agent_ready ?? null,
-    has_missing: Boolean(item.answers?.missing),
-    has_invented: Boolean(item.answers?.invented),
+    should_remember: item.answers?.should_remember ?? null,
     has_expected: Boolean(item.expected),
   };
 }

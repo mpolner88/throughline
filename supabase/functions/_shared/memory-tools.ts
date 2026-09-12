@@ -383,6 +383,7 @@ function taskToTodo(task: any) {
     id: task.id,
     text: task.text,
     status: task.status,
+    completed_at: task.completed_at ?? null,
     bucket: task.bucket,
     timeframe: task.timeframe,
     due: task.due,

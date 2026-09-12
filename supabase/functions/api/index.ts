@@ -68,6 +68,7 @@ const PRODUCT_EVENT_NAMES = new Set([
   "task_rebucketed",
   "saved_confirmation_shown",
   "notes_view_opened",
+  "note_merged",
 ]);
 const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
 class HttpError extends Error {

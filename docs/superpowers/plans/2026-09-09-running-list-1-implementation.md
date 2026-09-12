@@ -2,7 +2,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-throughline-running-list-design.md`
 **Prototype:** `mockup/list-redesign/index.html`
-**Status:** Approved 2026-09-09; phases 0 to 3 complete, phase 4 next. Sequenced by uncertainty, not by visual polish. The spec's open questions Q1, Q6, Q7, Q8 are resolved by their defaults (spec §13).
+**Status:** Approved 2026-09-09; phases 0 to 5 complete, phase 6 next. Sequenced by uncertainty, not by visual polish. The spec's open questions Q1, Q6, Q7, Q8 are resolved by their defaults (spec §13).
 
 ## Global constraints
 
@@ -72,21 +72,31 @@ Acceptance: spec §14 bullet 10. `task:smoke` asserts the `note_edit` and `task_
 
 ### Phase 4 · iOS: tabs, list, clearing, rollover (~3 days)
 
-- [ ] `Models/`: add `Task` and `TaskListResponse`; add `timeframe` to `Todo`.
-- [ ] `AppState`: replace `carriedForwardItems` with `taskList` fetched from `GET /tasks`; cache it; re-derive buckets locally on foreground when the local date changed since the cache was written. Delete `todaysMorningNote` / `todaysEveningNote` if unused after the move.
-- [ ] `HomeView`: tab strip (custom, not `TabView`, to keep the fixed top bar and bottom recorder), per-tab heading, `TaskRow`, done group with undo, empty states. Remove `CarryForwardView`, `MostImportantView`, and the home-screen `mostImportantItems`.
-- [ ] `NotesView`: move `CapturedCard` list, `NoteDetailSheet`, edit form, and grading behind the `notes →` top-bar affordance. Rename the detail's "most important" section to "worth remembering" and feed it the todo-free derivation.
-- [ ] Long-press row menu: move to today / this week / later (if Q6 yes) and open source note.
-- [ ] Analytics events from spec §11.
-- [ ] Update `scripts/generate-app-store-screenshots.mjs` fixtures so screenshots stop showing "carried forward".
+- [x] `Models/`: add `TaskItem` and `TaskListResponse`; add `timeframe` to `Todo`.
+  Done as `Models/TaskItem.swift` (`TaskItem` and `TaskListResponse`, named to avoid clashing with Swift's `Task`); `timeframe` added to `Todo`.
+- [x] `AppState`: replace `carriedForwardItems` with `taskList` fetched from `GET /tasks`; cache it; re-derive buckets locally on foreground when the local date changed since the cache was written. Delete `todaysMorningNote` / `todaysEveningNote` if unused after the move.
+  Done. The cached list is rederived by `TaskListResponse.rederived(for:)`, the Swift port of the `core/task-list.mjs` bucket logic.
+- [x] `HomeView`: tab strip (custom, not `TabView`, to keep the fixed top bar and bottom recorder), per-tab heading, `TaskRow`, done group with undo, empty states. Remove `CarryForwardView`, `MostImportantView`, and the home-screen `mostImportantItems`.
+  Done; `TaskRow` and the tab content live in `Views/TaskListView.swift`.
+- [x] `NotesView`: move `CapturedCard` list, `NoteDetailSheet`, edit form, and grading behind the `notes →` top-bar affordance. Rename the detail's "most important" section to "worth remembering" and feed it the todo-free derivation.
+  Done as `Views/NotesView.swift`.
+- [x] Long-press row menu: move to today / this week / later (if Q6 yes) and open source note.
+  Done via a context menu on `TaskRow`.
+- [x] Analytics events from spec §11.
+  `tab_selected`, `task_completed`, `task_reopened`, `task_rebucketed`, `saved_confirmation_shown`, and `notes_view_opened` shipped and are allowlisted server-side alongside `note_merged`; the `note_merged` emit from the post-processing path is the remaining gap.
+- [x] Update `scripts/generate-app-store-screenshots.mjs` fixtures so screenshots stop showing "carried forward".
+  Done; the fixtures no longer contain the phrase.
 
 Acceptance: spec §14 bullets 1–6, 8.
 
 ### Phase 5 · iOS: saved confirmation (~half day)
 
-- [ ] Replace `didJustSave: Bool` with `recorderPhase: enum { idle, preparing, recording, finishing, saving, saved(until: Date), sorting, landed(count: Int, until: Date) }`.
-- [ ] Status line styles per phase; hold bar view; haptic on `.saved`; `+n` pills on tabs from the `GET /tasks` diff.
-- [ ] Respect Reduce Motion: no bar animation, same durations.
+- [x] Replace `didJustSave: Bool` with `recorderPhase: enum { idle, preparing, recording, finishing, saving, saved(until: Date), sorting, landed(count: Int, until: Date) }`.
+  Done as `RecorderPhase` in `Views/HomeView.swift`.
+- [x] Status line styles per phase; hold bar view; haptic on `.saved`; `+n` pills on tabs from the `GET /tasks` diff.
+  Done.
+- [x] Respect Reduce Motion: no bar animation, same durations.
+  Done.
 
 Acceptance: spec §14 bullet 7.
 
@@ -105,7 +115,7 @@ Acceptance: spec §14 bullet 7.
 | Prompt and evals | `evals/prompts/extract-note-v0.md`, `evals/score-extraction.mjs`, `evals/fixtures/labeled/*`, `.github/workflows/eval.yml` |
 | Local backend | `backend/stub-server.mjs`, `backend/memory-tools.mjs`, `backend/smoke-*.mjs` |
 | Hosted backend | `supabase/functions/api/index.ts`, `supabase/functions/_shared/memory-tools.ts`, `scripts/export-feedback.mjs` |
-| iOS | `AppState.swift`, `Views/HomeView.swift`, new `Views/NotesView.swift`, new `Views/TaskListView.swift`, `Models/ThroughlineNote.swift`, new `Models/Task.swift` |
+| iOS | `AppState.swift`, `Views/HomeView.swift`, new `Views/NotesView.swift`, new `Views/TaskListView.swift`, `Models/ThroughlineNote.swift`, new `Models/TaskItem.swift` |
 | Docs | this plan, the spec, `decision-log.md`, `throughline-product-spec-v0.md` §8 (mark superseded) |
 
 ## What not to build yet
@@ -151,7 +161,7 @@ These are written in the repo's decision format so they can be pasted into `deci
 
 ### 2026-09-xx — "Most important" excludes tasks; the list owns priority
 
-**Decision:** `most_important` is derived from priorities, intentions, and decisions with todo texts excluded. In the app it is labelled "worth remembering" and appears only in the note detail. Task priority is a property of a task that affects sort order and shows a small mark.
+**Decision:** `most_important` is derived from priorities, intentions, and decisions with todo texts excluded. In the app it is labelled "worth remembering" and appears in the notes list cards and the note detail. Task priority is a property of a task that affects sort order and shows a small mark.
 
 **Context:** The derived union made "most important" a superset of the to-do list, so the two sections repeated each other and the difference was unclear.
 

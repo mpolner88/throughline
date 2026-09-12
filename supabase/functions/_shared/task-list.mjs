@@ -420,8 +420,12 @@ function finalizeTask(entry, { date, weekEnd, timeZone, includeAllDone }) {
   // a dated item does instead of sitting in today for good.
   const carryAnchor = dueEffective ?? (entry.timeframe === "today" ? entry.local_date : null);
 
-  if (status === "open" && carryAnchor && carryAnchor < date) {
-    carried = true;
+  // The ceiling re-bucket applies to completed rows too so a task cleared from
+  // the later tab stays in later's done group instead of jumping to today's
+  // (spec §3.2: a done item stays in the bucket it was completed in). Only open
+  // rows show the carried marker.
+  if (carryAnchor && carryAnchor < date) {
+    if (status === "open") carried = true;
     const age = daysBetween(carryAnchor, date);
     if (age !== null && age > CARRY_CEILING_DAYS) {
       bucket = "later";
@@ -456,7 +460,15 @@ function compareRecordingsNewestFirst(a, b) {
 function compareNewestRecording(a, b) {
   return timestampValue(b.recording_created_at) - timestampValue(a.recording_created_at)
     || String(b.recording_id ?? "").localeCompare(String(a.recording_id ?? ""))
-    || a.spoken_index - b.spoken_index;
+    || a.spoken_index - b.spoken_index
+    || sourceRank(a) - sourceRank(b)
+    || String(a.id ?? "").localeCompare(String(b.id ?? ""));
+}
+
+// Todos precede manual action items on a full tie so the order matches the
+// Swift client's rederived list exactly.
+function sourceRank(task) {
+  return task.source === "todo" ? 0 : 1;
 }
 
 function comparePriority(a, b) {

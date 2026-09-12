@@ -32,6 +32,22 @@ Last updated: August 6, 2026
 - First-party product events measure the activation funnel without attaching recordings, transcripts, note content, names, email addresses, or persistent device identifiers.
 - Product feedback and events are removed with account deletion.
 
+## Next build: 1.1.0 (2026090901), the running list
+
+Prepared on 2026-09-10 from branch `claude/throughline-ux-specs-y64fml` (PR #2). The Swift changes in that branch were written and reviewed without a compiler, so the first Xcode build is part of the release work, not a formality.
+
+Order of operations on a Mac:
+
+1. Deploy the backend first. `npm run supabase:deploy` runs the extraction contract check, then deploys the `api` and `mcp` Edge Functions. The app needs `GET /tasks` and the timeframe move on `PATCH /recordings/:id/action-items` in production before 1.1.0 is useful.
+2. `git checkout claude/throughline-ux-specs-y64fml && npm run ios:sync-config`.
+3. Open `ios/Throughline.xcodeproj` in Xcode and build for a simulator. Fix any compile errors in `Models/TaskItem.swift`, `Views/TaskListView.swift`, `Views/NotesView.swift`, `Views/HomeView.swift`, `AppState.swift`, or `Services/UploadClient.swift`; those files carry the new work.
+4. Run the manual acceptance walk from the spec (section 14): record a note with a today item, a Friday item, and a "sometime" item; record a second note that repeats one of them; clear an item; move an item with a long press; check the saved state holds; open notes and confirm delete, grade, and edit still work.
+5. Bump nothing: the project already carries marketing version 1.1.0 and build 2026090901.
+6. Archive with the Throughline scheme, upload to App Store Connect, and add the build to the Internal QA TestFlight group.
+7. After an overnight on device, confirm that yesterday's uncleared items show at the top of today with the marker and that done items left the list.
+
+What's new for 1.1.0: one running list, sorted into today, this week, and later. Say when a thing is due and it lands on the right tab. Clearing an item keeps it in the day's done group until tomorrow. Your notes moved behind the notes link at the top.
+
 ## What's New for 1.0.1
 
 Share feedback directly from Settings. This update also helps us understand where Throughline succeeds or gets stuck—without attaching recordings, transcripts, or note content.

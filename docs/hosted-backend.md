@@ -171,7 +171,7 @@ The deployed `mcp` Edge Function exposes the same read-only memory tools as the 
 - `get_energy_patterns`
 - `get_balance_snapshot`
 
-`get_today` accepts `date` and `tz` and returns `tasks` (the today bucket of the running list) alongside the day's recordings. `list_open_todos` returns each open task once across all recordings with its `bucket`, and accepts `date`, `tz`, and a `bucket` filter (`today`, `this_week`, or `later`). Both use the same `core/task-list.mjs` logic as `GET /tasks`.
+`get_today` accepts `date` and `tz` and returns `tasks` (the today bucket of the running list) alongside the day's recordings. `list_open_todos` returns each open task once across all recordings with its `bucket`, and accepts `date`, `tz`, a `bucket` filter (`today`, `this_week`, or `later`), `priority` (`high`), `limit`, and `include_completed` (returns cleared tasks after the open ones with `status: completed`). Both use the same `core/task-list.mjs` logic as `GET /tasks`.
 
 It accepts MCP-style JSON-RPC over HTTP. Agents that support remote MCP with custom bearer headers can use the deployed endpoint. The iOS app exposes this as `settings -> connect an agent`, where the user can mint a read-only MCP token and copy a Claude Code or Codex CLI setup command.
 

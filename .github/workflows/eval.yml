@@ -52,7 +52,7 @@ jobs:
           node-version: 22
       # No lockfile and no dependencies, so there is no install step.
       # npm run check = contract:check, eval:check, note:edit:smoke,
-      # agent:smoke and mcp:smoke.
+      # task:smoke, agent:smoke and mcp:smoke.
       - name: Run contract check, eval check and smokes
         run: npm run check
 

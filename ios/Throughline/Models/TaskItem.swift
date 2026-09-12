@@ -262,6 +262,19 @@ struct TaskListResponse: Codable, Hashable {
                 case .thisWeek: item.bucket = .thisWeek
                 case .later, .none: item.bucket = .later
                 }
+
+                // A todo the speaker tied to today without a date ("tonight")
+                // is anchored to the day it was recorded, so it carries and
+                // ages like a dated item (finalizeTask in core/task-list.mjs).
+                if item.timeframe == .today,
+                   Self.isISODate(item.firstSeenLocalDate),
+                   item.firstSeenLocalDate < date {
+                    item.carried = true
+                    if let age = Self.days(from: item.firstSeenLocalDate, to: date),
+                       age > Self.carryCeilingDays {
+                        item.bucket = .later
+                    }
+                }
             }
 
             lists[item.bucket, default: []].append(item)
@@ -384,6 +397,10 @@ struct TaskListResponse: Codable, Hashable {
         }
         if lhs.spokenIndex != rhs.spokenIndex {
             return lhs.spokenIndex < rhs.spokenIndex
+        }
+        // Todos precede manual action items on a full tie, matching the server sort.
+        if (lhs.source == "todo") != (rhs.source == "todo") {
+            return lhs.source == "todo"
         }
         return lhs.id < rhs.id
     }

@@ -153,7 +153,7 @@ Completion toggles do not write feedback. A move does: it writes a feedback item
 Returns the running task list merged across every processed recording. Query parameters:
 
 - `date`: the client's local date as `YYYY-MM-DD`. Defaults to today in `tz`. Pass it so the server never guesses the client's day.
-- `tz`: IANA time zone used to resolve today and completion dates, for example `America/New_York`. Defaults to `UTC`.
+- `tz`: IANA time zone used to resolve today and completion dates, for example `America/New_York`. Defaults to `UTC`. An unrecognised zone falls back to `UTC` rather than failing the request.
 
 The list is a derived view built by `buildTaskList` in `core/task-list.mjs`; nothing about buckets is stored. The rules:
 
