@@ -1,6 +1,25 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 
 import { listMemoryTools, runMemoryTool } from "../_shared/memory-tools.ts";
+import {
+  extractJsonFromText,
+  metadataForRecording,
+  normalizeExtraction,
+  normalizeForComparison,
+  normalizeStringArray,
+  nullableString,
+  VALID_PRIORITIES,
+  VALID_TIMEFRAMES,
+} from "../_shared/extraction-contract.mjs";
+import { EXTRACTION_PROMPT, EXTRACTION_PROMPT_PATH } from "../_shared/extraction-prompt.ts";
+import {
+  applyTaskMove,
+  buildTaskList,
+  localDateInZone,
+  normalizeIsoDate,
+  refreshActionItems,
+  updateActionItemCompletion,
+} from "../_shared/task-list.mjs";
 
 declare const EdgeRuntime: {
   waitUntil(promise: Promise<unknown>): void;
@@ -43,145 +62,15 @@ const PRODUCT_EVENT_NAMES = new Set([
   "action_item_toggled",
   "feedback_opened",
   "feedback_submitted",
+  "tab_selected",
+  "task_completed",
+  "task_reopened",
+  "task_rebucketed",
+  "saved_confirmation_shown",
+  "notes_view_opened",
+  "note_merged",
 ]);
 const PRODUCT_FEEDBACK_CATEGORIES = new Set(["general", "idea", "problem", "praise"]);
-const OUTPUT_FIELDS = [
-  "type",
-  "title",
-  "summary",
-  "most_important",
-  "todos",
-  "priorities",
-  "intentions",
-  "accomplishments",
-  "tomorrow_todos",
-  "mood",
-  "people",
-  "projects",
-  "tags",
-  "centers_of_balance",
-];
-const ARRAY_FIELDS = new Set([
-  "todos",
-  "most_important",
-  "priorities",
-  "intentions",
-  "accomplishments",
-  "tomorrow_todos",
-  "people",
-  "projects",
-  "tags",
-  "centers_of_balance",
-]);
-const VALID_TYPES = new Set(["morning", "evening", "weekly_review", "freeform"]);
-const VALID_MOODS = new Set([
-  "focused",
-  "energized",
-  "grateful",
-  "calm",
-  "anxious",
-  "frustrated",
-  "tired",
-  "sad",
-  "neutral",
-]);
-const VALID_PRIORITIES = new Set(["high", "medium", "low"]);
-const VALID_CENTERS = new Set(["health", "relationships", "passions", "purpose", "profession"]);
-
-const EXTRACTION_PROMPT = `# Throughline Note Extraction v0
-
-You extract structure from one Throughline voice note.
-
-The user-facing product is simple: a person speaks anything into Throughline, and that note becomes available to their AI agent. Your job is to preserve what they said and extract only the useful structure an agent may need later.
-
-## Non-negotiable rules
-
-- Do not invent facts, tasks, people, projects, dates, or mood.
-- If a field is not supported by the transcript, return an empty array or null.
-- Prefer missing data over invented data.
-- Keep the user's meaning. Do not turn a vague thought into a specific commitment.
-- Todos must be imperative: Call Sarah, not I should call Sarah.
-- Do not turn product opinions, design principles, or "the app should..." statements into todos unless the user clearly asks to do the work. Put those in intentions.
-- Only set due or for_date when the transcript clearly implies a date.
-- tomorrow_todos are strings only: the text of tasks explicitly assigned to tomorrow or the next day.
-- Never put todo objects inside tomorrow_todos.
-- Every tomorrow_todos item must also appear in todos with for_date set.
-- accomplishments are things the user says they completed or did.
-- Preserve named people exactly as spoken when possible.
-- Use concise titles, 80 characters or fewer.
-- Use one or two sentence summaries.
-- most_important must be an array of 1-5 concise strings that capture the highest-signal takeaways, actions, decisions, risks, or reminders for an agent. Each item must be grounded in the transcript.
-- Fill every applicable field. Empty arrays are correct only when the transcript gives no evidence.
-- Use neutral for mood when the note has no clear emotional signal. Use null only when the transcript is too thin to judge mood at all.
-
-## Type selection
-
-Choose exactly one:
-
-- morning: planning, priorities, intentions, what is on the user's mind for the day.
-- evening: reflection, accomplishments, what happened, what carries into tomorrow.
-- weekly_review: weekly retrospective or next-week planning.
-- freeform: any other note, idea, reminder, or thought.
-
-Use transcript content first. Use metadata only as a tiebreaker.
-
-## Mood
-
-Choose one or null:
-
-focused, energized, grateful, calm, anxious, frustrated, tired, sad, neutral
-
-Only choose a non-neutral mood when the transcript supports it.
-
-Mood mapping guidance:
-
-- nervous or worried -> anxious
-- relieved -> calm
-- clear or locked in -> focused
-- drained or done -> tired
-
-## Centers of balance
-
-Choose zero or more:
-
-- health
-- relationships
-- passions
-- purpose
-- profession
-
-Use centers when the note clearly touches that life area. Examples:
-
-- work, product, engineering, billing, launch, support -> profession
-- meaning, personal direction, constraints, values, decisions -> purpose
-- running, lunch, dentist, physical therapy, rest -> health
-- family, friends, apology, dinner with someone -> relationships
-- music, album, guitar, creative work -> passions
-
-## Field guidance
-
-- priorities: the main things for the day/week, especially when the user says priority, important, first, first thing, or carry forward.
-- most_important: a short ranked list of the items an agent should notice first. Prefer explicit priorities, high-impact todos, decisions, blockers, and durable context. Do not duplicate near-identical items.
-- intentions: constraints, posture, or how the user wants to approach something. Capture explicit constraints like do not overbuild the dashboard, not perfect it, without explaining too much, or keep it small. Do not invent intentions from generic worry or stress.
-- accomplishments: completed actions only. Example: I called Aaron, I got the outline done, I shipped the beta invite.
-- projects: named workstreams, objects, products, or recurring efforts mentioned directly. Example: Stripe, pricing page, metrics doc, README, dashboard, TestFlight. Avoid generic projects like the app unless no clearer project noun exists.
-- tags: short retrieval labels based on explicit topics in the transcript. Tags may be topical, but must be grounded in the note. Prefer 1-4 useful retrieval tags when the note has clear topics.
-- people: named people mentioned directly, including family labels like Mom or Dad.
-
-For negative instructions, do not create a todo unless the user frames it as an action. Put durable constraints in intentions.
-
-Before returning, check:
-
-- If a todo is for tomorrow, it appears in both todos and tomorrow_todos.
-- If the transcript names a product, doc, API, feature, or workstream, projects is not empty.
-- If the transcript has clear topics, tags is not empty.
-- If the transcript touches work, health, family/friends, creative work, or values, centers_of_balance is not empty.
-- If the transcript contains actions, decisions, priorities, blockers, or durable context, most_important is not empty.
-- If the transcript says what matters most, priorities is not empty.
-- If the transcript says how to approach the work, intentions is not empty.
-
-Return strict JSON only. No markdown. No commentary.`;
-
 class HttpError extends Error {
   status: number;
 
@@ -287,7 +176,11 @@ async function handleRequest(req: Request) {
 
   const actionItemsMatch = pathname.match(/^\/recordings\/([^/]+)\/action-items$/);
   if (req.method === "PATCH" && actionItemsMatch) {
-    return handlePatchActionItem(req, context, decodeURIComponent(actionItemsMatch[1]));
+    return handlePatchActionItem(req, context, decodeURIComponent(actionItemsMatch[1]), url);
+  }
+
+  if (req.method === "GET" && pathname === "/tasks") {
+    return handleGetTasks(context, url);
   }
 
   const patchRecordingMatch = pathname.match(/^\/recordings\/([^/]+)$/);
@@ -566,38 +459,188 @@ async function handlePostFeedback(req: Request, context: RequestContext, recordi
   });
 }
 
-async function handlePatchActionItem(req: Request, context: RequestContext, recordingId: string) {
+// PATCH /recordings/:id/action-items with exactly one of:
+//   { text, completed: boolean }                      toggle completion
+//   { text, timeframe, local_date: YYYY-MM-DD }       move to another bucket
+// Both answer { recording, tasks } so the client can redraw the list without a
+// second request. The tz query parameter names the caller's zone.
+async function handlePatchActionItem(req: Request, context: RequestContext, recordingId: string, url: URL) {
   const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
   const text = nullableString(body.text);
   const completed = nullableBoolean(body.completed);
+  const timeframe: string | null = typeof body.timeframe === "string" ? body.timeframe : null;
+  const localDate: string | null = normalizeIsoDate(body.local_date);
+  const timeZone = taskTimeZone(url);
 
   if (!text) {
     throw new HttpError(400, "Action item text is required");
   }
 
-  if (completed === null) {
-    throw new HttpError(400, "Action item completed must be a boolean");
+  if ((completed === null) === (timeframe === null)) {
+    throw new HttpError(400, "Provide exactly one of completed or timeframe");
+  }
+
+  if (timeframe !== null && !VALID_TIMEFRAMES.has(timeframe)) {
+    throw new HttpError(400, "Action item timeframe must be today, this_week, or later");
+  }
+
+  if (timeframe !== null && !localDate) {
+    throw new HttpError(400, "Action item local_date (YYYY-MM-DD) is required with timeframe");
   }
 
   if (!recording.structured_note) {
     throw new HttpError(400, "Recording does not have an extracted note yet");
   }
 
-  updateActionItemCompletion(recording.structured_note, text, completed);
+  // Completion toggles are not corrections, so only a move writes feedback.
+  let snapshot: Record<string, unknown> | null = null;
+
+  if (completed !== null) {
+    updateActionItemCompletion(recording.structured_note, text, completed);
+  } else {
+    snapshot = recordingSnapshot(recording);
+    const move = applyTaskMove(recording.structured_note, text, timeframe, localDate);
+    if (!move.todo) {
+      throw new HttpError(404, "Task not found in this recording");
+    }
+    // Moving a task to the bucket it is already in is not a correction.
+    if (!move.changed) snapshot = null;
+  }
+
   await persistRecording(recording);
 
-  return jsonResponse(200, { recording });
+  const feedbackError = snapshot
+    ? await persistCorrectionFeedback(recording, snapshot, "task_move", context)
+    : null;
+
+  const tasks = buildTaskList(await listFullRecordings(context), {
+    date: localDate || localDateInZone(new Date().toISOString(), timeZone),
+    timeZone,
+  });
+
+  return jsonResponse(200, feedbackError ? { recording, tasks, feedback_error: feedbackError } : { recording, tasks });
+}
+
+// GET /tasks?date=YYYY-MM-DD&tz=Area/City
+async function handleGetTasks(context: RequestContext, url: URL) {
+  const dateParam = url.searchParams.get("date");
+  if (dateParam && !normalizeIsoDate(dateParam)) {
+    throw new HttpError(400, "date must be YYYY-MM-DD");
+  }
+
+  const timeZone = taskTimeZone(url);
+  const tasks = buildTaskList(await listFullRecordings(context), {
+    date: dateParam || localDateInZone(new Date().toISOString(), timeZone),
+    timeZone,
+  });
+
+  return jsonResponse(200, tasks);
+}
+
+function taskTimeZone(url: URL) {
+  return nullableString(url.searchParams.get("tz")) || "UTC";
 }
 
 async function handlePatchRecording(req: Request, context: RequestContext, recordingId: string) {
   const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
 
+  const snapshot = recordingSnapshot(recording);
   applyRecordingEdits(recording, body);
   await persistRecording(recording);
 
-  return jsonResponse(200, { recording });
+  // An edit that changed nothing is not a correction, so it leaves no row.
+  const feedbackError = correctionChanged(snapshot, recording)
+    ? await persistCorrectionFeedback(recording, snapshot, "note_edit", context)
+    : null;
+
+  return jsonResponse(200, feedbackError ? { recording, feedback_error: feedbackError } : { recording });
+}
+
+// The fields of a recording that an extraction eval needs, copied before an
+// edit so the feedback row can pair the pre-edit input with the edited note.
+function recordingSnapshot(recording: any) {
+  return {
+    id: recording.id,
+    user_local_time: recording.user_local_time ?? null,
+    timezone: recording.timezone ?? null,
+    type: recording.type ?? null,
+    transcript_raw: recording.transcript_raw ?? null,
+    structured_note: cloneJson(recording.structured_note),
+  };
+}
+
+// Every note edit and task move is a correction the eval can learn from, so
+// it lands in throughline_feedback as an eval candidate: expected is the note
+// after the change and recording_snapshot is the recording before it. Storage
+// failures must not fail the edit; the message comes back as feedback_error.
+async function persistCorrectionFeedback(
+  recording: any,
+  snapshot: Record<string, unknown>,
+  source: "note_edit" | "task_move",
+  context: RequestContext,
+): Promise<string | null> {
+  const feedback = {
+    id: createFeedbackId(),
+    recording_id: recording.id,
+    user_id: recording.user_id,
+    auth_user_id: recording.auth_user_id ?? context.authUserId,
+    created_at: new Date().toISOString(),
+    source,
+    status: "eval_candidate",
+    answers: {
+      rubric_version: "note_edit_v1",
+      quality_score: null,
+      issue_types: [],
+      correction: null,
+      agent_ready: null,
+      should_remember: true,
+      missing: null,
+      invented: null,
+    },
+    expected: cloneJson(recording.structured_note),
+    recording_snapshot: snapshot,
+  };
+
+  try {
+    await persistFeedback(feedback);
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Feedback could not be stored";
+    console.error(`feedback ${source} for ${recording.id} was not stored: ${message}`);
+    return message;
+  }
+}
+
+function cloneJson<T>(value: T | null | undefined): T | null {
+  return value === undefined || value === null ? null : JSON.parse(JSON.stringify(value)) as T;
+}
+
+// True when an edit changed something an eval could learn from: the transcript,
+// the type, or the note itself. edited_at alone does not count.
+function correctionChanged(snapshot: Record<string, unknown>, recording: any): boolean {
+  return stableJson(correctionView(snapshot)) !== stableJson(correctionView(recording));
+}
+
+function correctionView(recording: any) {
+  const { edited_at: _editedAt, ...note } = recording.structured_note ?? {};
+  return {
+    transcript_raw: recording.transcript_raw ?? null,
+    type: recording.type ?? null,
+    structured_note: recording.structured_note ? note : null,
+  };
+}
+
+// JSON with object keys sorted, so key order (which edits rewrite) cannot make
+// two equal notes look different.
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value ?? null);
 }
 
 async function handleDeleteAccount(context: RequestContext) {
@@ -697,7 +740,7 @@ async function processRecording(recording: any, audioBytes: Uint8Array | null) {
   recording.extraction = {
     status: result.status,
     provider: result.provider,
-    prompt_path: "supabase/functions/api/index.ts:EXTRACTION_PROMPT",
+    prompt_path: EXTRACTION_PROMPT_PATH,
     processed_at: new Date().toISOString(),
     metadata: result.metadata ?? null,
     error: result.error,
@@ -1393,6 +1436,7 @@ function feedbackSummary(feedback: any) {
     id: feedback.id,
     recording_id: feedback.recording_id,
     created_at: feedback.created_at,
+    source: feedback.source ?? null,
     status: feedback.status,
     quality_score: feedback.answers?.quality_score ?? null,
     issue_types: feedback.answers?.issue_types ?? [],
@@ -1412,251 +1456,6 @@ function feedbackStatus(
   if (issueTypes.length || correction) return "needs_review";
   if (qualityScore !== null) return "graded";
   return "needs_review";
-}
-
-function normalizeExtraction(raw: any, metadata: Record<string, unknown> = {}) {
-  const actual: any = {};
-
-  for (const field of OUTPUT_FIELDS) {
-    if (field === "type") {
-      actual.type = VALID_TYPES.has(raw?.type) ? raw.type : "freeform";
-    } else if (field === "title") {
-      actual.title = stringOrEmpty(raw?.title).slice(0, 80);
-    } else if (field === "summary") {
-      actual.summary = stringOrEmpty(raw?.summary);
-    } else if (field === "todos") {
-      actual.todos = Array.isArray(raw?.todos)
-        ? raw.todos.map((todo: any) => normalizeTodo(todo, metadata)).filter((todo: any) => todo.text)
-        : [];
-    } else if (field === "mood") {
-      actual.mood = normalizeEnum(raw?.mood, VALID_MOODS);
-    } else if (field === "centers_of_balance") {
-      actual.centers_of_balance = normalizeCenters(raw?.centers_of_balance);
-    } else if (ARRAY_FIELDS.has(field)) {
-      actual[field] = normalizeStringArray(raw?.[field]);
-    }
-  }
-
-  return postprocessExtraction(actual, metadata);
-}
-
-function extractJsonFromText(text: string) {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    throw new Error("Extractor returned empty output");
-  }
-
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const firstBrace = trimmed.indexOf("{");
-    const lastBrace = trimmed.lastIndexOf("}");
-    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-      throw new Error("Extractor did not return parseable JSON");
-    }
-    return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
-  }
-}
-
-function metadataForRecording(recording: any) {
-  return {
-    user_local_date: userLocalDateFromTime(recording.user_local_time)
-      || new Date(recording.created_at).toISOString().slice(0, 10),
-    scenario: recording.type || "freeform",
-    recording_context: recording.upload_source || "unknown",
-  };
-}
-
-function postprocessExtraction(actual: any, metadata: Record<string, unknown>) {
-  deriveTomorrowTodos(actual, metadata);
-  deriveMostImportant(actual);
-  deriveActionItems(actual);
-  return actual;
-}
-
-function normalizeTodo(todo: any, metadata: Record<string, unknown> = {}) {
-  return {
-    text: stringOrEmpty(todo?.text),
-    status: "open",
-    priority: normalizeEnum(todo?.priority, VALID_PRIORITIES),
-    due: normalizeDateValue(todo?.due, metadata),
-    for_date: normalizeDateValue(todo?.for_date, metadata),
-    context: nullableString(todo?.context),
-  };
-}
-
-function normalizeDateValue(value: unknown, metadata: Record<string, unknown>) {
-  if (typeof value !== "string" || !value.trim()) return null;
-
-  const trimmed = value.trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
-
-  const lower = trimmed.toLowerCase();
-  if (lower === "today") return typeof metadata.user_local_date === "string" ? metadata.user_local_date : null;
-  if (lower === "tomorrow" || lower === "next day") return nextIsoDate(metadata.user_local_date);
-
-  return nextWeekdayIsoDate(metadata.user_local_date, lower);
-}
-
-function nextWeekdayIsoDate(baseIsoDate: unknown, weekdayName: string) {
-  const weekdayIndexes: Record<string, number> = {
-    sunday: 0,
-    monday: 1,
-    tuesday: 2,
-    wednesday: 3,
-    thursday: 4,
-    friday: 5,
-    saturday: 6,
-  };
-  const targetDay = weekdayIndexes[weekdayName];
-  if (targetDay === undefined) return null;
-  if (typeof baseIsoDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(baseIsoDate)) return null;
-
-  const date = new Date(`${baseIsoDate}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return null;
-
-  const currentDay = date.getUTCDay();
-  const daysUntilTarget = (targetDay - currentDay + 7) % 7 || 7;
-  date.setUTCDate(date.getUTCDate() + daysUntilTarget);
-  return date.toISOString().slice(0, 10);
-}
-
-function normalizeStringArray(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim());
-}
-
-function normalizeCenters(value: unknown) {
-  return normalizeStringArray(value).filter((item) => VALID_CENTERS.has(item));
-}
-
-function deriveTomorrowTodos(actual: any, metadata: Record<string, unknown>) {
-  const tomorrowDate = nextIsoDate(metadata.user_local_date);
-  if (!tomorrowDate) return;
-
-  const tomorrowTodoTexts = new Set(actual.tomorrow_todos.map(normalizeForComparison));
-
-  for (const todo of actual.todos) {
-    if (todo.for_date !== tomorrowDate) continue;
-
-    const key = normalizeForComparison(todo.text);
-    if (!key || tomorrowTodoTexts.has(key)) continue;
-
-    actual.tomorrow_todos.push(todo.text);
-    tomorrowTodoTexts.add(key);
-  }
-}
-
-function deriveMostImportant(actual: any) {
-  const values: string[] = [];
-
-  addUniqueImportant(values, actual.most_important ?? []);
-  addUniqueImportant(values, actual.priorities ?? []);
-  addUniqueImportant(
-    values,
-    (actual.todos ?? [])
-      .filter((todo: any) => todo.priority === "high")
-      .map((todo: any) => todo.text),
-  );
-  addUniqueImportant(values, actual.tomorrow_todos ?? []);
-  addUniqueImportant(values, actual.intentions ?? []);
-  addUniqueImportant(values, actual.accomplishments ?? []);
-  addUniqueImportant(values, (actual.todos ?? []).map((todo: any) => todo.text));
-
-  if (!values.length && actual.summary) {
-    addUniqueImportant(values, [actual.summary]);
-  }
-
-  actual.most_important = values.slice(0, 5);
-}
-
-function deriveActionItems(actual: any) {
-  const items: any[] = [];
-
-  for (const todo of actual.todos ?? []) {
-    addActionItem(items, todo.text, "todo", todo.status, todo.completed_at);
-  }
-
-  for (const text of actual.most_important ?? []) {
-    addActionItem(items, text, "most_important");
-  }
-
-  actual.action_items = items;
-}
-
-function addActionItem(
-  items: any[],
-  candidate: unknown,
-  source: string,
-  status: unknown = null,
-  completedAt: unknown = null,
-) {
-  const text = nullableString(candidate);
-  if (!text) return;
-
-  const key = normalizeForComparison(text);
-  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
-
-  const normalizedStatus = status === "completed" || status === "done" ? "completed" : "open";
-  items.push({
-    id: stableActionItemId(text),
-    text,
-    status: normalizedStatus,
-    source,
-    completed_at: normalizedStatus === "completed" ? nullableString(completedAt) : null,
-  });
-}
-
-function addUniqueImportant(values: string[], candidates: unknown[]) {
-  const seen = new Set(values.map(normalizeForComparison));
-
-  for (const candidate of candidates) {
-    const text = nullableString(candidate);
-    if (!text) continue;
-
-    const key = normalizeForComparison(text);
-    if (!key || seen.has(key)) continue;
-
-    values.push(text.slice(0, 180));
-    seen.add(key);
-  }
-}
-
-function updateActionItemCompletion(note: any, text: string, completed: boolean) {
-  note.action_items = Array.isArray(note.action_items) ? note.action_items : [];
-
-  if (!note.action_items.length) {
-    deriveActionItems(note);
-  }
-
-  const key = normalizeForComparison(text);
-  const completedAt = completed ? new Date().toISOString() : null;
-  let matched = false;
-
-  for (const item of note.action_items) {
-    if (normalizeForComparison(item.text) !== key) continue;
-
-    item.status = completed ? "completed" : "open";
-    item.completed_at = completedAt;
-    matched = true;
-  }
-
-  if (!matched) {
-    note.action_items.push({
-      id: stableActionItemId(text),
-      text,
-      status: completed ? "completed" : "open",
-      source: "manual",
-      completed_at: completedAt,
-    });
-  }
-
-  for (const todo of note.todos ?? []) {
-    if (normalizeForComparison(todo.text) !== key) continue;
-
-    todo.status = completed ? "completed" : "open";
-    todo.completed_at = completedAt;
-  }
 }
 
 function applyRecordingEdits(recording: any, body: any) {
@@ -1782,6 +1581,7 @@ function normalizeEditedTodos(value: unknown, previousTodos: any[]) {
       priority: normalizeTodoPriority(item?.priority ?? previous?.priority),
       due: nullableString(item?.due ?? previous?.due),
       for_date: nullableString(item?.for_date ?? previous?.for_date),
+      timeframe: normalizeTodoTimeframe(item?.timeframe ?? previous?.timeframe),
       context: nullableString(item?.context ?? previous?.context) || "manual_edit",
       completed_at: status === "completed" ? nullableString(item?.completed_at ?? previous?.completed_at) : null,
     });
@@ -1789,50 +1589,6 @@ function normalizeEditedTodos(value: unknown, previousTodos: any[]) {
   }
 
   return todos;
-}
-
-function refreshActionItems(note: any) {
-  const previousByText = new Map<string, any>(
-    (note.action_items ?? []).map(
-      (item: any): [string, any] => [normalizeForComparison(item.text), item],
-    ),
-  );
-  const items: any[] = [];
-
-  for (const todo of note.todos ?? []) {
-    addEditedActionItem(items, todo.text, "todo", todo.status, todo.completed_at, previousByText);
-  }
-
-  for (const text of note.most_important ?? []) {
-    addEditedActionItem(items, text, "most_important", null, null, previousByText);
-  }
-
-  note.action_items = items;
-}
-
-function addEditedActionItem(
-  items: any[],
-  candidate: unknown,
-  source: string,
-  status: unknown = null,
-  completedAt: unknown = null,
-  previousByText = new Map<string, any>(),
-) {
-  const text = nullableString(candidate);
-  if (!text) return;
-
-  const key = normalizeForComparison(text);
-  if (!key || items.some((item) => normalizeForComparison(item.text) === key)) return;
-
-  const previous = previousByText.get(key);
-  const normalizedStatus = normalizeCompletionStatus(status ?? previous?.status);
-  items.push({
-    id: previous?.id || stableActionItemId(text),
-    text,
-    status: normalizedStatus,
-    source,
-    completed_at: normalizedStatus === "completed" ? nullableString(completedAt ?? previous?.completed_at) : null,
-  });
 }
 
 function normalizeCompletionStatus(value: unknown) {
@@ -1843,12 +1599,8 @@ function normalizeTodoPriority(value: unknown) {
   return typeof value === "string" && VALID_PRIORITIES.has(value) ? value : null;
 }
 
-function stableActionItemId(text: string) {
-  const normalized = normalizeForComparison(text)
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .replace(/\s+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `act_${normalized.slice(0, 80) || randomHex(4)}`;
+function normalizeTodoTimeframe(value: unknown) {
+  return typeof value === "string" && VALID_TIMEFRAMES.has(value) ? value : null;
 }
 
 async function requestContext(req: Request): Promise<RequestContext | null> {
@@ -2109,10 +1861,6 @@ function corsHeaders() {
   };
 }
 
-function nullableString(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
 function nullableNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
@@ -2130,41 +1878,6 @@ function normalizeQualityScore(value: unknown) {
 
 function normalizeType(value: unknown) {
   return typeof value === "string" && RECORDING_TYPES.has(value) ? value : null;
-}
-
-function stringOrEmpty(value: unknown) {
-  return typeof value === "string" ? value : "";
-}
-
-function normalizeEnum(value: unknown, allowed: Set<string>) {
-  return typeof value === "string" && allowed.has(value) ? value : null;
-}
-
-function userLocalDateFromTime(userLocalTime: unknown) {
-  if (typeof userLocalTime !== "string") return null;
-
-  const match = userLocalTime.match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : null;
-}
-
-function nextIsoDate(isoDate: unknown) {
-  if (typeof isoDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-    return null;
-  }
-
-  const date = new Date(`${isoDate}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return null;
-
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
-function normalizeForComparison(value: unknown) {
-  return String(value ?? "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function extensionForMime(mimeType: unknown) {

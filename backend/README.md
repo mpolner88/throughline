@@ -121,6 +121,144 @@ Returns the stored recording metadata.
 
 Returns stored recording summaries.
 
+### `PATCH /recordings/:id`
+
+Edits a recording's transcript and structured note in place. Any subset of `transcript` (or `transcript_raw`), `title`, `summary`, `type`, `most_important`, `todos`, and `tomorrow_todos` may be sent. `todos` accepts strings or objects with `text`, `status`, `priority`, `due`, `for_date`, `timeframe`, and `context`; sending `todos` without `tomorrow_todos` clears `tomorrow_todos`. Editing `most_important` or `todos` rebuilds `action_items` while keeping the ids and completion state of items that were already there.
+
+```json
+{
+  "title": "Launch checklist",
+  "todos": [
+    { "text": "Call Sam about the beta", "due": null, "timeframe": "today", "priority": "high" },
+    { "text": "Update the launch checklist", "due": "2026-05-03", "timeframe": null, "priority": null }
+  ]
+}
+```
+
+Returns `{ "recording" }`. Every edit is also captured as an extraction correction: the server writes a feedback item with `source: "note_edit"` and `status: "eval_candidate"` (see the feedback section below). If that write fails, the edit still succeeds and the response carries `feedback_error` with the message.
+
+### `PATCH /recordings/:id/action-items`
+
+Toggles or moves one task in a recording. The body carries `text` plus exactly one of:
+
+- `{ "text": "Call Sam about the beta", "completed": true }` marks the matching action item and its todo twin completed (or open again with `false`). When nothing in the note matches, a manual action item is added.
+- `{ "text": "Call Sam about the beta", "timeframe": "later", "local_date": "2026-05-02" }` moves the task to another tab by rewriting the todo's `timeframe`. `timeframe` is `today`, `this_week`, or `later`; `local_date` is the caller's local date as `YYYY-MM-DD` and is required. Moving to `today` pins `due` to `local_date` so the task stays in today across day boundaries; the other buckets clear `due` and `for_date` and rely on `timeframe` alone. Returns 404 when the recording has no todo or manual action item with that text.
+
+Pass `?tz=Area/City` so the rebuilt list uses the caller's zone (defaults to `UTC`). Both forms answer `{ "recording", "tasks" }`, where `tasks` is the same shape as `GET /tasks` for `local_date` (or today in `tz`), so the client can redraw the list without a second request.
+
+Completion toggles do not write feedback. A move does: it writes a feedback item with `source: "task_move"` and `status: "eval_candidate"`, and a failed write adds `feedback_error` to the response instead of failing the move.
+
+### `GET /tasks`
+
+Returns the running task list merged across every processed recording. Query parameters:
+
+- `date`: the client's local date as `YYYY-MM-DD`. Defaults to today in `tz`. Pass it so the server never guesses the client's day.
+- `tz`: IANA time zone used to resolve today and completion dates, for example `America/New_York`. Defaults to `UTC`. An unrecognised zone falls back to `UTC` rather than failing the request.
+
+The list is a derived view built by `buildTaskList` in `core/task-list.mjs`; nothing about buckets is stored. The rules:
+
+- Tasks match by normalized text (lowercase, punctuation stripped, whitespace collapsed), the same key `action_items` uses. Each text appears once across all recordings.
+- The newest recording that mentions a task owns its text, dates, `timeframe`, `priority`, and provenance, so a restatement re-buckets the task instead of duplicating it. Older mentions only contribute completion and `first_seen_local_date`.
+- Completion never reopens: a task completed in any note stays completed. Done tasks stay in `done` until the next local day, then leave the list (they remain in the note's `action_items`).
+- The bucket comes from `deriveBucket`: `due` (or `for_date`) on or before `date` is `today`, on or before the Sunday ending the Monday to Sunday week is `this_week`, later dates are `later`; with no date, `timeframe` decides and `null` falls to `later`.
+- An open task whose date is before `date` is `carried: true`. After more than 7 days it drops from today to later and keeps the marker.
+- Sort: today is carried first, then `priority: "high"`, then newest recording and spoken order; this week is `due` ascending (undated last), then priority, then newest; later is newest recording first; done is most recently completed first.
+
+Example, generated from `buildTaskList` for a morning note and the previous evening's note on `2026-09-09` in `America/New_York`:
+
+```json
+{
+  "date": "2026-09-09",
+  "week_end": "2026-09-13",
+  "today": [
+    {
+      "id": "act_reply-to-omar-about-the-venue",
+      "text": "Reply to Omar about the venue",
+      "status": "open",
+      "bucket": "today",
+      "timeframe": "today",
+      "due": "2026-09-08",
+      "priority": null,
+      "recording_id": "rec_last_night",
+      "recording_title": "Evening wrap-up",
+      "recording_created_at": "2026-09-09T01:10:00.000Z",
+      "spoken_index": 0,
+      "first_seen_local_date": "2026-09-08",
+      "carried": true,
+      "completed_at": null,
+      "context": null,
+      "source": "todo"
+    },
+    {
+      "id": "act_call-marcus-about-the-contract",
+      "text": "Call Marcus about the contract",
+      "status": "open",
+      "bucket": "today",
+      "timeframe": "today",
+      "due": "2026-09-09",
+      "priority": "high",
+      "recording_id": "rec_morning",
+      "recording_title": "Morning walk",
+      "recording_created_at": "2026-09-09T11:42:00.000Z",
+      "spoken_index": 0,
+      "first_seen_local_date": "2026-09-08",
+      "carried": false,
+      "completed_at": null,
+      "context": null,
+      "source": "todo"
+    }
+  ],
+  "this_week": [
+    {
+      "id": "act_send-the-deck",
+      "text": "Send the deck",
+      "status": "open",
+      "bucket": "this_week",
+      "timeframe": null,
+      "due": "2026-09-11",
+      "priority": null,
+      "recording_id": "rec_morning",
+      "recording_title": "Morning walk",
+      "recording_created_at": "2026-09-09T11:42:00.000Z",
+      "spoken_index": 1,
+      "first_seen_local_date": "2026-09-09",
+      "carried": false,
+      "completed_at": null,
+      "context": null,
+      "source": "todo"
+    }
+  ],
+  "later": [
+    {
+      "id": "act_book-the-dentist",
+      "text": "Book the dentist",
+      "status": "open",
+      "bucket": "later",
+      "timeframe": "later",
+      "due": null,
+      "priority": null,
+      "recording_id": "rec_morning",
+      "recording_title": "Morning walk",
+      "recording_created_at": "2026-09-09T11:42:00.000Z",
+      "spoken_index": 2,
+      "first_seen_local_date": "2026-09-09",
+      "carried": false,
+      "completed_at": null,
+      "context": null,
+      "source": "todo"
+    }
+  ],
+  "done": [],
+  "counts": {
+    "today": 2,
+    "this_week": 1,
+    "later": 1
+  }
+}
+```
+
+"Call Marcus about the contract" was in both notes; the morning restatement owns it (`recording_id`, `due`, `priority`) while `first_seen_local_date` comes from the evening note. `source` is `todo` for extracted tasks and `manual` for action items added through the completion endpoint. `counts` covers the three open buckets only.
+
 ### `POST /recordings/:id/feedback`
 
 Stores sparse alpha feedback against a recording. This is the start of the eval-feedback loop: feedback is captured as reviewable data first, not automatically used to change extraction behavior.
@@ -136,11 +274,18 @@ Stores sparse alpha feedback against a recording. This is the start of the eval-
 }
 ```
 
-If `expected` contains a corrected extraction object, the feedback item is marked `eval_candidate`; otherwise it is marked `needs_review`.
+If `expected` contains a corrected extraction object, the feedback item is marked `eval_candidate`; otherwise it is marked `needs_review`. Items from this endpoint carry `source: "alpha_feedback"`.
+
+Edits and moves write feedback items of the same shape without any user grading, so the correction the user already made becomes an eval candidate on its own:
+
+- `PATCH /recordings/:id` writes `source: "note_edit"`.
+- `PATCH /recordings/:id/action-items` with `timeframe` writes `source: "task_move"`. Completion toggles write nothing.
+
+Both use `status: "eval_candidate"`, `expected` set to a copy of `structured_note` after the change, and `recording_snapshot` holding `id`, `user_local_time`, `timezone`, `type`, `transcript_raw`, and a copy of `structured_note` before the change. `answers` is `{ "rubric_version": "note_edit_v1", "quality_score": null, "issue_types": [], "correction": null, "agent_ready": null, "should_remember": true, "missing": null, "invented": null }`. A failed feedback write never fails the edit; the response gains `feedback_error` instead. `npm run eval:import-feedback` reads these files from `backend/data/feedback` and turns them into private fixtures (see `evals/README.md`).
 
 ### `GET /feedback`
 
-Returns feedback summaries.
+Returns feedback summaries, including `source` and `status`, for every item: graded, edited, and moved.
 
 ### `GET /feedback/:id`
 
@@ -168,6 +313,10 @@ Returns the available read-only tool names:
 
 Runs one tool with JSON input and returns `{ "tool", "output" }`.
 
+`get_today` accepts `date` (`YYYY-MM-DD`), `tz` (IANA zone, defaults to `UTC`), and `type`. Besides `recordings` and `count`, its output has `tasks`: the today bucket of the running list for that date, merged across every note, so "what is on my plate" is one call.
+
+`list_open_todos` accepts the date filters, `date`, `tz`, `bucket` (`today`, `this_week`, or `later`), `priority`, `include_completed`, and `limit`. It returns `{ "date", "todos" }` where each open task appears once across all recordings with `bucket`, `timeframe`, `due`, `priority`, `carried`, and `first_seen_local_date`, ordered today, then this week, then later. With `include_completed: true`, every cleared task follows the open ones with `status: completed`, on any date, even though the app's `done` group only holds tasks cleared that day. With no `bucket` or `priority` filter, open most-important action items follow the tasks with `bucket: null`, as agents have always seen them here. `priority` only matches `high`; tasks never carry `medium` or `low`.
+
 Examples:
 
 ```bash
@@ -179,7 +328,7 @@ curl -X POST http://localhost:5180/agent/tools/search \
 ```bash
 curl -X POST http://localhost:5180/agent/tools/list_open_todos \
   -H "Content-Type: application/json" \
-  --data '{"priority":"high"}'
+  --data '{"date":"2026-09-09","tz":"America/New_York","bucket":"today"}'
 ```
 
 These endpoints are local development scaffolding. Production should expose the same behavior through the authenticated per-user MCP endpoint.
@@ -189,6 +338,20 @@ Run the memory tool smoke check:
 ```bash
 npm run agent:smoke
 ```
+
+Run the note edit smoke check (`PATCH /recordings/:id` against a temporary stub with the dev extractor):
+
+```bash
+npm run note:edit:smoke
+```
+
+Run the task list smoke check. It boots the same temporary stub, posts two notes that share a task plus two older notes with dateless "today" todos, and asserts one row for the shared task, correct buckets for yesterday, today, this week, a dated later item and a spoken later item, the carried marker on the dateless todos (the ten-day-old one dropped to later), carried-then-priority ordering in today, matching `counts`, completion without a feedback row, a `task_move` and a `note_edit` `eval_candidate` row, no row for a repeated move or an empty edit, a manual completion that survives a later move, the `bucket` and `include_completed` inputs on `list_open_todos`, and `tasks` on `get_today`:
+
+```bash
+npm run task:smoke
+```
+
+`npm run check` runs both smokes along with the contract check, `eval:check`, `agent:smoke`, and `mcp:smoke`.
 
 Run the local stdio MCP adapter:
 

@@ -2,11 +2,15 @@
 
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_PROJECT_REF = "ywsenspsfyrdhgyxgcrv";
 const DEFAULT_FUNCTIONS = ["api", "mcp"];
 const ENV_FILES = [".env.local", ".env"];
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const CONTRACT_CHECK_SCRIPT = path.join(REPO_ROOT, "scripts", "sync-extraction-contract.mjs");
 
 function parseEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
@@ -84,6 +88,23 @@ function deployFunction(functionName, env) {
   }
 }
 
+function checkExtractionContract() {
+  console.log("Checking the extraction contract before deploy");
+  const result = spawnSync(process.execPath, [CONTRACT_CHECK_SCRIPT, "--check"], {
+    stdio: "inherit",
+    shell: false,
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    console.error("Deploy aborted: generated extraction files are stale. Run: npm run contract:sync");
+    process.exit(result.status ?? 1);
+  }
+}
+
 function selectedFunctions() {
   const names = process.argv.slice(2);
   return names.length ? names : DEFAULT_FUNCTIONS;
@@ -99,6 +120,8 @@ function main() {
     printMissingTokenHelp();
     process.exit(1);
   }
+
+  checkExtractionContract();
 
   for (const functionName of selectedFunctions()) {
     deployFunction(functionName, env);

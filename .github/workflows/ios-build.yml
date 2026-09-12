@@ -1,0 +1,46 @@
+name: iOS build
+
+# Compiles the app for the iOS Simulator with signing disabled. This is the
+# compile gate for Swift changes written in environments without Xcode; it
+# does not archive or upload. TestFlight archiving still happens on a Mac
+# with signing credentials (see docs/app-store-readiness.md).
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - "scripts/generate-ios-app-icons.mjs"
+      - "scripts/sync-ios-config.mjs"
+      - ".github/workflows/ios-build.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Show Xcode version
+        run: xcodebuild -version
+      # The xcconfig sync reads .env.local for the public Supabase anon key,
+      # which is compiled into the binary. A compile-only check does not talk
+      # to the backend, so a placeholder is enough here.
+      - name: Create compile-only build config
+        run: printf 'SUPABASE_ANON_KEY=ci-compile-placeholder\n' > .env.local
+      # npm run ios:build = generate app icons, sync xcconfig, then
+      # xcodebuild for a generic simulator with CODE_SIGNING_ALLOWED=NO.
+      - name: Build for iOS Simulator
+        run: npm run ios:build

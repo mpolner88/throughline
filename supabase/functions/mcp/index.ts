@@ -2,6 +2,10 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 
 import { getMemoryToolDefinitions, runMemoryTool } from "../_shared/memory-tools.ts";
 
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
 const FUNCTION_NAME = "mcp";
 const PROTOCOL_VERSION = "2025-06-18";
 const THROUGHLINE_PROMPTS = [

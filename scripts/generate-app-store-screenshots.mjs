@@ -34,10 +34,10 @@ const shots = [
     screen: "note",
   },
   {
-    slug: "04-most-important",
+    slug: "04-worth-remembering",
     kicker: "focus",
     title: "The important things rise to the top.",
-    subtitle: "Tasks, decisions, and reminders are pulled out of the recording.",
+    subtitle: "Tasks land in today, this week, or later. Decisions and context are kept as worth remembering.",
     screen: "important",
   },
   {
@@ -113,7 +113,7 @@ Generated at \`1284 x 2778\`, which App Store Connect accepts for the current iP
 1. \`01-voice-to-agent.png\`
 2. \`02-capture-voice.png\`
 3. \`03-voice-to-memory.png\`
-4. \`04-most-important.png\`
+4. \`04-worth-remembering.png\`
 5. \`05-agent-ready.png\`
 6. \`06-private-control.png\`
 
@@ -480,33 +480,6 @@ function html() {
         background: #fff;
       }
 
-      .memory-list {
-        display: grid;
-        gap: 14px;
-        margin-top: 28px;
-      }
-
-      .memory-row {
-        display: grid;
-        grid-template-columns: 10px 1fr;
-        gap: 16px;
-        align-items: start;
-      }
-
-      .memory-row i {
-        width: 10px;
-        height: 10px;
-        margin-top: 11px;
-        border-radius: 50%;
-        background: var(--blue);
-      }
-
-      .memory-row span {
-        color: #111827;
-        font-size: 22px;
-        line-height: 1.34;
-      }
-
       .quote {
         padding-left: 18px;
         border-left: 4px solid var(--blue);
@@ -515,60 +488,157 @@ function html() {
         line-height: 1.38;
       }
 
-      .todo {
-        display: grid;
-        grid-template-columns: 32px 1fr;
-        gap: 14px;
-        align-items: start;
-        font-size: 22px;
-        line-height: 1.32;
-        color: #111827;
+      .tabs {
+        display: flex;
+        gap: 30px;
+        margin: 0 0 30px;
+        border-bottom: 1px solid var(--border);
       }
 
-      .check {
-        display: grid;
-        place-items: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: var(--blue);
-        color: #fff;
-        font-size: 20px;
-        font-weight: 700;
-      }
-
-      .swipe-wrap {
+      .tab {
         position: relative;
-        overflow: hidden;
-        min-height: 112px;
-        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0 16px;
+        color: var(--muted);
+        font-size: 22px;
       }
 
-      .swipe-action {
-        position: absolute;
-        inset: 0 auto 0 0;
-        display: grid;
-        place-items: center;
-        width: 118px;
-        border-radius: 18px;
-        background: var(--blue);
-        color: #fff;
-        font-size: 18px;
+      .tab.selected {
+        color: var(--ink);
         font-weight: 560;
       }
 
-      .swipe-card {
-        position: relative;
-        min-height: 112px;
-        transform: translateX(88px);
-        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+      .tab.selected::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 3px;
+        background: var(--blue);
       }
 
-      .swipe-hint {
-        margin: -6px 0 0;
+      .tab .count {
+        min-width: 1ch;
+        color: #9a9ea6;
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .tab .delta {
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: var(--blue);
+        font-size: 15px;
+        font-weight: 560;
+      }
+
+      .datehead {
+        display: grid;
+        gap: 8px;
+      }
+
+      .datehead .sub {
+        margin: 0;
         color: var(--muted);
-        font-size: 18px;
+        font-size: 19px;
         line-height: 1.34;
+      }
+
+      .task-list {
+        display: grid;
+        margin-top: 30px;
+      }
+
+      .task-row {
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 16px;
+        align-items: start;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .task-row:last-child {
+        border-bottom: 0;
+      }
+
+      .task-check {
+        width: 32px;
+        height: 32px;
+        margin-top: 2px;
+        border: 2px solid #c5c8ce;
+        border-radius: 50%;
+      }
+
+      .task-row.done .task-check {
+        display: grid;
+        place-items: center;
+        border-color: var(--blue);
+        background: var(--blue);
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .task-text {
+        margin: 0;
+        color: #111827;
+        font-size: 22px;
+        line-height: 1.34;
+        font-weight: 500;
+      }
+
+      .task-row.done .task-text {
+        color: var(--muted);
+        font-weight: 400;
+        text-decoration: line-through;
+      }
+
+      .task-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .task-meta .carried {
+        padding: 1px 9px;
+        border-radius: 999px;
+        background: rgba(249, 115, 22, 0.15);
+        color: #9a4b00;
+        font-size: 16px;
+      }
+
+      .task-meta .flag {
+        color: var(--blue);
+        font-weight: 560;
+      }
+
+      .task-meta .src {
+        color: #9a9ea6;
+      }
+
+      .takeaway {
+        display: grid;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .takeaway li {
+        padding-left: 18px;
+        border-left: 4px solid var(--blue);
+        color: #374151;
+        font-size: 22px;
+        line-height: 1.36;
       }
 
       .command {
@@ -684,24 +754,43 @@ function html() {
 
       function homeScreen() {
         return shell(\`
-          <section>
+          <div class="tabs">
+            <div class="tab selected">today <span class="count">3</span></div>
+            <div class="tab">this week <span class="count">2</span> <span class="delta">+1</span></div>
+            <div class="tab">later <span class="count">4</span></div>
+          </div>
+          <section class="datehead">
             <p class="eyebrow">today</p>
             <h2 class="phone-title">Thursday, May 28</h2>
+            <p class="sub">Includes what you did not clear yesterday.</p>
           </section>
-          <div class="memory-list">
-            <div class="card blue">
-              <p class="eyebrow">morning note</p>
-              <p class="body">Launch screenshots, test the review account, and keep the first release simple.</p>
+          <div class="task-list">
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div>
+                <p class="task-text">Submit the App Store build after one clean TestFlight pass.</p>
+                <div class="task-meta"><span class="carried">from yesterday</span><span class="src">evening note · 9:40 PM</span></div>
+              </div>
             </div>
-            <div class="card">
-              <p class="eyebrow">carried forward</p>
-              <div class="memory-row"><i></i><span>Submit the App Store build after one clean TestFlight pass.</span></div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div>
+                <p class="task-text">Create the App Store reviewer account.</p>
+                <div class="task-meta"><span class="flag">priority</span><span class="src">morning note · 8:12 AM</span></div>
+              </div>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div>
+                <p class="task-text">Check the screenshots on a real phone.</p>
+                <div class="task-meta"><span class="src">morning note · 8:12 AM</span></div>
+              </div>
             </div>
           </div>
           <div class="record-area">
             <div class="record-button"><div><div class="line-mark"></div>start recording</div></div>
           </div>
-        \`);
+        \`, '<div class="pill-button">notes →</div>');
       }
 
       function noteScreen() {
@@ -727,21 +816,40 @@ function html() {
         return shell(\`
           <section class="stack">
             <div>
-              <p class="eyebrow">most important</p>
+              <p class="eyebrow">morning note</p>
               <h2 class="phone-title">The next actions are already pulled out.</h2>
             </div>
-            <div class="swipe-wrap">
-              <div class="swipe-action">✓<br>done</div>
-              <div class="card blue swipe-card">
-                <div class="todo"><span class="check">✓</span><span>Create the App Store reviewer account.</span></div>
+            <div class="card blue">
+              <p class="eyebrow">worth remembering</p>
+              <ul class="takeaway">
+                <li>Keep the first release simple and ship before adding features.</li>
+                <li>Reviewer credentials go in the App Store review notes, not the description.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <p class="eyebrow">to-do</p>
+              <div class="task-list" style="margin-top: 0;">
+                <div class="task-row">
+                  <div class="task-check"></div>
+                  <div>
+                    <p class="task-text">Create the App Store reviewer account.</p>
+                    <div class="task-meta"><span class="flag">priority</span><span>today</span></div>
+                  </div>
+                </div>
+                <div class="task-row">
+                  <div class="task-check"></div>
+                  <div>
+                    <p class="task-text">Upload screenshots and add review notes.</p>
+                    <div class="task-meta"><span>this week · Fri, May 29</span></div>
+                  </div>
+                </div>
+                <div class="task-row done">
+                  <div class="task-check">✓</div>
+                  <div>
+                    <p class="task-text">Run one final TestFlight recording.</p>
+                  </div>
+                </div>
               </div>
-            </div>
-            <p class="swipe-hint">Swipe a to-do to complete it.</p>
-            <div class="card">
-              <div class="todo"><span class="check">✓</span><span>Upload screenshots and add review notes.</span></div>
-            </div>
-            <div class="card">
-              <div class="todo"><span class="check">✓</span><span>Run one final TestFlight recording.</span></div>
             </div>
           </section>
         \`);

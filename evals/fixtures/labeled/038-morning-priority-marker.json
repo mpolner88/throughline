@@ -1,0 +1,30 @@
+{
+  "id": "038-morning-priority-marker",
+  "title": "Morning with an explicit priority marker",
+  "metadata": {
+    "user_local_date": "2026-05-21",
+    "scenario": "morning",
+    "recording_context": "stationary"
+  },
+  "transcript": "Morning. First thing, finish the budget for the grant, that's the most important thing today, nothing else until it's done. After that, reply to Omar about the venue, and if there's time, sketch the newsletter outline. Feeling a bit anxious about the budget numbers.",
+  "expected": {
+    "type": "morning",
+    "title": "Grant budget first",
+    "summary": "The user will finish the grant budget first thing today before anything else, then reply to Omar about the venue and sketch the newsletter outline if there is time.",
+    "most_important": ["Nothing else until the budget is done"],
+    "todos": [
+      { "text": "Finish the budget for the grant", "priority": "high", "due": "2026-05-21", "for_date": null, "timeframe": "today", "context": "first thing, most important today" },
+      { "text": "Reply to Omar about the venue", "priority": null, "due": null, "for_date": null, "timeframe": null, "context": "after the budget" },
+      { "text": "Sketch the newsletter outline", "priority": null, "due": null, "for_date": null, "timeframe": null, "context": "if there is time" }
+    ],
+    "priorities": ["Finish the budget for the grant"],
+    "intentions": ["Nothing else until the budget is done"],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "anxious",
+    "people": ["Omar"],
+    "projects": ["grant budget", "venue", "newsletter"],
+    "tags": ["grant", "budget", "newsletter"],
+    "centers_of_balance": ["profession"]
+  }
+}

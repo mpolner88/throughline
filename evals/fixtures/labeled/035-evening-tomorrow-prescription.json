@@ -1,0 +1,28 @@
+{
+  "id": "035-evening-tomorrow-prescription",
+  "title": "Evening with one tomorrow task",
+  "metadata": {
+    "user_local_date": "2026-05-20",
+    "scenario": "evening",
+    "recording_context": "stationary"
+  },
+  "transcript": "Evening. Long day but a good one. Tomorrow I need to pick up the prescription before the pharmacy closes at six. That's the only firm thing. Otherwise I want tomorrow to be quieter than today. Tired but okay.",
+  "expected": {
+    "type": "evening",
+    "title": "Prescription pickup tomorrow",
+    "summary": "The user needs to pick up the prescription tomorrow before the pharmacy closes at six and wants a quieter day.",
+    "most_important": ["Keep tomorrow quieter than today"],
+    "todos": [
+      { "text": "Pick up the prescription before the pharmacy closes at six", "priority": null, "due": null, "for_date": "2026-05-21", "timeframe": null, "context": "tomorrow" }
+    ],
+    "priorities": [],
+    "intentions": ["Keep tomorrow quieter than today"],
+    "accomplishments": [],
+    "tomorrow_todos": ["Pick up the prescription before the pharmacy closes at six"],
+    "mood": "tired",
+    "people": [],
+    "projects": ["prescription"],
+    "tags": ["pharmacy", "rest"],
+    "centers_of_balance": ["health"]
+  }
+}

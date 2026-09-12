@@ -1,0 +1,29 @@
+{
+  "id": "032-freeform-this-week-cue",
+  "title": "Reminder with this week cues",
+  "metadata": {
+    "user_local_date": "2026-05-19",
+    "scenario": "freeform",
+    "recording_context": "stationary"
+  },
+  "transcript": "Note to self. I need to get the tax documents over to Dana this week, and by the end of the week I want the garage cleared out so the bike fits. No rush on either beyond that, just this week.",
+  "expected": {
+    "type": "freeform",
+    "title": "Tax documents and garage this week",
+    "summary": "The user wants to send Dana the tax documents and clear out the garage for the bike by the end of this week.",
+    "most_important": [],
+    "todos": [
+      { "text": "Send the tax documents to Dana", "priority": null, "due": null, "for_date": null, "timeframe": "this_week", "context": "this week" },
+      { "text": "Clear out the garage so the bike fits", "priority": null, "due": null, "for_date": null, "timeframe": "this_week", "context": "by the end of the week" }
+    ],
+    "priorities": [],
+    "intentions": [],
+    "accomplishments": [],
+    "tomorrow_todos": [],
+    "mood": "neutral",
+    "people": ["Dana"],
+    "projects": ["tax documents", "garage"],
+    "tags": ["taxes", "garage"],
+    "centers_of_balance": ["health"]
+  }
+}

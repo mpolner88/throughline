@@ -22,6 +22,11 @@ const FIELD_WEIGHTS = {
   centers_of_balance: 6,
 };
 
+// Fields scored per fixture. The full profile weights every extraction field;
+// most_important is scored only in the memory profile, and only when the
+// fixture's expected object carries the key.
+const SCORED_FIELDS = [...Object.keys(FIELD_WEIGHTS), "most_important"];
+
 const SCORE_PROFILES = {
   full: {
     weights: FIELD_WEIGHTS,
@@ -61,6 +66,7 @@ const SCORE_PROFILES = {
     weights: {
       title: 8,
       summary: 18,
+      most_important: 10,
       accomplishments: 14,
       mood: 6,
       people: 10,
@@ -351,13 +357,32 @@ function nullableDateScore(expected, actual, metadata) {
   return 0;
 }
 
+// Todo weights: 0.6 text, 0.1 priority, 0.1 due, 0.1 for_date, 0.1 timeframe.
+// A fixture written before timeframe existed has no timeframe key on its
+// expected todos (undefined, not null). Those todos skip the timeframe
+// component and score with the earlier split, 0.7 text and 0.1 for each of
+// the other three, so older fixtures score exactly as they did before.
+const TODO_WEIGHTS = { text: 0.6, priority: 0.1, due: 0.1, for_date: 0.1, timeframe: 0.1 };
+const LEGACY_TODO_WEIGHTS = { text: 0.7, priority: 0.1, due: 0.1, for_date: 0.1 };
+
 function scoreTodo(expectedTodo, actualTodo, metadata) {
   const text = fuzzyTextScore(expectedTodo?.text, actualTodo?.text);
   const priority = exactEnumScore(expectedTodo?.priority ?? null, actualTodo?.priority ?? null);
   const due = exactEnumScore(expectedTodo?.due ?? null, actualTodo?.due ?? null);
   const forDate = nullableDateScore(expectedTodo?.for_date ?? null, actualTodo?.for_date ?? null, metadata);
 
-  return 0.7 * text + 0.1 * priority + 0.1 * due + 0.1 * forDate;
+  const scoresTimeframe = expectedTodo !== null
+    && typeof expectedTodo === "object"
+    && Object.hasOwn(expectedTodo, "timeframe");
+
+  if (!scoresTimeframe) {
+    const w = LEGACY_TODO_WEIGHTS;
+    return w.text * text + w.priority * priority + w.due * due + w.for_date * forDate;
+  }
+
+  const timeframe = exactEnumScore(expectedTodo.timeframe ?? null, actualTodo?.timeframe ?? null);
+  const w = TODO_WEIGHTS;
+  return w.text * text + w.priority * priority + w.due * due + w.for_date * forDate + w.timeframe * timeframe;
 }
 
 function scoreTodos(expectedValue, actualValue, metadata) {
@@ -489,6 +514,13 @@ function scoreProfile(fieldResults, profileName) {
   for (const [field, weight] of Object.entries(profile.weights)) {
     const result = fieldResults[field] ?? { score: 0, hallucinationDetails: [] };
 
+    // A skipped field (the fixture does not label it) contributes no weight, so
+    // the fixture is scored over the fields it actually labels.
+    if (result.skipped) {
+      fieldScores[field] = null;
+      continue;
+    }
+
     fieldScores[field] = Number((result.score * 100).toFixed(1));
     weightedTotal += result.score * weight;
     weightTotal += weight;
@@ -505,10 +537,19 @@ function scoreProfile(fieldResults, profileName) {
   };
 }
 
+function fieldSkipped(field, expected) {
+  return field === "most_important" && !Object.hasOwn(expected ?? {}, field);
+}
+
 function scoreFixture(fixture, actual) {
   const fieldResults = {};
 
-  for (const field of Object.keys(FIELD_WEIGHTS)) {
+  for (const field of SCORED_FIELDS) {
+    if (fieldSkipped(field, fixture.expected)) {
+      fieldResults[field] = { score: 0, hallucinationDetails: [], skipped: true };
+      continue;
+    }
+
     fieldResults[field] = actual
       ? scoreField(field, fixture.expected, actual, fixture.transcript, fixture.metadata ?? {})
       : { score: 0, hallucinationDetails: [] };
@@ -531,6 +572,12 @@ function scoreFixture(fixture, actual) {
     ]),
   );
 
+  // Field scores per profile, so the aggregate can break down a profile by the
+  // fields that profile actually weights (most_important only exists in memory).
+  const profileFieldScores = Object.fromEntries(
+    Object.entries(profiles).map(([profileName, profile]) => [profileName, profile.fieldScores]),
+  );
+
   return {
     id: fixture.id,
     title: fixture.title,
@@ -538,6 +585,7 @@ function scoreFixture(fixture, actual) {
     fieldScores: profiles.full.fieldScores,
     criticalHallucinations: profiles.full.criticalHallucinations,
     profiles: compactProfiles,
+    profileFieldScores,
   };
 }
 
@@ -548,13 +596,20 @@ function aggregate(results, profileName) {
   const fieldTotals = {};
 
   for (const field of Object.keys(profile.weights)) {
-    fieldTotals[field] = results.reduce((sum, result) => sum + result.fieldScores[field], 0) / results.length;
+    const fieldScores = results.map((result) => result.profileFieldScores[profileName][field]);
+    const scored = fieldScores.filter((score) => typeof score === "number");
+    fieldTotals[field] = scored.length
+      ? scored.reduce((sum, score) => sum + score, 0) / scored.length
+      : null;
   }
 
   return {
     overall: Number(overall.toFixed(1)),
     fields: Object.fromEntries(
-      Object.entries(fieldTotals).map(([field, score]) => [field, Number(score.toFixed(1))]),
+      Object.entries(fieldTotals).map(([field, score]) => [
+        field,
+        score === null ? null : Number(score.toFixed(1)),
+      ]),
     ),
     criticalHallucinationCount: profileResults.reduce(
       (sum, result) => sum + result.criticalHallucinationCount,
