@@ -1,0 +1,102 @@
+name: TestFlight upload
+
+# Archives the app with cloud signing and uploads it to App Store Connect,
+# where it lands in TestFlight processing. Needs four repository secrets:
+#
+#   ASC_KEY_ID          App Store Connect API key ID
+#   ASC_ISSUER_ID       App Store Connect issuer ID
+#   ASC_PRIVATE_KEY     contents of the AuthKey_<ID>.p8 file
+#   SUPABASE_ANON_KEY   the project's public anon key, compiled into the app
+#
+# Create the API key at App Store Connect -> Users and Access -> Integrations
+# with the App Manager role or higher; cloud signing needs that role to manage
+# certificates and profiles. The project uses automatic signing with the team
+# already set, so no certificate or profile secrets are needed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  archive-and-upload:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require the secrets
+        env:
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          missing=0
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY SUPABASE_ANON_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "$name is not set as a repository secret." >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" = "1" ]; then
+            echo "Add the secrets under Settings -> Secrets and variables -> Actions." >&2
+            exit 1
+          fi
+      - name: Write the App Store Connect key
+        env:
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          printf '%s\n' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey.p8"
+      - name: Sync build config
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          printf 'SUPABASE_ANON_KEY=%s\n' "$SUPABASE_ANON_KEY" > .env.local
+          node scripts/generate-ios-app-icons.mjs
+          node scripts/sync-ios-config.mjs
+      - name: Archive
+        run: |
+          xcodebuild \
+            -project ios/Throughline.xcodeproj \
+            -scheme Throughline \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Throughline.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            archive
+      - name: Upload to App Store Connect
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>destination</key>
+            <string>upload</string>
+            <key>teamID</key>
+            <string>RZT3KU8KMY</string>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$RUNNER_TEMP/Throughline.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"

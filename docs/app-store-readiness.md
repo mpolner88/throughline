@@ -36,7 +36,15 @@ Last updated: August 6, 2026
 
 Prepared on 2026-09-10 from branch `claude/throughline-ux-specs-y64fml` (PR #2). The Swift changes in that branch were written and reviewed without a compiler, so the first Xcode build is part of the release work, not a formality.
 
-Order of operations on a Mac:
+No CLI or Mac is required for the build itself any more. Three GitHub Actions workflows cover the release, all run from the repository's Actions tab:
+
+1. `iOS build` compiles every pull request touching `ios/` for the simulator. Already green for 1.1.0.
+2. `Deploy Supabase functions` deploys the `api` and `mcp` Edge Functions from the dispatched branch. Needs the `SUPABASE_ACCESS_TOKEN` secret (create a token at supabase.com/dashboard/account/tokens).
+3. `TestFlight upload` archives with cloud signing and uploads to App Store Connect. Needs `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY` (an App Store Connect API key with the App Manager role, from App Store Connect -> Users and Access -> Integrations), and `SUPABASE_ANON_KEY` (the project's public anon key, from the Supabase dashboard API settings).
+
+Add the secrets under Settings -> Secrets and variables -> Actions, run workflow 2 and then workflow 3 from the release branch, then add the processed build to the Internal QA group in TestFlight and run the acceptance walk from spec section 14 on a phone. The local path below still works and remains the fallback if cloud signing refuses the API key.
+
+Order of operations on a Mac (fallback):
 
 1. Deploy the backend first. Run the `Deploy Supabase functions` GitHub Actions workflow from the branch (needs the `SUPABASE_ACCESS_TOKEN` repository secret), or run `npm run supabase:deploy` locally. Either path runs the extraction contract check, then deploys the `api` and `mcp` Edge Functions. The app needs `GET /tasks` and the timeframe move on `PATCH /recordings/:id/action-items` in production before 1.1.0 is useful.
 2. `git checkout claude/throughline-ux-specs-y64fml && npm run ios:sync-config`.
