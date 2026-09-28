@@ -535,7 +535,11 @@ struct HomeView: View {
     }
 
     private func saveEdits(for note: ThroughlineNote, draft: NoteEditDraft) async throws -> ThroughlineNote {
-        let recording = try await UploadClient().updateRecording(recordingID: note.id, draft: draft)
+        let recording = try await UploadClient().updateRecording(
+            recordingID: note.id,
+            draft: draft,
+            expectedRevisionID: note.currentRevisionID
+        )
         let updatedNote = recording.displayNote()
         appState.addUploadedNote(updatedNote)
         if selectedNote?.id == updatedNote.id {
@@ -1075,7 +1079,11 @@ private struct NoteDetailSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     if isEditing {
-                        NoteEditForm(draft: $draft, error: editError)
+                        NoteEditForm(
+                            draft: $draft,
+                            error: editError,
+                            showsPrivateEvaluationDisclosure: currentNote.currentRevisionID != nil
+                        )
                             .disabled(isSaving)
                     } else {
                         readOnlyContent
@@ -1183,10 +1191,15 @@ private struct NoteDetailSheet: View {
             }
 
             if currentNote.id.hasPrefix("rec_") {
-                DetailedExtractionFeedbackView(
-                    status: feedbackStatus,
-                    onSubmit: onFeedback
-                )
+                switch EvaluationRatingMode.resolve(currentRevisionID: currentNote.currentRevisionID) {
+                case .privateLineage:
+                    PrivateEvaluationView(note: currentNote)
+                case .standard:
+                    DetailedExtractionFeedbackView(
+                        status: feedbackStatus,
+                        onSubmit: onFeedback
+                    )
+                }
             }
 
             Button(role: .destructive) {
@@ -1225,9 +1238,288 @@ private struct NoteDetailSheet: View {
     }
 }
 
+private enum EvaluationContributionPhase: Equatable {
+    case idle
+    case loadingPreview
+    case saving
+    case saved
+    case removing
+    case removed
+    case failed(String)
+}
+
+private struct PrivateEvaluationView: View {
+    let note: ThroughlineNote
+    @State private var state = EvaluationContributionState()
+    @State private var phase: EvaluationContributionPhase = .idle
+    @State private var selectedScore: Int?
+    @State private var selectedIssues = Set<String>()
+    @State private var explanation = ""
+    @State private var isPreviewExpanded = false
+    @State private var isConfirmingRemoval = false
+
+    private let issues: [(id: String, label: String)] = [
+        ("missed_action", "Missed action"),
+        ("unsupported_action", "Invented action"),
+        ("wrong_importance", "Wrong importance"),
+        ("meaning_changed", "Meaning changed"),
+        ("weak_summary", "Weak summary"),
+        ("transcription_error", "Transcript error"),
+        ("schema_invalid", "Invalid structure"),
+        ("other_structured", "Other structure")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Eyebrow(text: "private quality check")
+
+            RecordingPrivacyLink()
+
+            if let revisionID = note.currentRevisionID, UUID(uuidString: revisionID) != nil {
+                gradeControl
+                previewControl(revisionID: revisionID)
+                issueControl
+                explanationControl
+                saveControl(revisionID: revisionID)
+
+                removalControl
+            }
+        }
+        .padding(16)
+        .background(Theme.blue.opacity(0.045))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Theme.border, lineWidth: 0.5)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .task(id: note.currentRevisionID) {
+            state.invalidateForNoteChange()
+            phase = .idle
+            isPreviewExpanded = false
+        }
+        .confirmationDialog("Remove this private quality contribution?", isPresented: $isConfirmingRemoval, titleVisibility: .visible) {
+            Button(EvaluationContributionCopy.removalLabel, role: .destructive) { removeContribution() }
+        } message: {
+            Text(EvaluationContributionCopy.removalMeaning)
+        }
+    }
+
+    private var gradeControl: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("How well did Throughline structure this note?")
+                .font(.system(size: 14, weight: .medium))
+            HStack(spacing: 7) {
+                ForEach(1...5, id: \.self) { score in
+                    Button { selectedScore = score } label: {
+                        Text("\(score)")
+                            .font(.system(size: 14, weight: .semibold))
+                            .frame(width: 38, height: 34)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(selectedScore == score ? Theme.blue : Color.clear))
+                            .overlay { RoundedRectangle(cornerRadius: 8).stroke(Theme.border, lineWidth: 0.5) }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(selectedScore == score ? .white : .primary)
+                    .disabled(isBusy)
+                    .accessibilityLabel("Grade private quality \(score) out of 5")
+                }
+            }
+        }
+    }
+
+    private func previewControl(revisionID: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DisclosureGroup(isExpanded: Binding(
+                get: { isPreviewExpanded },
+                set: { expanded in
+                    isPreviewExpanded = expanded
+                    guard expanded else { return }
+                    if state.currentPreview == nil { loadPreview(revisionID: revisionID) }
+                    else { state.recordPreviewPresented() }
+                }
+            )) {
+                Group {
+                    if phase == .loadingPreview {
+                        ProgressView("Loading exact note output")
+                    } else if let preview = state.currentPreview {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(preview.rows) { row in previewRow(row) }
+                        }
+                        .padding(.top, 8)
+                        .onAppear { state.recordPreviewPresented() }
+                    } else {
+                        Text("Preview unavailable. Readiness stays off.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(EvaluationContributionCopy.previewTitle)
+                        .font(.system(size: 15, weight: .medium))
+                    Text(EvaluationContributionCopy.previewMeaning)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Toggle(EvaluationContributionCopy.readinessLabel, isOn: Binding(
+                get: { state.readinessChoice == .accepted },
+                set: { accepted in
+                    if accepted { state.acceptReadiness() }
+                    else { state.rejectReadiness() }
+                }
+            ))
+            .disabled(!state.canAcceptReadiness || isBusy)
+
+            Text(EvaluationContributionCopy.readinessMeaning)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func previewRow(_ row: CanonicalFieldPreviewRow) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(row.field.replacingOccurrences(of: "_", with: " "))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            ForEach(Array(row.inspectableLines.enumerated()), id: \.offset) { _, line in
+                Text(line.hasPrefix(": ") ? String(line.dropFirst(2)) : line)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.primary.opacity(0.86))
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    private var issueControl: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 126), spacing: 8)], alignment: .leading, spacing: 8) {
+            ForEach(issues, id: \.id) { issue in
+                let selected = selectedIssues.contains(issue.id)
+                Button {
+                    if selected { selectedIssues.remove(issue.id) }
+                    else { selectedIssues.insert(issue.id) }
+                } label: {
+                    Text(issue.label)
+                        .font(.system(size: 13, weight: .medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 9)
+                        .padding(.horizontal, 10)
+                        .background(selected ? Theme.blue.opacity(0.12) : Color.clear)
+                        .overlay { RoundedRectangle(cornerRadius: 8).stroke(selected ? Theme.blue : Theme.border, lineWidth: 0.7) }
+                }
+                .buttonStyle(.plain)
+                .disabled(isBusy)
+            }
+        }
+    }
+
+    private var explanationControl: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            TextEditor(text: $explanation)
+                .font(.system(size: 13))
+                .frame(minHeight: 72)
+                .padding(7)
+                .overlay { RoundedRectangle(cornerRadius: 8).stroke(Theme.border, lineWidth: 0.5) }
+                .accessibilityLabel("Optional private quality explanation")
+            Text(EvaluationContributionCopy.explanationPrivacy)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func saveControl(revisionID: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Button { saveEvaluation(revisionID: revisionID) } label: {
+                Text(phase == .saving ? "Saving private quality grade" : "Save private quality grade")
+                    .font(.system(size: 15, weight: .medium))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(selectedScore == nil || isBusy ? Theme.border : Theme.blue)
+                    .foregroundColor(selectedScore == nil || isBusy ? .secondary : .white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedScore == nil || isBusy)
+
+            if let statusMessage {
+                Text(statusMessage).font(.system(size: 12)).foregroundStyle(phaseIsFailure ? .red : .secondary)
+            }
+        }
+    }
+
+    private var removalControl: some View {
+        Button(role: .destructive) { isConfirmingRemoval = true } label: {
+            Text(EvaluationContributionCopy.removalLabel).font(.system(size: 13, weight: .medium))
+        }
+        .buttonStyle(.plain)
+        .disabled(isBusy)
+    }
+
+    private var isBusy: Bool { phase == .loadingPreview || phase == .saving || phase == .removing }
+    private var phaseIsFailure: Bool { if case .failed = phase { return true }; return false }
+    private var statusMessage: String? {
+        switch phase {
+        case .saved: "Private quality contribution saved."
+        case .removed: "Private quality contribution removed. Your visible note is unchanged."
+        case let .failed(message): message
+        default: nil
+        }
+    }
+
+    private func loadPreview(revisionID: String) {
+        phase = .loadingPreview
+        Task {
+            do {
+                let preview = try await UploadClient().evaluationReadinessPreview(recordingID: note.id, revisionID: revisionID)
+                guard preview.revisionID.lowercased() == revisionID.lowercased() else { throw UploadClientError.invalidResponse }
+                state.loadPreview(preview)
+                phase = .idle
+            } catch { fail(error, message: "Could not load the exact output. Readiness stays off.") }
+        }
+    }
+
+    private func saveEvaluation(revisionID: String) {
+        guard let score = selectedScore, let revision = UUID(uuidString: revisionID) else { return }
+        phase = .saving
+        let trimmed = explanation.trimmingCharacters(in: .whitespacesAndNewlines)
+        var request = EvaluationContributionRequest(evaluatedRevisionID: revision, score: score, issueCodes: Array(selectedIssues).sorted(), explanation: trimmed.isEmpty ? nil : trimmed)
+        request = request.withPreview(state.boundPreview).withReadiness(state.readinessChoice)
+        Task {
+            do {
+                _ = try await UploadClient().saveEvaluation(recordingID: note.id, request: request)
+                state.recordContributionSaved()
+                phase = .saved
+            } catch { fail(error, message: "Could not save this private quality grade.") }
+        }
+    }
+
+    private func removeContribution() {
+        phase = .removing
+        Task {
+            do {
+                _ = try await UploadClient().removeEvaluationContribution(recordingID: note.id)
+                state.recordContributionRemoved()
+                phase = .removed
+            } catch { fail(error, message: "Could not remove the contribution. Try again.") }
+        }
+    }
+
+    private func fail(_ error: Error, message: String) {
+        if case UploadClientError.serverError(409, _) = error {
+            state.invalidateForNoteChange()
+            phase = .failed("The note changed. Open the refreshed preview before trying again.")
+        } else {
+            phase = .failed(message)
+        }
+    }
+}
+
 private struct NoteEditForm: View {
+
     @Binding var draft: NoteEditDraft
     let error: String?
+    let showsPrivateEvaluationDisclosure: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1237,6 +1529,10 @@ private struct NoteEditForm: View {
             EditTextEditor(title: "to-dos", text: $draft.todosText, minHeight: 112)
             EditTextEditor(title: "transcript", text: $draft.transcript, minHeight: 220)
 
+            if showsPrivateEvaluationDisclosure {
+                RecordingPrivacyLink()
+            }
+
             if let error {
                 Text(error)
                     .font(.system(size: 13))
@@ -1244,6 +1540,16 @@ private struct NoteEditForm: View {
                     .lineSpacing(3)
             }
         }
+    }
+}
+
+private struct RecordingPrivacyLink: View {
+    private let privacyURL = URL(string: "https://mpolner88.github.io/throughline/privacy/")!
+
+    var body: some View {
+        Link(EvaluationContributionCopy.privacyLinkLabel, destination: privacyURL)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(Theme.blue)
     }
 }
 
@@ -1311,6 +1617,8 @@ private struct DetailedExtractionFeedbackView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
+
+            RecordingPrivacyLink()
 
             HStack(spacing: 7) {
                 ForEach(1...5, id: \.self) { score in

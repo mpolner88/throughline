@@ -176,6 +176,7 @@ struct RecordingPayload: Decodable {
     let processingStatus: String?
     let transcriptRaw: String?
     let structuredNote: StructuredNotePayload?
+    var currentRevisionID: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -184,6 +185,7 @@ struct RecordingPayload: Decodable {
         case processingStatus = "processing_status"
         case transcriptRaw = "transcript_raw"
         case structuredNote = "structured_note"
+        case currentRevisionID = "current_revision_id"
     }
 
     var throughlineNote: ThroughlineNote? {
@@ -212,6 +214,7 @@ struct RecordingPayload: Decodable {
             createdAt: createdAtDate,
             type: structuredNote.type ?? type ?? .freeform,
             processingStatus: processingStatus,
+            currentRevisionID: currentRevisionID,
             title: title,
             summary: summary,
             transcript: transcriptRaw ?? "",
@@ -245,6 +248,7 @@ struct RecordingPayload: Decodable {
             createdAt: createdAtDate,
             type: type ?? .freeform,
             processingStatus: status,
+            currentRevisionID: currentRevisionID,
             title: "voice note captured",
             summary: UploadResponse.summary(for: status),
             transcript: transcriptRaw ?? "Recording saved. Transcript will appear here after processing.",
@@ -372,7 +376,50 @@ struct RecordingListItem: Decodable {
 }
 
 struct RecordingDetailResponse: Decodable {
-    let recording: RecordingPayload
+    var recording: RecordingPayload
+    let currentRevisionID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case recording
+        case currentRevisionID = "current_revision_id"
+    }
+
+    var resolvedRecording: RecordingPayload {
+        var value = recording
+        if value.currentRevisionID == nil { value.currentRevisionID = currentRevisionID }
+        return value
+    }
+}
+
+struct EvaluationReadinessPreviewResponse: Decodable {
+    let preview: AgentReadinessPreview
+}
+
+struct EvaluationContributionResponse: Decodable {
+    let evaluationID: String
+    let evaluatedRevisionID: String
+    let contributionID: String
+    let eligible: Bool
+    let idempotent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case evaluationID = "evaluation_id"
+        case evaluatedRevisionID = "evaluated_revision_id"
+        case contributionID = "contribution_id"
+        case eligible, idempotent
+    }
+}
+
+struct EvaluationContributionRemovalResponse: Decodable {
+    let withdrawn: Bool
+    let audioDeleted: Bool
+    let idempotent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case withdrawn
+        case audioDeleted = "audio_deleted"
+        case idempotent
+    }
 }
 
 struct AgentTokenSummary: Identifiable, Decodable {
@@ -678,7 +725,7 @@ struct UploadClient {
             .appendingPathComponent(id))
         let (data, response) = try await URLSession.shared.data(for: request)
         try validate(response: response, data: data)
-        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
 
     func deleteRecording(id: String) async throws {
@@ -704,20 +751,50 @@ struct UploadClient {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validate(response: response, data: data)
-        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
 
-    func updateRecording(recordingID: String, draft: NoteEditDraft) async throws -> RecordingPayload {
+    func updateRecording(recordingID: String, draft: NoteEditDraft, expectedRevisionID: String?) async throws -> RecordingPayload {
         var request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("recordings")
             .appendingPathComponent(recordingID))
         request.httpMethod = "PATCH"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(RecordingEditRequest(draft: draft))
+        request.httpBody = try JSONEncoder().encode(RecordingEditRequest(draft: draft, expectedRevisionID: expectedRevisionID))
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validate(response: response, data: data)
-        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
+    }
+
+    func evaluationReadinessPreview(recordingID: String, revisionID: String) async throws -> AgentReadinessPreview {
+        var components = URLComponents(url: baseURL.appendingPathComponent("recordings").appendingPathComponent(recordingID).appendingPathComponent("evaluation-readiness-preview"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "revision_id", value: revisionID.lowercased())]
+        guard let url = components?.url else { throw UploadClientError.invalidResponse }
+        let request = try await authorizedRequest(url: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(EvaluationReadinessPreviewResponse.self, from: data).preview
+    }
+
+    func saveEvaluation(recordingID: String, request body: EvaluationContributionRequest) async throws -> EvaluationContributionResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings").appendingPathComponent(recordingID).appendingPathComponent("evaluations"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(EvaluationContributionResponse.self, from: data)
+    }
+
+    func removeEvaluationContribution(recordingID: String, idempotencyKey: UUID = UUID()) async throws -> EvaluationContributionRemovalResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings").appendingPathComponent(recordingID).appendingPathComponent("evaluation-contribution"))
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["idempotency_key": idempotencyKey.uuidString.lowercased()])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(EvaluationContributionRemovalResponse.self, from: data)
     }
 
     func deleteAccount() async throws {
@@ -928,6 +1005,11 @@ private struct RecordingEditRequest: Encodable {
     let transcript: String
     let mostImportant: [String]
     let todos: [String]
+    let expectedCurrentRevisionID: String?
+    let idempotencyKey: String?
+    let noticeVersion: String?
+    let disclosureVersion: String?
+    let policyVersion: String?
 
     enum CodingKeys: String, CodingKey {
         case title
@@ -935,14 +1017,24 @@ private struct RecordingEditRequest: Encodable {
         case transcript
         case mostImportant = "most_important"
         case todos
+        case expectedCurrentRevisionID = "expected_current_revision_id"
+        case idempotencyKey = "idempotency_key"
+        case noticeVersion = "notice_version"
+        case disclosureVersion = "disclosure_version"
+        case policyVersion = "policy_version"
     }
 
-    init(draft: NoteEditDraft) {
+    init(draft: NoteEditDraft, expectedRevisionID: String?) {
         title = draft.trimmedTitle
         summary = draft.trimmedSummary
         transcript = draft.trimmedTranscript
         mostImportant = draft.mostImportant
         todos = draft.todos
+        expectedCurrentRevisionID = expectedRevisionID?.lowercased()
+        idempotencyKey = expectedRevisionID == nil ? nil : UUID().uuidString.lowercased()
+        noticeVersion = expectedRevisionID == nil ? nil : EvaluationContributionRequest.noticeVersion
+        disclosureVersion = expectedRevisionID == nil ? nil : EvaluationContributionRequest.disclosureVersion
+        policyVersion = expectedRevisionID == nil ? nil : EvaluationContributionRequest.policyVersion
     }
 }
 
