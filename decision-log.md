@@ -641,3 +641,18 @@ Each decision should explain the call that was made, the alternatives considered
 **Authority:** Only this branch and its new PR may be published. Posting the PR #2 review and contacting Claude each require their own go-ahead. Main merges, force-pushes, branch deletion, deployments/migrations, deployment/TestFlight workflow dispatch, secrets, automations, behavior flags and Apple changes remain outside this approval. Moving or repointing the active checkout out of iCloud is a separate proposed action after the PR is open. The existing checkout and private recovery copy stay intact.
 
 **Revisit when:** The exact committed handoff receives its separate feasibility review, the reconciled base receives the required peer review, or Mike changes priority or approves one of the separately gated actions.
+
+
+---
+
+## 2026-09-28 — Approve the current-operation privacy policy text
+
+**Decision:** Mike approved the exact revised Markdown and HTML policy presented after the privacy publication audit. The approved text discloses the current server-side PostHog processing and account linkage, accurately describes the current AI-processing controls, and clearly marks Private Evaluation and its contribution/retention/removal controls as planned and not enabled. Account deletion is described separately from that future feature. The policy retains the no-training, no-fine-tuning and no-automatic-promotion boundaries.
+
+**Exact approved files:** `docs/privacy-policy.md`, SHA-256 `2b0b68dce68b816f9471df3855fe0d2e7462ae9050c7d0c8ae34a144e71c7fce`; `docs/privacy/index.html`, SHA-256 `4be13989c8a52153f4f9faf54770c564a483437ec54ce74803dfbc7d2a455965`. Any later wording change requires approval of the revised text before publication.
+
+**Authority:** Record the approval and publish these bounded policy/decision changes only on the already-authorized `codex/reconcile-september-base` branch and [PR #3](https://github.com/mpolner88/throughline/pull/3). The exact-text gate is satisfied for these bytes. Main merge remains unapproved and mutual review remains pending; GitHub Pages continues to serve main until a separately approved publication action. This does not enable evaluation, deploy functions or migrations, change secrets/flags, dispatch release workflows, or change App Store answers. App Store privacy answers will be finalized and updated with the next approved build as Mike requested; the known current linkage discrepancy remains unresolved until that action.
+
+**Product direction:** Mike reaffirmed capture recovery first, followed by the next running-list version. The selected capture tray still needs its committed-handoff feasibility findings resolved before build entry. Mike wants the learning loop enabled soon and asked to return to that separately; this records intent, not approval to enable production collection, benchmarking, training or automatic promotion.
+
+**Revisit when:** The approved policy bytes change, an exact main/publication action is approved, the capture handoff is ready for build, or Mike resumes the bounded learning-loop decision.
