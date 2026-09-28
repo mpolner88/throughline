@@ -1,11 +1,13 @@
 # Evaluation Truth and Immutable Lineage Slice
 
-**Status:** Selected and planned; runtime work is blocked on the dependency gate below
+**Backlog state:** `approved_for_build`
+**Slice phase:** `canary`
+**Progress:** Production foundation, lineage canary, owner iOS/privacy controls, source-bound owner-canary package, API v30 hosted preflight, and valid internal TestFlight delivery are complete; installation and owner retention/evaluation execution remain pending.
 **Selected:** 2026-08-17
 **Backlog:** `TL-EVAL-001`
 **Program:** [Core Quality and Learning](../programs/core-quality-learning.md)
-**Verified control:** 2026-08-17; [current state](../CURRENT_STATE.md) and [iOS 1.0.4 / API v22 provenance closure](../releases/2026-08-17-ios-1.0.4-2026081602-provenance.md)
-**Hard runtime dependency:** `TL-DATA-001` Task 6 must have a dated verified migration/API rollout record and passing canaries before this slice's runtime Task 1 begins. The 2026-08-17 [measurement execution ledger](../../.superpowers/sdd/2026-08-17-measurement-attribution/progress.md) records Task 6 as blocked before production; it is not rollout evidence.
+**Verified control:** 2026-08-28; [current state](../CURRENT_STATE.md), [Home rollback internal delivery](../evidence/2026-08-28-home-ui-rollback.md), [owner-canary production preflight](../evidence/2026-08-23-evaluation-owner-canary-preflight.md), [production lineage behavior canary](../evidence/2026-08-23-evaluation-lineage-behavior-canary.md), [local iOS/privacy controls](../evidence/2026-08-23-evaluation-ios-privacy-controls.md), and [owner-canary preparation](../evidence/2026-08-23-evaluation-owner-canary-preparation.md)
+**Runtime dependency:** `TL-DATA-001`, the flags-off TL-EVAL foundation, the bounded lineage behavior canary, the source-bound owner-canary package, the byte-verified API v30 preflight, and `VALID` internal TestFlight build `2026082801` visible to `Internal QA` are complete. Installation and owner retention/evaluation execution remain pending and must preserve the package's ordered canary and rollback contract below.
 
 ## User problem
 
@@ -73,7 +75,7 @@ The compatibility API keeps old routes decodable while adding current contracts:
 
 - `GET /recordings/{recording_id}/evaluation-readiness-preview?revision_id={uuid}` is owner-only and returns an inspectable ordered view of every schema-derived canonical field/value plus exact payload/schema/normalizer/keyset hashes; it fails closed if any field cannot be validated or shown.
 - `POST /recordings/{recording_id}/evaluations` accepts UUID `idempotency_key` and `evaluated_revision_id`, rubric/disclosure fields, bounded grade fields, nullable `agent_ready`, optional matching readiness-preview binding, and quarantined explanation. True readiness requires the exact current preview binding; revision, payload, schema, normalizer, keyset, or preview drift is rejected. `should_remember` authorizes nothing.
-- `PATCH /recordings/{recording_id}` accepts UUID `idempotency_key`, optimistic `base_revision_id`, current notice/disclosure versions when the save is offered as a contribution, and the bounded editable note fields. Only a changed server-derived canonical content fingerprint can create `content_correction` eligibility.
+- `PATCH /recordings/{recording_id}` accepts UUID `idempotency_key`, optimistic `expected_current_revision_id`, current notice/disclosure versions when the save is offered as a contribution, and the bounded editable note fields. Only a changed server-derived canonical content fingerprint can create `content_correction` eligibility.
 - `PATCH /recordings/{recording_id}/action-items` appends workflow history only; it cannot create evaluation eligibility.
 - `DELETE /recordings/{recording_id}/evaluation-contribution` accepts UUID `idempotency_key` and appends a withdrawal after required Storage deletion succeeds.
 - Legacy feedback/edit requests may remain accepted for old clients, but without current server-verified disclosure provenance they cannot create eligibility or extend retention.
@@ -140,7 +142,7 @@ Production canary evaluation is performed by the recording owner on their own ca
 ## Guardrails and non-goals
 
 - No model training or fine-tuning, automatic promotion, advertising/tracking use, or new provider sharing.
-- No provider, base-model, production-prompt-byte, pricing, recording-limit, credit, subscription, onboarding, TestFlight, App Store Connect, or submission change.
+- No provider, base-model, production-prompt-byte, pricing, recording-limit, credit, subscription, onboarding, App Store submission, or public-release change. The separately approved internal-only TestFlight canary delivery is recorded above.
 - No legacy evaluation backfill that creates eligibility or extended retention.
 - No raw provider bodies in failure messages or logs.
 - No public policy publication or App Store privacy-answer action in this slice without Mike's separate approval.

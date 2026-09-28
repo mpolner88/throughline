@@ -682,11 +682,11 @@ Rollback: before eligibility use TL-DATA stable API; after eligibility only the 
 - Produces Swift `EvaluationContributionRequest`, `AgentReadinessPreview`, `CanonicalFieldPreviewRow`, `AgentReadinessChoice` (default `.notAccepted`), `EvaluationContributionState`, current `RecordingEditRequest`, and `removeEvaluationContribution(recordingID:idempotencyKey:)`. Evaluation requests carry the exact loaded `evaluated_revision_id`; only a deliberate `.accepted` choice after a complete matching preview encodes `agent_ready: true` plus its preview binding.
 - Recommended copy for review: `Private quality check. Saving this grade or a content correction may keep this recording's audio past 30 days until you remove the contribution. Not used to train models. Learn more.`
 
-- [ ] **Step 1: Record Mike's product/design taste decision**
+- [x] **Step 1: Record Mike's product/design taste decision**
 
 Present the recommended disclosure, grade/edit hierarchy, Learn more destination, removal control, and a quiet explicit readiness control next to an inspectable `What your agent will read` preview. The preview must show every canonical field/value in the frozen production contract, including the ten fields outside the smaller edit form, before acceptance can be enabled. Explain that readiness accepts the exact previewed revision/output; correction save alone labels only editable changed fields, and transcript remains separate/unlabeled unless explicitly corrected. Do not imply the user edited or inspected any field the UI did not actually show. Record Mike's approval or exact replacement copy/control in `decision-log.md` before implementation. This checkpoint does not authorize onboarding, publication, App Store privacy answers, upload, TestFlight, submission, or a new binary.
 
-- [ ] **Step 2: Write coding/copy/policy parity tests first**
+- [x] **Step 2: Write coding/copy/policy parity tests first**
 
 ```swift
 let body = try JSONEncoder().encode(EvaluationContributionRequest.fixture)
@@ -704,18 +704,18 @@ precondition((acceptedJSON["agent_ready_preview"] as? [String: Any])?["preview_s
 
 Using synthetic values only, assert the preview renders exactly the schema-derived current fields `type`, `title`, `summary`, `most_important`, `todos`, `priorities`, `intentions`, `accomplishments`, `tomorrow_todos`, `mood`, `people`, `projects`, `tags`, and `centers_of_balance`, with no hidden or extra field; nested todos render inspectably. Also encode legacy/nil-readiness and prove absent is never true. State tests prove readiness defaults off, correction save alone does not flip it, incomplete/invalid/unrenderable previews disable the control, and any changed canonical payload/output hash, schema hash, normalizer hash, keyset hash, or revision resets readiness and removes the binding. Only an explicit tap after the complete exact preview encodes true. Copy tests cover disclosure, truthful preview/readiness meaning, and removal; they do not inspect onboarding. The Node parity test parses Markdown/HTML headings and required semantics, not raw byte equality.
 
-- [ ] **Step 3: Witness RED**
+- [x] **Step 3: Witness RED**
 
 Run: `swiftc -parse-as-library ios/Throughline/Services/EvaluationContributionContract.swift ios/Tests/EvaluationContributionCodingTests.swift ios/Tests/EvaluationContributionCopyTests.swift -o /private/tmp/throughline-eval-ios-tests && /private/tmp/throughline-eval-ios-tests`, then `node --test scripts/check-privacy-policy-parity.test.mjs`.
 Expected RED: Swift compilation fails on missing contribution types and policy parity fails on the false permission-modal/Settings-withdrawal claims.
 
-- [ ] **Step 4: Implement the approved quiet surfaces and local declarations**
+- [x] **Step 4: Implement the approved quiet surfaces and local declarations**
 
 Fetch the owner-only preview for the exact loaded revision and render every schema-derived canonical field/value under the Mike-approved quiet `What your agent will read` treatment; recursively render todos and other nested values, without claiming editability. Fail closed and keep readiness disabled if any field cannot be validated or displayed. Send UUID idempotency, exact loaded `evaluated_revision_id`, and current notice/disclosure versions with grade actions; send optimistic `base_revision_id` with material edits. Keep readiness off by default. A correction save alone sends no readiness acceptance. Encode `agent_ready: true` and `agent_ready_preview` only after deliberate acceptance of the complete exact preview. Reset on payload/schema/normalizer/keyset/revision change; on `409 revision_conflict` or preview-stale, require a fresh preview rather than replaying acceptance. Expose removal without undoing the visible correction. Keep free-text explanation visually and technically separate from note-content edits and label it excluded from private evaluation.
 
 Update Markdown and HTML in parity: describe contextual grade/content-correction contribution, private evaluation only, retention exception/removal/note/account deletion, no training/fine-tuning/automatic promotion/ads, and normal inference sharing boundary. Remove claims that a first-recording permission modal or existing Settings withdrawal flow exists. Add Analytics to Audio Data purposes in `PrivacyInfo.xcprivacy` only in the evaluation-linked-audio release source. Record ordinary third-party-AI inference permission as a separate unresolved App Store readiness risk; do not invent UI.
 
-- [ ] **Step 5: Witness GREEN and build locally**
+- [x] **Step 5: Witness GREEN and build locally**
 
 Run the exact Swift command from Step 3, `node --test scripts/check-privacy-policy-parity.test.mjs`, `npm run privacy:check`, and `xcodebuild -project ios/Throughline.xcodeproj -scheme Throughline -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/throughline-eval-derived CODE_SIGNING_ALLOWED=NO build`.
 Expected GREEN: exact wire values/copy/parity pass; all 14 canonical fields and nested values are inspectable before acceptance; missing/unrenderable/drifted preview state fails closed; default/nil/false readiness never becomes full-output acceptance; deliberate true binds the exact preview/revision/production contract; correction alone stays partial-label; onboarding source hash is unchanged; build succeeds; no publication or upload occurs.
@@ -839,6 +839,10 @@ Default all three new behavior flags false. Build and hash the normal candidate 
 
 Re-run every exact command from Step 2 after implementation, then run `npm run eval:plumbing`, `npm run product:weekly:test`, and `npm run privacy:check`.
 Expected GREEN: old/current contracts pass, compatibility mode honors retention/removal/deletion, schema tests pass, and release evidence contains no content or identifiers.
+**2026-08-23 local preparation checkpoint:** The deterministic content-free owner-canary package and verifier are complete. They bind eight exact local sources, fix the nine-phase order with retention before evaluation writes, keep every grade/correction/readiness action owner-only, use mode-`0600` temporary output, reject source drift or manifest tampering, and encode stable-before-eligibility versus retention-aware-after-eligibility rollback. This does not complete hosted Step 5.
+
+Evidence: [owner-controlled canary preparation](../../evidence/2026-08-23-evaluation-owner-canary-preparation.md).
+
 
 - [ ] **Step 5: Perform reversible production rollout in order**
 

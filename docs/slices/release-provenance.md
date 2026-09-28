@@ -1,6 +1,8 @@
 # Release Provenance Slice
 
-**Status:** Completed
+**Backlog state:** `closed`
+**Slice phase:** `closed`
+**Backlog:** Completed program dependency; no standalone backlog item
 **Selected:** 2026-08-17
 **Completed:** 2026-08-17
 **Program:** [Core Quality and Learning](../programs/core-quality-learning.md)

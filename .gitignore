@@ -7,9 +7,15 @@ node_modules/
 # Eval outputs
 evals/runs/
 evals/tmp/
+evals/private/
+evals/runs/private/
+evals/tmp/private-*/
 
 # Local backend stub data
 backend/data/
+
+# Private product-learning reports generated from production signals
+.throughline/
 
 # iOS build output
 ios/build/
@@ -17,3 +23,10 @@ ios/Config/Local.xcconfig
 ios/Config/LocalRelease.xcconfig
 ios/Throughline.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcuserstate
+
+# Reconciliation: local recovery/private and transient artifacts stay out of Git.
+tmp/
+*.orig
+*.rej
+output/
+product/audits/

@@ -1,6 +1,7 @@
 # Discovery Growth Slice
 
-**Status:** Measuring
+**Backlog state:** `measuring`
+**Slice phase:** `measuring`
 **Selected:** 2026-08-27
 **Backlog:** `TL-DISC-001`
 **Design:** [Throughline Discovery Agent System](../superpowers/specs/2026-08-22-throughline-discovery-agent-system-design.md)
@@ -14,7 +15,7 @@ Throughline's public App Store listing communicates the voice-to-structured-task
 
 - On 2026-08-27 the live US App Store listing showed Throughline version `1.0.4`, the subtitle `Voice to AI Agents & To-Do's`, and the public description of owner-controlled MCP access. Evidence: <https://apps.apple.com/us/app/throughline-ai-voice-notes/id6774304241>.
 - On 2026-08-27 the live GitHub Pages root rendered only the Throughline name, one positioning sentence, and privacy/support links. Evidence: <https://mpolner88.github.io/throughline/>.
-- On 2026-08-27 the repository current-state source recorded internal TestFlight build `1.0.5 (2026082601)` in the one-tester `Internal QA` group; installation and updated Home-journey use remain unproved. Evidence: [Current State](../CURRENT_STATE.md) and [Home feedback evidence](../evidence/2026-08-27-home-feedback-first-slice.md).
+- On 2026-08-28 internal TestFlight build `1.0.5 (2026082801)` superseded rejected build `2026082601` and restored the preceding Home presentation in source. It was valid and visible to the one-tester `Internal QA` group; installation and the restored journey remain unproved. Evidence: [Current State](../CURRENT_STATE.md) and [Home rollback evidence](../evidence/2026-08-28-home-ui-rollback.md).
 - First MCP tool use remains a measurement coverage gap. Absence of that event must not be reported as zero agent value. Evidence: [Metrics](../../product/metrics.md).
 
 ## Outcome

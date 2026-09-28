@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coordinate Multi-Agent Work"
+  short_description: "Delegate bounded work without losing control"
+  default_prompt: "Use $coordinate-multi-agent-work to split this task into safe, non-overlapping assignments and integrate the result."

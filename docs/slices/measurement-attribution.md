@@ -1,7 +1,9 @@
 # Measurement Attribution and Reconciliation Slice
 
-**Status:** Selected
+**Backlog state:** `measuring`
+**Slice phase:** `measuring`
 **Selected:** 2026-08-17
+**Current evidence:** 2026-08-22; [production rollout and first post-cutover baseline](../evidence/2026-08-22-measurement-production-rollout.md)
 **Backlog:** `TL-DATA-001`
 **Program:** [Core Quality and Learning](../programs/core-quality-learning.md)
 **Control:** [iOS 1.0.4 / API v22 provenance closure](../releases/2026-08-17-ios-1.0.4-2026081602-provenance.md)
@@ -72,7 +74,7 @@ Split those populations into debug, internal dogfood, external TestFlight, exter
 1. Preserve the current local report, report tests, dashboard generator, and their package commands before editing them.
 2. Add and verify the database schema and service-only allowlist.
 3. Deploy the backward-compatible API contract and run authenticated ingestion canaries.
-4. Build the instrumented iOS app; any TestFlight upload or App Store action remains Mike-approved.
+4. Build the instrumented iOS app. Internal-only delivery to the existing `Internal QA` group may follow the standing 2026-08-25 decision only within an already-approved bounded iteration; external TestFlight distribution, App Store submission or review, and public release remain Mike-approved.
 5. Privately add confirmed internal accounts and backfill only those known rows.
 6. Update the aggregate report and establish the first post-cutover baseline after controlled canaries pass.
 

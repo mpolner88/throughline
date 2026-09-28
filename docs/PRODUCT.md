@@ -20,6 +20,25 @@ Throughline serves an individual who thinks out loud and wants those thoughts to
 4. The corrected, durable knowledge is available for the individual's AI agent to read.
 5. Learning uses review signals to improve the system while protecting the individual's trust.
 
+## Product direction
+
+The durable vision is a private voice knowledge layer: speaking is the lightest input, structured notes and to-dos are the durable record, and the individual's chosen agent can read that record with clear provenance and owner control.
+
+The outcome ladder is:
+
+1. **Capture without loss:** a spoken thought remains recoverable until durable save is confirmed.
+2. **Trust the structure:** notes and to-dos preserve meaning, expose their source, and can be corrected.
+3. **Return and reuse:** older knowledge can be found, understood, and acted on after the day it was captured.
+4. **Let an agent read:** the individual's chosen agent can retrieve owner-controlled structured context.
+5. **Permit scoped action:** write-back or task mutation is a future hypothesis, not a shipped promise; it requires explicit scopes, auditability, and a separately selected product direction.
+
+## Differentiation
+
+- Capture is designed to be lighter than typing when stopping is distracting or impractical.
+- The output is structured knowledge with source traceability, not a disposable transcript or unexplained AI summary.
+- The record is durable and portable enough to remain useful beyond one screen or one agent.
+- Agent access is owner-controlled and readable today; broader agent action remains permissioned future work.
+
 ## What Throughline is not
 
 - A meeting recorder or team-transcription product.
@@ -42,4 +61,4 @@ Visual identity, interaction voice, and copy direction are governed by [throughl
 
 Historical specifications and tool-specific workflow documents provide context only; they cannot override this charter, verified current state, architecture, active program briefs, workflow, metrics, or backlog.
 
-`docs/product-learning-loop.md` remains a noncanonical, pre-existing dirty release artifact until the release-provenance slice preserves it. Current workflow, metrics, and backlog truth already live in their canonical files.
+`docs/product-learning-loop.md` remains a noncanonical historical document with an explicit banner. Release provenance is preserved separately; current workflow, metrics, and backlog truth live only in their canonical files.

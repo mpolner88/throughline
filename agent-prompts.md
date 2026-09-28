@@ -1,6 +1,6 @@
 # Agent Prompts
 
-> **Superseded prompts.** This tool-specific document is retained for history. Follow [AGENTS.md](AGENTS.md) and [docs/WORKFLOW.md](docs/WORKFLOW.md) for the current workflow.
+> **Superseded prompts.** This tool-specific document is retained for history. Follow [AGENTS.md](AGENTS.md), [docs/WORKFLOW.md](docs/WORKFLOW.md), and [the Claude Code + Codex tandem workflow](docs/AGENT_TANDEM.md) for the current workflow. The current copy-ready Claude prompt is [docs/prompts/claude-code-ui-design.md](docs/prompts/claude-code-ui-design.md).
 
 Reusable prompts for the Throughline product workflow.
 

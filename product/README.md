@@ -23,6 +23,6 @@ Reports are written to the ignored `.throughline/product-learning/` directory. T
 2. Keep `internal` and `external` cohorts separate as soon as attribution exists. Until then, label mixed data non-decision-grade.
 3. Reconcile event processing counts against durable recordings before using processing outcomes for a decision.
 4. Add or refresh the relevant [backlog item](backlog.json) with a dated, aggregate evidence summary, dependencies, authority, one primary metric, guardrail, and next action.
-5. Work the ordered core loop only through an approved slice and its evidence/release manifest.
+5. Preserve the existing array order unless Mike changes priority; never treat order as automatic authorization. Work an item only through its dependencies, decision gate, approved slice, and evidence/release manifest.
 
 The initial interpretation floors are five newly signed-in users for activation and five mature activated users for retention; decision-grade reporting starts at 20 for each. These are readiness floors, not statistical-significance claims. Definitions, cohort rules, and guardrails are canonical in [metrics.md](metrics.md).

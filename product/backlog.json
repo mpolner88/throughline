@@ -1,7 +1,19 @@
 {
   "version": 2,
-  "updated_at": "2026-08-18",
-  "ordering": "Items are in execution order for the voice-to-durable-knowledge core loop. Each item records dated aggregate evidence, dependencies, authority, and its next action; later items do not imply approval to skip an earlier gate.",
+  "updated_at": "2026-08-29",
+  "ordering": "Items preserve the existing portfolio order; only Mike may change priority. Dependencies name enabling relationships but do not automatically require a dependency to be closed. Array position never authorizes work or waives a selection, design, policy, provider, pricing, limit, onboarding, or release gate.",
+  "portfolio_rules": {
+    "priority_owner": "Mike",
+    "build_entry_owner": "Mike",
+    "candidate_rule": "ready_for_mock and awaiting_mock_approval are not approval to build",
+    "next_action_rule": "Each item names one bounded next action or decision and the authority required for it."
+  },
+  "next_portfolio_decision": {
+    "as_of": "2026-08-29",
+    "owner": "Mike",
+    "status": "unselected",
+    "question": "Whether to select a bounded TL-CAP-001 capture-durability and truthful-save candidate before implementation."
+  },
   "states": [
     "collecting_evidence",
     "ready_for_mock",
@@ -13,20 +25,66 @@
   ],
   "items": [
     {
+      "id": "TL-OPS-002",
+      "title": "Stabilize the operating foundation before acceleration",
+      "type": "operations",
+      "state": "closed",
+      "problem": "Canonical status, current-state, navigation, and authority records drifted enough that agents could select different next actions or gates from the same repository.",
+      "evidence": {
+        "as_of": "2026-08-29",
+        "source": "read-only repository, workflow, current iOS source, and existing evidence audit",
+        "verification": "docs/evidence/2026-08-29-repository-experience-workflow-audit.md",
+        "experience_gate": "Capture durability and truthful saved or agent-readable state outrank another Home redesign; implementation still requires a bounded candidate and Mike's product or design selection where applicable.",
+        "checkout_boundary": "The shared checkout remains heavily dirty; this slice preserves unrelated work and makes no cleanup, staging, deployment, or publication claim."
+      },
+      "funnel_step": "operating foundation",
+      "hypothesis": "A single decision lens plus automated canonical checks will reduce contradictory handoffs and keep the next product slice evidence-backed and authority-safe.",
+      "primary_metric": "repository foundation verifier passes with zero canonical navigation or backlog-integrity errors",
+      "guardrail": "no product behavior or external state change; preserve unrelated dirty work and all privacy boundaries",
+      "approval_required": false,
+      "authority": "Mike selected cleanup before acceleration; agents may complete reversible documentation and validation work. Product/design changes and all named approval-bound classes remain Mike-gated.",
+      "dependencies": [],
+      "next_action": "Closure complete. Use the foundation verifier at future baseline and closeout; Mike's next product decision is whether to select a bounded capture-durability and truthful-save candidate before implementation."
+    },
+    {
+      "id": "TL-DISC-001",
+      "title": "Build the voice-to-agent discovery system",
+      "type": "acquisition",
+      "state": "measuring",
+      "problem": "Qualified agent users cannot yet discover and verify Throughline's complete voice-to-structured-context-to-agent loop through one strong owned surface or a repeatable distribution system.",
+      "evidence": {
+        "as_of": "2026-08-27",
+        "source": "live US App Store listing, live GitHub Pages root, current repository state, and Mike's explicit selection",
+        "public_listing": "Version 1.0.4 is live and describes structured to-dos plus owner-controlled MCP access.",
+        "owned_surface": "The public root and /voice-to-task-list/ page serve the verified discovery release from Pages commit 1770db3.",
+        "internal_build": "Version 1.0.5 build 2026082801 is internal-TestFlight-only and restores the preceding Home presentation after 2026082601 was rejected; installation and the restored journey remain unproved.",
+        "measurement_gap": "Server-side first MCP tool use is not yet measured and must not be reported as a healthy zero.",
+        "verification": "docs/slices/discovery-growth.md"
+      },
+      "funnel_step": "qualified discovery -> first-time download -> auth_succeeded -> recording_processed -> first MCP tool use",
+      "hypothesis": "Verified product proof distributed through agent-native, owned, creator, community, and demand-capture surfaces will increase qualified first-time downloads and downstream voice-to-agent value.",
+      "primary_metric": "first-time App Store downloads attributed to a named discovery source or campaign when Apple exposes the aggregate",
+      "guardrail": "no raw content or identifiers; keep internal and public cohorts separate; do not infer unavailable attribution or first-tool-use data",
+      "approval_required": false,
+      "authority": "Mike selected the reversible owned discovery build and deployment on 2026-08-27. Spend, outreach, account posting, third-party submissions, App Store changes, and live product changes remain exact-action gates.",
+      "dependencies": ["TL-DATA-001"],
+      "next_action": "Establish the first aggregate owned-page and App Store attribution baseline without treating unavailable account-side data as zero; keep outreach, posting, submissions, spend, and provider generation behind exact-action review."
+    },
+    {
       "id": "TL-DATA-001",
       "title": "Establish measurement attribution and reconciliation",
       "type": "measurement",
-      "state": "approved_for_build",
+      "state": "measuring",
       "problem": "The August 17 aggregate baseline mixes internal and external traffic, has uneven event versions and surface coverage, and conflicts with durable-recording counts; it cannot support a decision-grade activation or processing conclusion.",
       "evidence": {
-        "as_of": "2026-08-18",
+        "as_of": "2026-08-22",
         "usage_baseline_as_of": "2026-08-17",
         "evidence_strength": "operator-observed, unretained private aggregate snapshot; repository assertion, not independently reproducible production evidence",
         "signed_in_users": 5,
         "durable_processed_recordings": 12,
-        "reconciliation_status": "events and durable recordings remain unreconciled",
-        "cohort_status": "internal and external attribution is not yet available",
-        "decision_status": "mixed results are non-decision-grade",
+        "reconciliation_status": "production contract is live; first post-cutover report has zero real schema-v2 outcomes and remains collecting baseline",
+        "cohort_status": "five schema-v2 cohorts are implemented; no real eligible post-cutover outcome has arrived",
+        "decision_status": "measurement-ready but outcome evidence remains non-decision-grade",
         "readiness_audit": "distribution and internal-user attribution must be paired with a validated first-party recording link; historical rows remain legacy_unattributed",
         "database_gate": "GitHub Actions run 32107892008 passed the data-less local reconstruction with ordered baseline, attribution, privilege, REST, lint, advisor, and cleanup gates; tracked evidence is docs/evidence/2026-08-17-measurement-database-gate.md",
         "classification_database_gate": "GitHub Actions run 32158920640 passed the corrected pristine full-replay classification followed by the exact baseline 21, attribution 30, privilege 7, REST, lint, advisor, and cleanup gates. The three changed CI file blobs are byte-identical to local commit 4a507131c85a312bb64efe4c13a8ab83cd8b4941. Evidence: docs/evidence/2026-08-18-measurement-classification-database-gate.md",
@@ -37,7 +95,10 @@
         "next_hosted_preview_runner": "The hosted runner at SHA-256 2f01bd829160e2d557df743f3df26323db7474bf7f842c40d3ddde14c68bad2b and test artifact at SHA-256 d54bc6d00ed270a7cd44e748ad8fa1af7261d3ae25f038d77e962d69856bc33e passed 34 of 34 offline checks with no independent-review findings. Its one approved execution reached stable delta-only classification and then stopped at the baseline pgTAP command before either pending migration. The one-use preview approval was consumed.",
         "hosted_preview_management_classification_attempt": "On 2026-08-18, the one approved runner passed provider and direct readiness and produced a stable delta-only child classification through the read-only Management API. The baseline pgTAP child command then exited 1 before either pending migration; raw output was not retained, so assertion failure and hosted CLI or pooler invocation failure remain indistinguishable. Cleanup and an independent post-check confirmed zero previews, unchanged production API v22 and control digest, and the same exact ordered migration pair pending. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-management-classification-attempt.md",
         "hosted_pgtap_diagnostic_ready": "Commit 80216be8fbbca17cf2d3af929d58d8d3de4b7305 contains exactly the bounded pgTAP diagnostic and its contract tests; 29 of 29 repository contract tests passed and independent review returned GO with no findings. A frozen future runner at SHA-256 bfd036fad27535346a6a0ad3500b3ac3283c882ab4998d5517fe68cf49b1ee89 and test artifact at SHA-256 0c21bd5cefbf30aeb6e08e5d44c796fd30ecfc166435f3bb14610f69566718c6 passed 11 of 11 focused offline tests. No external action occurred. The prior hosted failure remains unresolved, production unchanged and blocked, and the prior one-use approval consumed. Evidence: docs/evidence/2026-08-18-measurement-hosted-pgtap-diagnostic-ready.md",
-        "hosted_preview_pgtap_diagnostic_attempt": "On 2026-08-18, the explicitly approved frozen diagnostic runner passed fresh 11-of-11 focused, 29-of-29 repository, and 15-of-15 blob checks; four-of-four provider and four-of-four direct readiness checks; and two identical delta-only snapshots on exactly one data-less preview. The baseline pgTAP child then exited 1 with only the fixed category pgTAP failure category: unknown. Neither pending migration was applied, no function was deployed, cleanup was confirmed, and an independent post-check found zero previews, healthy production, active API v22 at the recorded control, the same ordered migration pair pending, zero remote-only migrations, and no production mutation. The one-use approval is consumed and no retry is authorized. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-pgtap-diagnostic-attempt.md"
+        "hosted_preview_pgtap_diagnostic_attempt": "On 2026-08-18, the explicitly approved frozen diagnostic runner passed fresh 11-of-11 focused, 29-of-29 repository, and 15-of-15 blob checks; four-of-four provider and four-of-four direct readiness checks; and two identical delta-only snapshots on exactly one data-less preview. The baseline pgTAP child then exited 1 with only the fixed category pgTAP failure category: unknown. Neither pending migration was applied, no function was deployed, cleanup was confirmed, and an independent post-check found zero previews, healthy production, active API v22 at the recorded control, the same ordered migration pair pending, zero remote-only migrations, and no production mutation. The one-use approval is consumed and no retry is authorized. Evidence: docs/evidence/2026-08-18-measurement-hosted-preview-pgtap-diagnostic-attempt.md",
+        "structured_contract_ci_gate": "GitHub Actions run 32221015322 at head 61e4a3523248949bc7da96db9c58a5680c3cd95b passed 45 of 45 contract tests and the complete isolated data-less database gate. The pgTAP and read-only structured oracles agreed across the exact 21-, 30-, and 7-assertion pass states and seven bounded adversarial mutations; every restore was verified by both oracles. The only isolated-CI correction was PostgreSQL 17 whitespace and parenthesis rendering around one legacy CHECK expression, while literal bytes remain separately locked. No hosted preview or production action occurred. Evidence: docs/evidence/2026-08-18-measurement-structured-contract-ci.md",
+        "production_rollout": "On 2026-08-22 the exact six-migration production history, sealed API candidate, and aggregate-only synthetic canary completed GO. API v25 is active, the non-API function fingerprint is unchanged, no database rollback occurred, and the canary observed three expected events with zero invalid identities or raw-data leaks. Evidence: docs/evidence/2026-08-22-measurement-production-rollout.md",
+        "post_cutover_baseline": "The first aggregate-only report after cutover found zero real schema-v2 processing outcomes and zero public-baseline-eligible outcomes. Historical activity remains legacy/unattributed; this is collecting baseline, not an outcome claim. Evidence: docs/evidence/2026-08-22-measurement-production-rollout.md"
       },
       "funnel_step": "auth_succeeded -> recording_processed",
       "hypothesis": "Traceable cohort attribution and event-to-durable-recording reconciliation will make activation and processing outcomes interpretable without exposing content or identifiers.",
@@ -46,7 +107,7 @@
       "approval_required": false,
       "authority": "Agents may establish measurement and documentation within the approved slice; no provider, pricing, limit, onboarding, or App Store change is authorized.",
       "dependencies": [],
-      "next_action": "Production rollout remains blocked, the one-use preview approval is consumed, and no retry is authorized. Discuss with Mike and obtain his explicit build decision before replacing the hosted db test --db-url path with a non-billable structured-JSON contract executor over the already-working database-query transport. Before any hosted or production use, cross-check that executor locally against the existing 21-, 30-, and 7-assertion pgTAP contracts on passing and deliberately failing fixtures."
+      "next_action": "Continue collecting real schema-v2 processing outcomes under the five isolated cohorts and report reconciliation readiness without reclassifying historical rows. TL-EVAL-001 may begin."
     },
     {
       "id": "TL-EVAL-001",
@@ -55,11 +116,14 @@
       "state": "approved_for_build",
       "problem": "The extraction evaluator self-copies expected output when predictions are absent, and processed records lack immutable transcription/extraction input, output, model, prompt, and stage lineage.",
       "evidence": {
-        "as_of": "2026-08-18",
-        "source": "current-state and core-quality program inspection",
-        "evaluation_status": "self-copied expected output is not an independent quality result",
-        "lineage_status": "exact model identifiers and prompt hashes are not persisted",
-        "dependency_status": "Runtime work remains blocked on the incomplete TL-DATA-001 hosted rollout."
+        "as_of": "2026-08-28",
+        "source": "local contract, isolation, scorer, disposable PostgreSQL, frozen rollout package, exact production API and migrations, same-project Supabase Storage/Edge deletion target, two hosted deletion canary phases, protected reconciliation schedule, production lineage-write behavior canary, aggregate-only reconciled baseline, local owner iOS/privacy controls, a source-bound content-free owner-canary package, the byte-verified API v30 hosted preflight, private TestFlight feedback intake, and the valid internal-only Home rollback build that preserves the evaluation and privacy source",
+        "evaluation_status": "The legacy golden path is explicitly plumbing-only; sealed private prediction inputs, isolation, service-derived corpus prepare/commit/revalidation, and separate denominators pass locally. The offline real-private materializer is explicitly execution-locked and has not run, so no independent real-audio quality result exists.",
+        "lineage_status": "The production lineage-write behavior canary passed with only the lineage flag enabled: one synthetic transcript produced one succeeded operation, one resolved contract, one succeeded extraction attempt, one immutable 14-key original revision, exact current pointers, zero evaluation rows, complete recording cascade cleanup, and verified flags-off rollback. Secret propagation advanced API to v29 and private-artifact-delete to v3 without source drift. The reconciled baseline contains one reusable inference contract, zero recording-linked lineage/evaluation rows, zero active eligibility, and no behavior controls present.",
+        "dependency_status": "TL-DATA-001, the TL-EVAL flags-off production foundation, the bounded lineage behavior canary, the local owner iOS/privacy control source, the deterministic source-bound owner-canary package, the API v30 hosted preflight, and valid internal-only TestFlight build 2026082801 visible to the one-tester Internal QA group are complete. Installation and owner evaluation/retention execution remain pending. Policy publication, App Store answers, submission, and public release remain separately gated. Real private-audio materialization and independent provider execution remain separately gated. No quality or user-outcome claim exists.",
+        "verification": "docs/evidence/2026-08-28-home-ui-rollback.md",
+        "lineage_verification": "docs/evidence/2026-08-23-evaluation-lineage-behavior-canary.md",
+        "ios_verification": "docs/evidence/2026-08-23-evaluation-ios-privacy-controls.md"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Independent predictions and immutable lineage will make quality, reliability, latency, cost, canary, and rollback gates auditable.",
@@ -68,7 +132,7 @@
       "approval_required": false,
       "authority": "Agents may implement evaluation and lineage evidence within an approved reversible slice; provider or base-model changes remain Mike-approved.",
       "dependencies": ["TL-DATA-001"],
-      "next_action": "Runtime work remains blocked. Begin only after TL-DATA-001 Task 6 has dated verified migration/API rollout evidence and passing canaries; then freeze the shared current-control inference contract without behavior change and build the honest private audio-manifest and independent-prediction path."
+      "next_action": "Install internal build 2026082801 and verify the restored Home presentation plus the corrected rating/privacy-link journey. Then execute the owner canary against byte-verified API v30 in its fixed order: lineage, retention, evaluation writes, owner-only diagnostic grade, owner-only reviewed-fields correction, owner-only exact-preview readiness, withdrawal, and aggregate postflight. The recording user must personally provide every judgment; keep policy publication, App Store submission/public release, real private-audio corpus materialization, and independent provider execution disabled until their separate gates are satisfied."
     },
     {
       "id": "TL-TRNS-001",
@@ -185,19 +249,22 @@
       "state": "ready_for_mock",
       "problem": "Throughline extracts task dates, priorities, context and completion state, but the app does not yet present a task inbox, Today/Upcoming/Completed views, reminders, or clear source-note traceability.",
       "evidence": {
-        "as_of": "2026-08-07",
-        "source": "outside-in product study and current iOS implementation",
+        "as_of": "2026-08-28",
+        "source": "outside-in product study, current iOS implementation, owner review, and fresh internal TestFlight rollback evidence",
         "market_pattern": "Successful task products organize work by time and status; voice-workflow users ask for dated tasks that route into daily systems.",
-        "sample_size_warning": "Competitive and qualitative evidence only; validate with activated users."
+        "sample_size_warning": "The rejected implementation and its rollback were available to one internal tester; internal use is not a public-product outcome and does not establish lift.",
+        "implementation_selection": "On 2026-08-26 Mike selected and design-approved the presentation-first Home slice. On 2026-08-28 owner review rejected that presentation and selected restoration of the preceding Home UI while preserving backend, evaluation, and privacy work. No later Home candidate is approved for build.",
+        "implementation_delivery": "The selected slice reached internal build 2026082601. On 2026-08-28 the source and internal canary were rolled back through build 2026082801, which Apple processed to VALID and which was freshly verified in the one-tester Internal QA group.",
+        "verification": "docs/evidence/2026-08-28-home-ui-rollback.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
       "primary_metric": "new activated users who revisit or complete an extracted task within 7 days",
       "guardrail": "task extraction correction rate and reminder opt-out rate",
       "approval_required": true,
-      "authority": "Mike approval is required for product/design direction before implementation.",
+      "authority": "Mike rejected the delivered presentation and approved restoration of the preceding Home UI; agents completed the bounded internal rollback and documentation. Any later Home candidate still requires Mike's selection and design judgment.",
       "dependencies": ["TL-EXTRACT-001"],
-      "next_action": "Mock Today, Upcoming and Completed views plus the task-to-source-note interaction, then wait for approval before implementation."
+      "next_action": "Install internal build 2026082801 and record whether the preceding Home presentation is restored; a later task-home mock remains unselected and must not reuse the rejected presentation as an active candidate."
     },
     {
       "id": "TL-CAP-001",
@@ -217,7 +284,7 @@
       "approval_required": true,
       "authority": "Mike approval is required for product/design direction before implementation.",
       "dependencies": ["TL-DATA-001"],
-      "next_action": "Mock pending, failed, replay and retry outbox states before implementation."
+      "next_action": "Prepare a bounded mock and specification for pending, failed, replay, retry, and truthful saved or agent-readable states, then present that candidate to Mike for selection before implementation."
     },
     {
       "id": "TL-KNOW-001",
@@ -368,6 +435,27 @@
       "authority": "Mike's explicit approval is required for pricing, recording limits, credits, and implementation.",
       "dependencies": ["TL-EVAL-001", "TL-COST-001", "TL-LEARN-001"],
       "next_action": "Keep credits in evidence/backlog state until evaluation integrity, quality, cost, and abuse controls have decision-grade evidence."
+    },
+    {
+      "id": "TL-PERS-001",
+      "title": "Explore account-private personalization",
+      "type": "personalization",
+      "state": "collecting_evidence",
+      "problem": "The core-quality program names personalization as a candidate slice, but the product has no canonical evidence for which preferences should be learned, how they should be consented to, or how they should be inspected and removed.",
+      "evidence": {
+        "as_of": "2026-08-17",
+        "source": "core quality and learning program candidate inventory",
+        "coverage_gap": "no selected personalization job, typed preference contract, consent model, user controls, or outcome evidence",
+        "portfolio_status": "evidence-only and unselected; this item closes program-to-backlog inventory drift without setting priority"
+      },
+      "funnel_step": "user correction or preference -> account-private candidate -> inspectable personalized output",
+      "hypothesis": "Typed, inspectable, account-private preferences may improve recurring structure without weakening source fidelity or user control.",
+      "primary_metric": "decision-grade evidence for a recurring personalization job and its correction rate",
+      "guardrail": "no raw content or identifiers in tracked artifacts; no hidden profile, cross-user learning, or unconsented promotion",
+      "approval_required": true,
+      "authority": "Agents may gather privacy-safe evidence and draft a candidate contract. Mike's explicit approval is required for product direction and any data-use-policy or live personalization change.",
+      "dependencies": ["TL-EVAL-001", "TL-LEARN-001"],
+      "next_action": "Keep personalization unselected until direct recurring-user evidence identifies one bounded preference job; then draft its consent, inspection, correction, and removal contract for Mike's review."
     }
   ]
 }
