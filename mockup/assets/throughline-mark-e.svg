@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 96" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline mark E</title>
+  <desc id="desc">A wider lens-like continuous mark optimized for lockups.</desc>
+  <path
+    d="M16 48 L66 48 C66 28 84 16 110 16 C136 16 154 28 154 48 C154 68 136 80 110 80 C84 80 66 68 66 48 L176 48"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

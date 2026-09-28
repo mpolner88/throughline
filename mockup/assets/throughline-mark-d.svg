@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 96" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline mark D</title>
+  <desc id="desc">A hand-threaded continuous loop with a slightly organic memory shape.</desc>
+  <path
+    d="M15 47 L73 47 C76 29 91 17 109 18 C127 19 140 33 140 50 C140 68 126 80 108 80 C90 80 77 66 78 48 L177 48"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

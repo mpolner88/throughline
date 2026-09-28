@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 96" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline mark F</title>
+  <desc id="desc">A compact continuous circle with shorter tails for small icon sizes.</desc>
+  <path
+    d="M24 48 L82 48 C82 34 94 22 108 22 C122 22 134 34 134 48 C134 62 122 74 108 74 C94 74 82 62 82 48 L168 48"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="12"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

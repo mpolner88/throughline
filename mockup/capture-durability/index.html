@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capture durability — design brief and three candidates · Throughline</title>
+<style>
+  :root {
+    --blue: #2563EB; --bg: #FFFFFF; --ink: #111114; --sec: #6E6E73;
+    --border: rgba(17,17,20,0.14); --page: #F7F7F8;
+  }
+  [data-theme="dark"] {
+    --blue: #3B82F6; --bg: #0E0E10; --ink: #F4F4F5; --sec: #9A9AA1;
+    --border: rgba(244,244,245,0.16); --page: #050506;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink); padding: 56px 40px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sec); }
+  .eyebrow.blue { color: var(--blue); }
+  h1 { font-size: 38px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.15;
+       border-bottom: 3px solid var(--blue); padding-bottom: 10px; display: inline-block; align-self: flex-start; }
+  h2 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  p, li { font-size: 15px; line-height: 1.6; color: var(--sec); }
+  strong { color: var(--ink); font-weight: 500; }
+  ul { padding-left: 19px; display: flex; flex-direction: column; gap: 6px; }
+  section { display: flex; flex-direction: column; gap: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; vertical-align: top; line-height: 1.5; color: var(--sec); }
+  th { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--border) 22%, transparent); }
+  td strong { color: var(--ink); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .cand { border: 0.7px solid var(--border); border-radius: 8px; padding: 20px; background: var(--bg);
+          display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit; }
+  .cand:hover { border-color: var(--blue); }
+  .cand .name { font-size: 19px; font-weight: 500; color: var(--ink); }
+  .cand .open { color: var(--blue); font-size: 13px; font-weight: 500; margin-top: 6px; }
+  .status-banner { border: 0.7px solid var(--blue); border-radius: 8px; padding: 18px 20px; background: color-mix(in srgb, var(--blue) 6%, var(--bg)); }
+  .status-banner p { color: var(--ink); }
+  .theme-toggle { position: fixed; top: 20px; right: 24px; font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .prov td:first-child { white-space: nowrap; }
+</style>
+<script>if (new URLSearchParams(location.search).get("theme") === "dark") document.documentElement.dataset.theme = "dark";</script>
+</head>
+<body>
+<button class="theme-toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? '' : 'dark'">Light / Dark</button>
+<main>
+  <header style="display:flex; flex-direction:column; gap:14px;">
+    <div class="eyebrow blue">TL-CAP-001 · capture durability and truthful save · Phase A · 2026-08-30 · design-only, no production change</div>
+    <h1>Make every recording recoverable</h1>
+    <p><strong>One user problem.</strong> A person speaks a thought they could not stop to type — then the app can silently lose it. The recording is created in temporary OS storage; if the upload fails, Home shows a small transient error with no way to hear the capture again, no retry, and no record that it ever existed. Even when saving works, the app never says what is actually true: whether the thought is on the phone, in the account, structured, or readable by their agent — and the recorder stays locked for up to ~40 seconds while it finds out.</p>
+    <p>This is rung one of the product’s outcome ladder — <strong>capture without loss</strong> — and the canonical portfolio decision Mike named next. The promise “a spoken thought remains recoverable until durable save is confirmed” is currently made by the marketing and broken by the failure path.</p>
+  </header>
+
+  <section>
+    <h2>Current-flow baseline and provenance</h2>
+    <table class="prov">
+      <tr><th>Evidence</th><th>What it establishes</th></tr>
+      <tr><td><strong>Source inspection</strong> · 2026-08-30</td><td>Recording writes to <code>FileManager.temporaryDirectory</code> (AudioRecorder.swift:44). On upload failure the file URL is dropped; only <code>uploadError</code> text renders above the recorder (HomeView.swift:185, :437). The record button is disabled through upload and the full processing poll (HomeView.swift:203). Stalled server states (<code>needs_transcript</code>…) render an indefinite spinner with no action (ThroughlineNote.swift:252, HomeView ProcessingStatusRow). Upload is a one-shot POST with no idempotency key (UploadClient.swift:666). Nothing in the UI states agent readability.</td></tr>
+      <tr><td><strong>Simulator</strong> · 2026-08-29</td><td>Design-audit captures of populated Home and the recorder (docs/evidence/assets/2026-08-29-design-audit/). Establishes the accepted visual baseline these mocks extend.</td></tr>
+      <tr><td><strong>Repository audit</strong> · 2026-08-29</td><td>P0 experience risk: “a failed normal upload can lose the thought” (docs/evidence/2026-08-29-repository-experience-workflow-audit.md).</td></tr>
+      <tr><td><strong>Gaps</strong></td><td>No physical-device or TestFlight reproduction of a real upload failure; real failure frequency unknown (recording-failure guardrail is still collecting baseline). Internal build 2026082801’s restored Home journey remains unverified on device.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>The shared truthful lifecycle (all three candidates)</h2>
+    <p>Every candidate uses one vocabulary — a <strong>capture</strong> (fragile) becomes a <strong>note in your plan</strong> (durable) — and one state machine:</p>
+    <ul>
+      <li><strong>On your phone</strong> — at stop, audio moves to a durable app-owned outbox before anything else. Survives quits, crashes, and offline.</li>
+      <li><strong>Saving to your account…</strong> → <strong>Saved to your account</strong> — the audio is server-durable; the border/dot/row says so.</li>
+      <li><strong>Structuring your note…</strong> → <strong>In today’s plan</strong> · <strong>readable by your agent</strong> (only claimed when MCP is connected; otherwise “ready for your agent”).</li>
+      <li><strong>Waiting for connection</strong> — offline is a calm queue with an automatic resume, not an error.</li>
+      <li><strong>Couldn’t save. Still on your phone.</strong> — recovery offers <strong>Save again</strong> (same capture ID, never a duplicate), <strong>▶ Play</strong>, and confirmed <strong>Discard</strong>.</li>
+      <li><strong>Structuring didn’t finish. Your audio is saved.</strong> — honest stall with one re-request action, replacing today’s endless spinner.</li>
+      <li>The recorder frees the moment audio is kept on the phone — a second thought never waits for the first.</li>
+    </ul>
+    <p>Shared guardrails: no new gestures anywhere (every action is a visible 44&nbsp;pt button); semantic Dynamic Type for all new text; one VoiceOver announcement per state change; Reduce Motion variants for every transition; audio kept on the phone until account-durable, with a storage-cap policy question flagged for the handoff.</p>
+  </section>
+
+  <section>
+    <h2>Three candidates</h2>
+    <div class="cards">
+      <a class="cand" href="candidate-a.html">
+        <div class="eyebrow blue">Candidate A</div>
+        <div class="name">Born in place</div>
+        <p>The capture appears instantly at the top of the notes area — in the exact spot the finished note will occupy — and ages into it. Dashed hairline = not yet safe; solid = durable. Recovery happens on the card itself.</p>
+        <div class="open">Open mock ›</div>
+      </a>
+      <a class="cand" href="candidate-b.html">
+        <div class="eyebrow blue">Candidate B</div>
+        <div class="name">The recorder holds it</div>
+        <p>Nothing leaves the recorder until it’s safe. Captures dock in a one-line tray above the record button and only move up into Today’s plan as finished notes. The plan never contains anything fragile.</p>
+        <div class="open">Open mock ›</div>
+      </a>
+      <a class="cand" href="candidate-c.html">
+        <div class="eyebrow blue">Candidate C</div>
+        <div class="name">The save receipt</div>
+        <p>A quiet sheet rises from the recorder and draws the journey as a literal throughline — dot by dot: on your phone → saved → in your plan → agent-readable. Dismiss it and the journey continues; failure waits for you.</p>
+        <div class="open">Open mock ›</div>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Honest comparison</h2>
+    <table>
+      <tr><th></th><th>A · Born in place</th><th>B · The recorder holds it</th><th>C · The save receipt</th></tr>
+      <tr><td><strong>Core model</strong></td><td>Lifecycle lives in the list, where the note will be</td><td>Outbox docked to the recorder; list stays purely durable</td><td>Explicit journey surface; ambient one-line row when dismissed</td></tr>
+      <tr><td><strong>Glanceability while driving</strong></td><td>Good — top of list, but above the fold only if scrolled up</td><td>Best — fixed at thumb height next to the recorder</td><td>Good — sheet is unmissable, but it is one more thing on screen</td></tr>
+      <tr><td><strong>Failure legibility</strong></td><td>Strong; failed card sits among notes, so distinction rests on the dashed border</td><td>Strongest — failure is pinned where the thumb is and cannot mix with notes</td><td>Strongest narrative — the thread shows exactly which promise broke</td></tr>
+      <tr><td><strong>Truth of “Today’s plan”</strong></td><td>Plan temporarily contains a not-yet-durable item (dashed)</td><td>Plan only ever contains durable notes</td><td>Plan only ever contains durable notes</td></tr>
+      <tr><td><strong>Shows the transformation</strong> (brand №2)</td><td>Implicit — card morphs in place</td><td>Implicit — row “arrives” in the plan</td><td>Explicit — the product’s promise drawn as its own mark</td></tr>
+      <tr><td><strong>New chrome added</strong></td><td>None (one item class + truth line)</td><td>A tray region above the recorder</td><td>A sheet + a status row</td></tr>
+      <tr><td><strong>Ceremony added to capture</strong></td><td>None</td><td>None</td><td>A sheet after every stop (auto-settles; dismissible)</td></tr>
+      <tr><td><strong>One-role risk</strong></td><td>Low; capture and note are the same item aging</td><td>Low-moderate; a structuring capture is in the tray while its subject is about to appear above</td><td>Low; receipt is about the journey, the note is the destination</td></tr>
+      <tr><td><strong>Home-hierarchy risk vs. rejected Home history</strong></td><td>Adds a transient item class to the list Mike just restored</td><td>Leaves the restored list alone; grows the bottom area</td><td>Leaves the restored list alone; adds a modal moment</td></tr>
+      <tr><td><strong>Implementation surface</strong></td><td>Smallest</td><td>Small-medium</td><td>Medium (sheet, playback, settle timing)</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Canonical fit</h2>
+    <ul>
+      <li><strong>Backlog:</strong> TL-CAP-001, state <code>ready_for_mock</code>; this is the mock its next action names. Slice phase after this review: <code>candidate</code>.</li>
+      <li><strong>Primary metric:</strong> share of <code>recording_started</code> sessions that reach <code>recording_uploaded</code>.</li>
+      <li><strong>Guardrails:</strong> local storage growth (outbox cap policy) and duplicate-upload rate (idempotent retry is a hard invariant in all three).</li>
+      <li><strong>Principles applied:</strong> voice before interface; show the transformation; preserve the user’s words (replay); quiet hierarchy; one role per item; blue means state, not decoration; native confirmations; gestures additive (here: zero new gestures); accessible calm.</li>
+      <li><strong>Non-goals:</strong> no Home-hierarchy redesign (the rejected 2026082601 presentation is not reused and the restored Home is preserved); no task-home work (TL-TASK-001); no onboarding, provider, pricing, recording-limit, policy, or release change; no backend implementation in this phase.</li>
+      <li><strong>Authority:</strong> Mike selects; this phase changes design mocks only. Implementation requires the Phase B handoff and remains Codex’s.</li>
+      <li><strong>Unresolved facts:</strong> real upload-failure frequency (guardrail still collecting); server-side idempotency and re-process endpoints do not exist yet; internal build 2026082801’s journey unverified on device.</li>
+    </ul>
+  </section>
+
+  <section class="status-banner">
+    <div class="eyebrow blue" style="margin-bottom:8px;">tandem stage · awaiting_mike_selection</div>
+    <p><strong>Recommendation: Candidate B — The recorder holds it.</strong> It gives the durability promise a physical logic (“nothing leaves the recorder until it’s safe”), keeps the just-restored Home list completely free of transient state, puts failure recovery at thumb height where a driver can see it, and adds the least ceremony per capture. Candidate C is the strongest brand expression and would make the best onboarding-adjacent moment, but it adds a sheet to every capture; Candidate A is the smallest change but reintroduces transient content into the exact list Mike just had rolled back.</p>
+    <p style="margin-top:8px;">Selection is Mike’s: <strong>A</strong>, <strong>B</strong>, <strong>C</strong>, a hybrid (for example B’s tray with C’s receipt available on tap), or reject all three. No production code changes until then.</p>
+  </section>
+</main>
+</body>
+</html>

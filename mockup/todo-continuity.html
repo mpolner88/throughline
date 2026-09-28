@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Throughline To-Do Continuity Mockup</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --blue: #2563eb;
+        --blue-soft: #eff6ff;
+        --ink: #111111;
+        --muted: #6b7280;
+        --faint: #f6f7f9;
+        --line: rgba(17, 17, 17, 0.14);
+        --green: #0f766e;
+        --amber: #92400e;
+        --surface: #ffffff;
+        --radius: 8px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 247, 249, 0.96)),
+          repeating-linear-gradient(90deg, rgba(17, 17, 17, 0.035) 0 1px, transparent 1px 92px);
+        color: var(--ink);
+      }
+
+      button,
+      summary {
+        font: inherit;
+      }
+
+      .frame {
+        width: min(100%, 430px);
+        min-height: 100vh;
+        padding: 18px;
+        display: grid;
+        place-items: center;
+      }
+
+      .phone {
+        width: min(100%, 390px);
+        height: min(844px, calc(100vh - 36px));
+        min-height: 720px;
+        overflow: hidden;
+        background: var(--surface);
+        border: 0.5px solid var(--line);
+        border-radius: 36px;
+        box-shadow: 0 24px 80px rgba(17, 17, 17, 0.16);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .status {
+        height: 42px;
+        padding: 14px 28px 0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .topbar {
+        height: 54px;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .wordmark {
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .wordmark::after {
+        content: "";
+        display: block;
+        width: 74px;
+        height: 4px;
+        margin-top: 3px;
+        border-radius: 999px;
+        background: var(--blue);
+      }
+
+      .settings {
+        width: 34px;
+        height: 34px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        display: grid;
+        place-items: center;
+      }
+
+      .settings span,
+      .settings::before,
+      .settings::after {
+        content: "";
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .settings {
+        gap: 3px;
+      }
+
+      .content {
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding: 20px 24px 120px;
+      }
+
+      .content::-webkit-scrollbar {
+        display: none;
+      }
+
+      .date-block {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 22px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 31px;
+        line-height: 1.02;
+        font-weight: 700;
+      }
+
+      h2 {
+        font-size: 21px;
+        line-height: 1.15;
+        font-weight: 700;
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .section {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .count {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .todo-stack {
+        display: grid;
+        gap: 9px;
+      }
+
+      .todo-row {
+        position: relative;
+        min-height: 58px;
+        display: grid;
+        grid-template-columns: 26px 1fr;
+        gap: 10px;
+        align-items: start;
+        padding: 10px 11px;
+        border: 0.7px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+
+      .todo-row::before {
+        content: "Done";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 78px;
+        border-radius: var(--radius) 0 0 var(--radius);
+        background: var(--blue);
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        font-weight: 700;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .todo-row.swiped {
+        overflow: hidden;
+        padding-left: 88px;
+      }
+
+      .todo-row.swiped::before {
+        opacity: 1;
+      }
+
+      .circle {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 1.5px solid var(--muted);
+        margin-top: 1px;
+      }
+
+      .todo-copy {
+        display: grid;
+        gap: 4px;
+      }
+
+      .todo-text {
+        font-size: 15px;
+        font-weight: 650;
+        line-height: 1.25;
+      }
+
+      .todo-source {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .fresh {
+        border-color: rgba(37, 99, 235, 0.42);
+        background: linear-gradient(180deg, #ffffff, #f8fbff);
+      }
+
+      .fresh .circle {
+        border-color: var(--blue);
+      }
+
+      .source-pill {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        height: 20px;
+        padding: 0 7px;
+        border-radius: 999px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      details {
+        border: 0.7px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+
+      summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 12px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::after {
+        content: "+";
+        color: var(--blue);
+        font-weight: 800;
+      }
+
+      details[open] summary::after {
+        content: "-";
+      }
+
+      .details-title {
+        display: grid;
+        gap: 3px;
+      }
+
+      .details-title strong {
+        font-size: 14px;
+      }
+
+      .details-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .details-body {
+        display: grid;
+        gap: 9px;
+        padding: 0 10px 10px;
+      }
+
+      .completed .todo-text {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+
+      .completed .circle {
+        border-color: var(--blue);
+        background:
+          linear-gradient(135deg, transparent 40%, #ffffff 40% 52%, transparent 52%),
+          var(--blue);
+      }
+
+      .note-card {
+        display: grid;
+        gap: 11px;
+        padding: 16px;
+        border: 0.7px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+      }
+
+      .note-card h3 {
+        font-size: 17px;
+        line-height: 1.2;
+      }
+
+      .important-list {
+        display: grid;
+        gap: 7px;
+      }
+
+      .important-item {
+        display: grid;
+        grid-template-columns: 7px 1fr;
+        gap: 8px;
+        color: rgba(17, 17, 17, 0.84);
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .important-item::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        margin-top: 7px;
+        border-radius: 50%;
+        background: var(--blue);
+      }
+
+      .bottom-recorder {
+        margin-top: auto;
+        min-height: 104px;
+        border-top: 0.7px solid var(--line);
+        background: rgba(255, 255, 255, 0.94);
+        padding: 14px 24px 20px;
+      }
+
+      .record-box {
+        min-height: 70px;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #ffffff;
+        display: grid;
+        grid-template-columns: 1fr 68px;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .record-copy {
+        padding-left: 18px;
+        display: grid;
+        gap: 3px;
+      }
+
+      .record-copy strong {
+        font-size: 15px;
+      }
+
+      .record-copy span {
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 12px;
+      }
+
+      .record-mark {
+        height: 70px;
+        display: grid;
+        place-items: center;
+        border-left: 1px solid rgba(255, 255, 255, 0.28);
+      }
+
+      .record-mark::before,
+      .record-mark::after {
+        content: "";
+        grid-area: 1 / 1;
+        width: 34px;
+        height: 3px;
+        background: #ffffff;
+      }
+
+      .record-mark::after {
+        transform: rotate(90deg);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="frame" aria-label="Throughline to-do continuity mockup">
+      <section class="phone">
+        <div class="status">
+          <span>9:41</span>
+          <span>5g 82%</span>
+        </div>
+
+        <header class="topbar">
+          <div class="wordmark">throughline</div>
+          <button class="settings" type="button" aria-label="Settings"><span></span></button>
+        </header>
+
+        <div class="content">
+          <section class="date-block">
+            <p class="eyebrow">today</p>
+            <h1>voice notes became a working list</h1>
+            <p class="subtle">Each recording adds to the same open list. New items stay on top; older open items stay below.</p>
+          </section>
+
+          <section class="section" aria-label="Open to-do list">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">to-do list</p>
+                <h2>Open</h2>
+              </div>
+              <span class="count">7 open</span>
+            </div>
+
+            <div class="todo-stack">
+              <article class="todo-row fresh swiped">
+                <div class="circle"></div>
+                <div class="todo-copy">
+                  <span class="source-pill">new from latest note</span>
+                  <p class="todo-text">Send the revised onboarding notes to App Review.</p>
+                  <p class="todo-source">App Store review follow-up - 9:32 AM</p>
+                </div>
+              </article>
+
+              <article class="todo-row fresh">
+                <div class="circle"></div>
+                <div class="todo-copy">
+                  <span class="source-pill">new from latest note</span>
+                  <p class="todo-text">Check whether the MCP token copy still matches the shipped app.</p>
+                  <p class="todo-source">App Store review follow-up - 9:32 AM</p>
+                </div>
+              </article>
+
+              <article class="todo-row">
+                <div class="circle"></div>
+                <div class="todo-copy">
+                  <p class="todo-text">Record a short agent demo after the build lands.</p>
+                  <p class="todo-source">Launch video ideas - yesterday 5:18 PM</p>
+                </div>
+              </article>
+            </div>
+
+            <details open>
+              <summary>
+                <span class="details-title">
+                  <strong>Earlier open to-dos</strong>
+                  <span>4 older items stay available here</span>
+                </span>
+              </summary>
+              <div class="details-body">
+                <article class="todo-row">
+                  <div class="circle"></div>
+                  <div class="todo-copy">
+                    <p class="todo-text">Draft the first support article for reviewer login issues.</p>
+                    <p class="todo-source">Support prep - yesterday 2:04 PM</p>
+                  </div>
+                </article>
+
+                <article class="todo-row">
+                  <div class="circle"></div>
+                  <div class="todo-copy">
+                    <p class="todo-text">Make the first screenshot lead with voice to agent.</p>
+                    <p class="todo-source">Screenshot pass - Jun 5</p>
+                  </div>
+                </article>
+
+                <article class="todo-row">
+                  <div class="circle"></div>
+                  <div class="todo-copy">
+                    <p class="todo-text">Review extraction quality for tasks versus memories.</p>
+                    <p class="todo-source">Product eval - Jun 5</p>
+                  </div>
+                </article>
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                <span class="details-title">
+                  <strong>Completed</strong>
+                  <span>3 done items hidden until needed</span>
+                </span>
+              </summary>
+              <div class="details-body completed">
+                <article class="todo-row">
+                  <div class="circle"></div>
+                  <div class="todo-copy">
+                    <p class="todo-text">Rotate the App Review password.</p>
+                    <p class="todo-source">App Review auth - today 6:55 PM</p>
+                  </div>
+                </article>
+              </div>
+            </details>
+          </section>
+
+          <section class="section" aria-label="Latest note">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">latest memory</p>
+                <h2>App Store review follow-up</h2>
+              </div>
+            </div>
+
+            <article class="note-card">
+              <h3>Keep App Review moving without losing product tasks.</h3>
+              <p class="subtle">This note still reads like a memory. Its action items are copied into the persistent list above.</p>
+              <div class="important-list">
+                <p class="important-item">Reviewer should use sign in, not create.</p>
+                <p class="important-item">New extracted tasks appear at the top of the open list.</p>
+                <p class="important-item">Older tasks remain available inside earlier open to-dos.</p>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <footer class="bottom-recorder">
+          <div class="record-box">
+            <div class="record-copy">
+              <strong>record another note</strong>
+              <span>new to-dos will be added on top</span>
+            </div>
+            <div class="record-mark" aria-hidden="true"></div>
+          </div>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>

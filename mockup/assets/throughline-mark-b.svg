@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 96" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline mark B</title>
+  <desc id="desc">A fuller continuous circle with shorter balanced entry and exit lines.</desc>
+  <path
+    d="M14 48 L74 48 C74 29.2 89.2 14 108 14 C126.8 14 142 29.2 142 48 C142 66.8 126.8 82 108 82 C89.2 82 74 66.8 74 48 L178 48"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
