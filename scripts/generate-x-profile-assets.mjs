@@ -1,0 +1,118 @@
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const root = process.cwd();
+const outputDir = path.join(root, "marketing", "assets", "x-profile");
+const sourcePath = path.join(outputDir, "throughline-x-header.html");
+const outputPath = path.join(outputDir, "throughline-x-header-1500x500.png");
+const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+
+fs.mkdirSync(outputDir, { recursive: true });
+fs.writeFileSync(sourcePath, html(), "utf8");
+
+if (!fs.existsSync(chromePath)) {
+  throw new Error(`Google Chrome not found at ${chromePath}`);
+}
+
+const result = spawnSync(chromePath, [
+  "--headless=new",
+  "--disable-gpu",
+  "--hide-scrollbars",
+  "--no-first-run",
+  "--force-device-scale-factor=1",
+  "--virtual-time-budget=1000",
+  "--window-size=1500,500",
+  `--screenshot=${outputPath}`,
+  pathToFileURL(sourcePath).href,
+], {
+  cwd: root,
+  encoding: "utf8",
+  stdio: "pipe",
+});
+
+if (result.status !== 0) {
+  throw new Error(`Chrome screenshot failed\n${result.stderr || result.stdout}`);
+}
+
+console.log(`wrote ${path.relative(root, outputPath)}`);
+
+function html() {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=1500, initial-scale=1">
+    <title>Throughline X header</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { width: 1500px; height: 500px; margin: 0; overflow: hidden; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+        color: #090a0c;
+        background:
+          radial-gradient(circle at 90% 10%, rgba(37,99,235,.17), transparent 32%),
+          linear-gradient(135deg, #ffffff 0%, #f5f7fb 100%);
+      }
+      .frame {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1.15fr .85fr;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        padding: 68px 92px;
+      }
+      .brand { display: inline-grid; gap: 4px; margin-bottom: 36px; }
+      .wordmark { font-size: 34px; font-weight: 620; letter-spacing: -.8px; }
+      .underline { width: 156px; height: 7px; border-radius: 999px; background: #2563eb; }
+      h1 { margin: 0; font-size: 68px; line-height: 1; font-weight: 620; letter-spacing: -3.1px; }
+      .sub { margin-top: 22px; color: #656b75; font-size: 26px; line-height: 1.25; }
+      .flow { display: grid; gap: 15px; justify-self: end; width: 470px; }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-height: 86px;
+        padding: 18px 22px;
+        border: 1px solid #dfe3ea;
+        border-radius: 21px;
+        background: rgba(255,255,255,.92);
+        box-shadow: 0 12px 34px rgba(15,23,42,.07);
+        font-size: 23px;
+        font-weight: 520;
+      }
+      .step strong {
+        display: grid;
+        place-items: center;
+        flex: 0 0 44px;
+        height: 44px;
+        border-radius: 14px;
+        color: #fff;
+        background: #2563eb;
+        font-size: 21px;
+      }
+      .arrow { justify-self: center; width: 2px; height: 12px; background: #a8b0bd; }
+    </style>
+  </head>
+  <body>
+    <main class="frame">
+      <section>
+        <div class="brand">
+          <div class="wordmark">throughline</div>
+          <div class="underline"></div>
+        </div>
+        <h1>Speak it.<br>Get a plan.</h1>
+        <div class="sub">Voice notes → structured to-dos → agent-readable memory</div>
+      </section>
+      <section class="flow" aria-label="Throughline workflow">
+        <div class="step"><strong>1</strong> Speak naturally</div>
+        <div class="step"><strong>2</strong> Get structured next steps</div>
+        <div class="step"><strong>3</strong> Let your agent read them via MCP</div>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+

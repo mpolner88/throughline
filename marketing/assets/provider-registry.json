@@ -1,0 +1,56 @@
+{
+  "preferred_order": [
+    "real_app_capture",
+    "local_composition",
+    "higgsfield_mcp",
+    "gemini_image_api",
+    "firefly_api",
+    "vertex_veo_api",
+    "kling_api"
+  ],
+  "providers": {
+    "real_app_capture": {
+      "type": "local",
+      "best_for": ["core demo", "product proof", "trust-building screenshots"],
+      "risk": "low",
+      "setup_status": "available"
+    },
+    "local_composition": {
+      "type": "local",
+      "best_for": ["diagrams", "screenshot triptychs", "motion explainers"],
+      "risk": "low",
+      "setup_status": "available"
+    },
+    "higgsfield_mcp": {
+      "type": "mcp",
+      "server_url": "https://mcp.higgsfield.ai/mcp",
+      "best_for": ["short social video", "atmospheric clips", "multi-model creative exploration"],
+      "risk": "medium",
+      "setup_status": "authenticated_tools_require_fresh_session_verification"
+    },
+    "gemini_image_api": {
+      "type": "api",
+      "best_for": ["static images", "social cards", "image editing", "prompt-to-image variants"],
+      "risk": "medium",
+      "setup_status": "not_configured"
+    },
+    "firefly_api": {
+      "type": "api",
+      "best_for": ["brand-safe imagery", "composites", "upscaling", "custom model workflows"],
+      "risk": "medium",
+      "setup_status": "not_configured"
+    },
+    "vertex_veo_api": {
+      "type": "api",
+      "best_for": ["scriptable text-to-video", "scriptable image-to-video", "repeatable video generation"],
+      "risk": "medium_high",
+      "setup_status": "not_configured"
+    },
+    "kling_api": {
+      "type": "api",
+      "best_for": ["short cinematic video", "image-to-video", "direct async generation"],
+      "risk": "medium",
+      "setup_status": "not_configured"
+    }
+  }
+}
