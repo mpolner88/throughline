@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "updated_at": "2026-08-29",
-  "ordering": "Items preserve the existing portfolio order; only Mike may change priority. Dependencies name enabling relationships but do not automatically require a dependency to be closed. Array position never authorizes work or waives a selection, design, policy, provider, pricing, limit, onboarding, or release gate.",
+  "updated_at": "2026-09-28",
+  "ordering": "Mike selected capture recovery (TL-CAP-001) before the running list (TL-TASK-001) on 2026-09-28; other portfolio positions are preserved. Dependencies name enabling relationships but do not automatically require a dependency to be closed. Array position never authorizes work or waives a selection, design, policy, provider, pricing, limit, onboarding, or release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
     "build_entry_owner": "Mike",
@@ -9,10 +9,17 @@
     "next_action_rule": "Each item names one bounded next action or decision and the authority required for it."
   },
   "next_portfolio_decision": {
-    "as_of": "2026-08-29",
+    "as_of": "2026-09-28",
     "owner": "Mike",
-    "status": "unselected",
-    "question": "Whether to select a bounded TL-CAP-001 capture-durability and truthful-save candidate before implementation."
+    "status": "selected",
+    "question": "Capture recovery first, then the running list; Candidate B, The recorder holds it, is selected. After the separate Codex feasibility review of the committed handoff, Mike decides build entry for the bounded capture slice.",
+    "selected_order": [
+      "TL-CAP-001",
+      "TL-TASK-001"
+    ],
+    "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
+    "handoff_sha256": "0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c",
+    "next_gate": "Separate Codex feasibility review against the committed reconciliation revision; handoff remains selected_pending_codex_feasibility_review."
   },
   "states": [
     "collecting_evidence",
@@ -44,7 +51,7 @@
       "approval_required": false,
       "authority": "Mike selected cleanup before acceleration; agents may complete reversible documentation and validation work. Product/design changes and all named approval-bound classes remain Mike-gated.",
       "dependencies": [],
-      "next_action": "Closure complete. Use the foundation verifier at future baseline and closeout; Mike's next product decision is whether to select a bounded capture-durability and truthful-save candidate before implementation."
+      "next_action": "Closure remains complete. Keep the foundation verifier at baseline and closeout; the next product gate is the separate Codex feasibility review of the selected capture handoff against the committed reconciliation revision."
     },
     {
       "id": "TL-DISC-001",
@@ -243,6 +250,31 @@
       "next_action": "Choose a Throughline-owned domain, configure a Supabase custom auth domain such as auth.throughline.example, and update Google and Apple callback registrations before changing the app base URL."
     },
     {
+      "id": "TL-CAP-001",
+      "title": "Make every recording recoverable",
+      "type": "reliability",
+      "state": "awaiting_mock_approval",
+      "problem": "Recordings are created in temporary storage and the current app has no durable outbox or retry control after an upload failure.",
+      "evidence": {
+        "as_of": "2026-09-28",
+        "source": "Earlier AudioRecorder/upload inspection plus Mike’s September 28 product-order and Candidate B selection; no new runtime feasibility verdict.",
+        "implementation_observation": "A failed upload surfaces an error, but the user cannot replay or retry the captured file from the UI.",
+        "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
+        "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
+        "handoff_sha256": "0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c",
+        "tandem_stage": "selected_pending_codex_feasibility_review",
+        "verification": "docs/evidence/2026-09-28-reconciliation-plan.md"
+      },
+      "funnel_step": "recording_started -> recording_uploaded",
+      "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
+      "primary_metric": "recording_started sessions that reach recording_uploaded",
+      "guardrail": "local storage growth and duplicate upload rate",
+      "approval_required": true,
+      "authority": "Mike selected the capture tray and capture-first priority. The draft handoff is not ready and is not approved for build; Codex feasibility is a separate task after Phase 2, and Claude owns any handoff edit.",
+      "dependencies": ["TL-DATA-001"],
+      "next_action": "Codex reviews the immutable selected handoff for feasibility against the committed reconciliation revision in a separate task; record findings without editing Claude’s handoff or implementing a feature."
+    },
+    {
       "id": "TL-TASK-001",
       "title": "Turn extracted todos into a dependable task home",
       "type": "retention",
@@ -255,36 +287,20 @@
         "sample_size_warning": "The rejected implementation and its rollback were available to one internal tester; internal use is not a public-product outcome and does not establish lift.",
         "implementation_selection": "On 2026-08-26 Mike selected and design-approved the presentation-first Home slice. On 2026-08-28 owner review rejected that presentation and selected restoration of the preceding Home UI while preserving backend, evaluation, and privacy work. No later Home candidate is approved for build.",
         "implementation_delivery": "The selected slice reached internal build 2026082601. On 2026-08-28 the source and internal canary were rolled back through build 2026082801, which Apple processed to VALID and which was freshly verified in the one-tester Internal QA group.",
-        "verification": "docs/evidence/2026-08-28-home-ui-rollback.md"
+        "verification": "docs/evidence/2026-08-28-home-ui-rollback.md",
+        "reconciliation_as_of": "2026-09-28",
+        "product_order": "Mike selected the running list after capture recovery; PR #2 is a deferred implementation source, not a compatible replacement for the August foundation.",
+        "reconciliation_verification": "docs/evidence/2026-09-28-reconciliation-plan.md",
+        "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
       "primary_metric": "new activated users who revisit or complete an extracted task within 7 days",
       "guardrail": "task extraction correction rate and reminder opt-out rate",
       "approval_required": true,
-      "authority": "Mike rejected the delivered presentation and approved restoration of the preceding Home UI; agents completed the bounded internal rollback and documentation. Any later Home candidate still requires Mike's selection and design judgment.",
-      "dependencies": ["TL-EXTRACT-001"],
-      "next_action": "Install internal build 2026082801 and record whether the preceding Home presentation is restored; a later task-home mock remains unselected and must not reuse the rejected presentation as an active candidate."
-    },
-    {
-      "id": "TL-CAP-001",
-      "title": "Make every recording recoverable",
-      "type": "reliability",
-      "state": "ready_for_mock",
-      "problem": "Recordings are created in temporary storage and the current app has no durable outbox or retry control after an upload failure.",
-      "evidence": {
-        "as_of": "2026-08-07",
-        "source": "AudioRecorder and upload flow inspection",
-        "implementation_observation": "A failed upload surfaces an error, but the user cannot replay or retry the captured file from the UI."
-      },
-      "funnel_step": "recording_started -> recording_uploaded",
-      "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
-      "primary_metric": "recording_started sessions that reach recording_uploaded",
-      "guardrail": "local storage growth and duplicate upload rate",
-      "approval_required": true,
-      "authority": "Mike approval is required for product/design direction before implementation.",
-      "dependencies": ["TL-DATA-001"],
-      "next_action": "Prepare a bounded mock and specification for pending, failed, replay, retry, and truthful saved or agent-readable states, then present that candidate to Mike for selection before implementation."
+      "authority": "Mike selected running-list priority after capture recovery. That order does not approve importing PR #2 wholesale or its design for build. Posting its GitHub review and contacting Claude for a design review each require separate approval.",
+      "dependencies": ["TL-EXTRACT-001", "TL-CAP-001"],
+      "next_action": "After capture recovery, prepare a bounded running-list rework from the reviewed base that preserves lineage, consent, retention, API compatibility and occurrence-level task identity; obtain the separately authorized reviews before build entry."
     },
     {
       "id": "TL-KNOW-001",

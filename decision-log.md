@@ -627,3 +627,17 @@ Each decision should explain the call that was made, the alternatives considered
 **Authority:** This records Mike's requested audit and process organization. It does not select the running-list PR or a capture candidate, authorize a merge, enable a quality behavior, resume a state-changing automation, approve new credentials, or change release/product-policy boundaries. Existing approved-slice authority remains unchanged.
 
 **Revisit when:** One bounded slice has completed the full cross-tool review and device acceptance loop, or Mike changes the role split. Keep practical lessons in the existing tandem workflow rather than creating another process system.
+
+---
+
+## 2026-09-28 — Reconcile the preserved base; capture recovery precedes the running list
+
+**Decision:** Mike approved Phase 2 for `codex/reconcile-september-base` and its new pull request only. Publish the reviewed August engineering work, operating guides and design artifacts, and incorporate the two newer main commits into that branch. Do not merge into main. Mike explicitly accepted first public repository publication of current state, product charter, workflow, backlog and metrics. The working-copy preservation and publication screens are recorded in the [reconciliation evidence](docs/evidence/2026-09-28-reconciliation-plan.md).
+
+**Product order:** Capture recovery (`TL-CAP-001`) first, then the running list (`TL-TASK-001`). Candidate B, “The recorder holds it,” is selected. The [draft capture handoff](docs/handoffs/2026-09-28-home-capture-recovery.md) remains `selected_pending_codex_feasibility_review`; preserve its SHA-256 `0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c` and all design assets byte-identically. Codex’s feasibility review follows Phase 2 against the committed revision as a separate task. Claude owns any later handoff edit. This decision does not authorize feature implementation.
+
+**Integration evidence:** Preservation commits and main-ancestry reconciliation produced source revision `a743aac555b7e59e25bc55c7a0659864ed02c548`. Both `1770db3` and `fd85d01` are ancestors; the one discovery-document conflict retained the newer local rollback evidence. Node/Deno tests, documentation/privacy checks, the isolated unsigned Simulator build and focused Swift contracts passed. The local database replay was unavailable; peer review remains pending. See the linked evidence for counts and limitations.
+
+**Authority:** Only this branch and its new PR may be published. Posting the PR #2 review and contacting Claude each require their own go-ahead. Main merges, force-pushes, branch deletion, deployments/migrations, deployment/TestFlight workflow dispatch, secrets, automations, behavior flags and Apple changes remain outside this approval. Moving or repointing the active checkout out of iCloud is a separate proposed action after the PR is open. The existing checkout and private recovery copy stay intact.
+
+**Revisit when:** The exact committed handoff receives its separate feasibility review, the reconciled base receives the required peer review, or Mike changes priority or approves one of the separately gated actions.

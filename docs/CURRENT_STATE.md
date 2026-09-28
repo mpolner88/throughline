@@ -1,5 +1,15 @@
 # Throughline current state
 
+## September 28 reconciliation candidate
+
+**Verified:** 2026-09-28. **Scope:** isolated local source preservation, ancestry reconciliation and executable checks. Evidence: [reconciliation plan and execution receipt](evidence/2026-09-28-reconciliation-plan.md#phase-2-execution-receipt). This is not a new deployment, release or user-outcome verification.
+
+- **Source:** `codex/reconcile-september-base`; preservation/main integration revision `a743aac555b7e59e25bc55c7a0659864ed02c548`. Both newer main commits (`1770db3`, `fd85d01`) are ancestors. The final documentation commit follows this source revision; its exact identity belongs in the new PR. Original dirty work and private recovery remain preserved.
+- **Checks:** 156 Node tests, 80 Deno tests, the focused 13-test canary suite, documentation/privacy verification, an isolated unsigned Release Simulator build and four Swift contract executables passed. Five PR #1 SQL files match exactly; local database replay remains unverified because no local runtime is running.
+- **Review:** `peer_review_pending`. The branch is an integration candidate, not a completed mutually reviewed shared base. PR #1 is provisionally superseded; PR #2 remains deferred and needs deliberate contract/identity reconciliation after capture recovery. No PR review was posted and Claude was not contacted.
+- **Product order:** Mike selected capture recovery first, then the running list. Candidate B, “The recorder holds it,” remains selected but not ready. The [capture handoff](handoffs/2026-09-28-home-capture-recovery.md) and assets are preserved byte-identically; the separate Codex feasibility review must use the committed revision. No feature is implemented in this reconciliation.
+- **Publication boundary:** Mike approved only this branch and its new PR, including first-time publication of the canonical operating documents. Main merge, release, deployment, behavior changes and active-project migration remain separately gated.
+
 ## September 28 re-entry verification
 
 **Verified:** 2026-09-28. **Scope:** live GitHub, App Store Connect UI, Supabase management metadata and aggregate SQL, local source/workspace inspection, and a fresh aggregate product report. Evidence: [return audit](evidence/2026-09-28-return-audit.md) and [product evidence](evidence/2026-09-28-product-evidence.md). This section supersedes the August statements below only for the explicitly rechecked facts; old dates do not become new runtime attestations.
@@ -10,7 +20,7 @@
 - **Product evidence:** the preceding 35-day report has 192 events, 25 sessions and three signed-in users. Four schema-v2 outcomes now match durable recordings, all in the unknown cohort; their distribution channel is unknown. Public-baseline-eligible outcomes remain zero. Activation and retention are below readiness floors. Do not reuse August's zero-schema-v2 statement as current.
 - **Quality:** current aggregate tables contain zero immutable processing operations, owner evaluations, contributions and corpus cases. There is still no independent real-audio quality result or proven feedback-learning loop. Legacy ratings do not establish either.
 - **Work locations:** the local August checkout and September Claude [PR #2](https://github.com/mpolner88/throughline/pull/2) overlap; the PR's base/head lack the local operating guides. Its successful checks do not establish integration, peer review, deployment or owner acceptance. The [audit](evidence/2026-09-28-return-audit.md) owns the dated inventory.
-- **Next gate:** preserve/reconcile local and remote work into one reviewed base before overlapping implementation. Product selection remains Mike's decision. The [tandem workflow](AGENT_TANDEM.md#daily-working-agreement) now includes mutual review; actual adoption is pending.
+- **Re-entry gate at audit time:** preserve/reconcile local and remote work into one reviewed base before overlapping implementation. The newer reconciliation section above records the subsequent branch and product-order decisions. The [tandem workflow](AGENT_TANDEM.md#daily-working-agreement) includes mutual review; its exact-revision review receipts remain pending.
 
 ## August verification record
 

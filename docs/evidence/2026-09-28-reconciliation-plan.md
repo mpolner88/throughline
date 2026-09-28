@@ -4,7 +4,7 @@ Verified **2026-09-28**. Status: **Phase 2 approved on 2026-09-28 for `codex/rec
 
 ## Scope and decisions
 
-Preserve the August local engineering foundation, operating guides, and design work; reconcile the two newer main commits; produce a reviewable integration branch and pull request only after approval. This document is the plan, not a claim that integration has happened.
+Preserve the August local engineering foundation, operating guides, and design work; reconcile the two newer main commits; produce a reviewable integration branch and pull request only after approval. The approved plan is preserved below; the Phase 2 execution receipt records the completed local integration and its verification limits.
 
 Mike confirmed on September 28:
 
@@ -195,11 +195,49 @@ Proposed later migration: a real nonsymlink directory such as `~/code/throughlin
 
 ## Risks, ownership and stopping point
 
-- **Privacy:** sanitization remains to do; history must be re-screened at publication. Backup contents never enter a remote or tracked report.
+- **Privacy:** the five approved sanitizations are complete; exact final history must pass the publication screen. Backup contents never enter a remote or tracked report.
 - **Source drift:** additional Claude or Codex edits after the snapshot require a supplemental verified backup and refreshed path hashes; no overwriting concurrent work.
 - **Integration:** stale PR interfaces are incompatible with the local foundation; real task identity, schema/version and consent changes need deliberate later work.
 - **Quality evidence:** structural tests and green CI do not establish voice-note quality or capture reliability; no new benchmark or feasibility verdict is made here.
 - **Review:** independent Codex inspection is not mutual Claude/Codex review. Record `peer_review_pending` until exact-revision Claude review is authorized and received.
 - **Recovery:** same-disk copy is limited protection; disk capacity, source availability and restore verification are explicit prerequisites.
 
-Session closeout: Phase 1 produced this plan and exact-path inventory, with the original branch/HEAD intact. The final working-tree delta for this phase is exactly two new files: this plan and its public path manifest; pre-existing files are unchanged. Backup/restore and checks are recorded above. No staging, commits, integration, publishing, PR comments, Claude contact, feature work, release or service changes occurred. **Mike acts next:** approve or revise this concrete Phase 2 plan. Codex then owns bounded integration/checks/new PR within that approval; capture feasibility and all separately gated review/publication actions remain distinct.
+Historical Phase 1 closeout: Phase 1 produced this plan and exact-path inventory, with the original branch/HEAD intact. The final working-tree delta for this phase is exactly two new files: this plan and its public path manifest; pre-existing files are unchanged. Backup/restore and checks are recorded above. No staging, commits, integration, publishing, PR comments, Claude contact, feature work, release or service changes occurred. Mike subsequently approved Phase 2 with the additions recorded above; the following receipt supersedes this historical stopping point.
+
+
+## Phase 2 execution receipt
+
+**Verified:** 2026-09-28. **Status:** integration candidate; `peer_review_pending`. Mike authorized publication of the named branch and its new PR only. The publication receipt and final documentation-commit SHA will be in that PR; this receipt does not claim a main merge or peer-review completion.
+
+| Step | Exact commit | Result |
+| --- | --- | --- |
+| C1 | `9139206e746b36e7a6f400ac2b8fa4f11b58e686` | Preserve frozen inference and private evaluation tooling |
+| C2 | `32c5da06bdcfcce2052af860dfdf7b4ae82b45b7` | Preserve hosted lineage retention and privacy foundation |
+| C3 | `c482d787d41d0793ae717cc3548b7a3eed9895cd` | Preserve iOS revision and evaluation support |
+| C4 | `8b6f3501fa065afa80f6a7e9854ed63c8bb95d47` | Preserve measurement attribution and reporting gates |
+| C5 | `127c4a54d5d8623e8b2b0706690079dbd390e1db` | Preserve selected capture design handoff and explorations |
+| C6 | `a9989e31f6973e97a431949c6d21e97778397d77` | Preserve marketing research and reviewed assets |
+| C7 | `664a03bfcbee939ff3d1b12f715b9b663deeb5c4` | Preserve operating foundation and reconciliation evidence |
+| C8 | `a743aac555b7e59e25bc55c7a0659864ed02c548` | Reconcile newer main ancestry while retaining the August foundation |
+
+C8's tree is byte-identical to C7's tree. The single add/add conflict in `docs/slices/discovery-growth.md` retained the newer local backlog/slice-phase fields and August 28 rollback evidence after both sides were compared. Both main commits are ancestors. No product code changed during reconciliation. C9 changes only this receipt, `decision-log.md`, `product/backlog.json` and `docs/CURRENT_STATE.md`; it records Mike's selection and pending review gates. The path manifest's `preservation_sha256` column intentionally identifies C1–C7 bytes, before C9 canonical updates.
+
+All five approved sanitizations were applied before preservation commits. The personal test path became `/home/example/throughline-evaluation-edge-canary-test.json`. All 33 protected design/handoff/mock files matched their inspected source hashes, and the selected handoff remains `0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c`. Its 24 declared asset checksums match. The handoff was not edited to record these decisions.
+
+| Check | Result and boundary |
+| --- | --- |
+| Documentation foundation | PASS before and after C9: 19 backlog items; 47 checked Markdown files. |
+| Privacy-policy parity | PASS before and after C9; this check is not a secret scanner. |
+| Complete Node suites | PASS: 156/156 on Node 26.7.0. CI uses Node 22; local version difference disclosed. |
+| Requested canary test | PASS: 13/13 after the neutral-path replacement; included in the complete Node total, not additional coverage. |
+| Deno API/shared/deletion suites | PASS: 80/80 on Deno 2.9.5, frozen dependency lock, environment-only runtime permission, mocked provider calls. |
+| Isolated iOS build | PASS: unsigned Release, generic iOS Simulator, arm64 and x86_64, Xcode 26.3 (17C529); neutral build-only configuration and separate DerivedData. This is not signed/device/TestFlight evidence. |
+| Swift contracts | PASS: four executables covering evaluation coding/copy, note action items, product-event coding and attribution. |
+| PR #1 SQL equivalence | PASS: five named SQL files byte-identical to PR head `1f58561417f634216438ab83b2157661bec1fdaf`. |
+| Local database replay | NOT RUN: Docker socket absent and local PostgreSQL/Supabase database endpoints unavailable. No services started. New PR's existing isolated database CI is the next execution gate; PR #1 remains only provisionally superseded. |
+| Whitespace | New edited tracked diffs pass. Preservation staging identified inherited Markdown hard breaks, template spacing and final blank lines; retained deliberately, including immutable `docs/handoffs/README.md`. These warnings are not represented as a clean full-range whitespace result. The new CSV uses LF endings. |
+| Privacy/publication | Every candidate screened; final reachable history is re-screened before the exact branch push. Only named approved paths were staged. Private runtime logs and recovery locations remain outside Git. |
+
+Backend checks initially encountered sandbox loopback/dependency access restrictions; the same tests passed with the required local socket/public dependency access, without loading production credentials. The iOS build needed local Simulator service access; its retry passed, with only the AppIntents metadata warning that no AppIntents dependency was present. No assertion was waived. The iOS source manifest hash is `8d9903c53b3d934f246497847448544725a82c6c065e8e64db98706f5c875f2c`; the pinned resolved-package file is `eae239dd13431df4df93d751ec78cdc5f17bb1146adb7f36945f604cf0d4e04e`. Private logs retain the detailed receipts.
+
+**What remains:** publish only the approved branch/new draft PR after final checks; obtain the separately authorized peer-review receipts; perform capture feasibility as a separate task against the committed revision. No PR #1 closure, PR #2 comment/review, Claude contact, feature implementation, deployment, release, automation, flag or active-checkout migration is included. After PR creation, give Mike a concrete separate migration plan including both tools' project paths.
