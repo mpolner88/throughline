@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "throughline-private-audio-manifest-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "purpose",
+    "created_at",
+    "disclosure_version",
+    "policy_version",
+    "split_hash",
+    "content_set_hash",
+    "label_contract_set_hash",
+    "inference_contract",
+    "materializer_receipt",
+    "cases"
+  ],
+  "properties": {
+    "manifest_version": { "const": "throughline-private-audio-manifest-v1" },
+    "purpose": { "enum": ["synthetic_plumbing", "real_private_quality"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "disclosure_version": { "type": "string", "minLength": 1 },
+    "policy_version": { "type": "string", "minLength": 1 },
+    "split_hash": { "$ref": "#/$defs/hash" },
+    "content_set_hash": { "$ref": "#/$defs/hash" },
+    "label_contract_set_hash": { "$ref": "#/$defs/hash" },
+    "inference_contract": { "type": "object" },
+    "materializer_receipt": { "type": ["object", "null"] },
+    "cases": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}

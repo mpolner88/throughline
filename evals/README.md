@@ -70,27 +70,19 @@ Score the memory enrichment path only:
 npm run eval:score:memory
 ```
 
-Run the full local plumbing check:
+Run the full local plumbing check. This proves mechanics only and cannot claim model quality:
 
 ```bash
-npm run eval:check
+npm run eval:plumbing
 ```
 
-Import reviewed alpha feedback with corrected `expected` objects into private, ignored fixtures:
+### Legacy feedback importer boundary
 
-```bash
-npm run eval:import-feedback
-```
+`npm run eval:import-feedback` is a legacy local fixture utility, not the canonical real-user learning path and not authorization to materialize private feedback. Its output cannot establish independent quality or promotion readiness. Never commit raw feedback or turn an agent's interpretation of correction text into an owner label.
 
-This writes to `evals/tmp/feedback-fixtures` by default. Keep raw user feedback out of committed fixtures unless it has been reviewed and sanitized.
+The user who recorded a note is the only human evaluator. Real evaluation follows the revision-bound, server-derived contribution and corpus contract in [the evaluation slice](../docs/slices/evaluation-truth-and-lineage.md), with readiness and winner rules in [metrics](../product/metrics.md). Ambiguous labels remain quarantined; no employee, contractor, or agent review queue supplies missing expected outputs.
 
-Product feedback now stores extraction grades in Supabase through the API feedback endpoint. A useful self-improving loop is:
-
-1. User grades an extraction in the app and optionally adds correction notes.
-2. Low scores or corrections are stored as `needs_review` feedback with the transcript and structured-note snapshot.
-3. A reviewer or agent converts the correction into a sanitized `expected` object.
-4. `npm run eval:import-feedback` turns reviewed feedback into private fixtures.
-5. Prompt or model changes must pass `npm run eval:check` before deploy.
+Use `npm run eval:plumbing` for synthetic mechanics and the separately gated `npm run eval:quality` for an eligible private corpus. The old `eval:check` command does not exist. A synthetic or copied-fixture pass is never a model-quality pass. Provider execution, data-use changes, and corpus materialization retain their separate authorization requirements.
 
 Prediction files should be named `{fixture_id}.json` and contain either the extraction object directly or `{ "actual": { ... } }`.
 
@@ -98,7 +90,13 @@ Prediction files should be named `{fixture_id}.json` and contain either the extr
 
 `evals/run-extraction.mjs` writes predictions to `evals/runs/latest`.
 
-The default `golden` provider copies fixture labels into prediction files. This does not test model quality; it tests that the eval plumbing is sound.
+The default `golden` provider copies fixture labels into prediction files. It reports `plumbing_only: true`; it does not test or pass model quality.
+
+Private quality evaluation uses an append-only manifest, an isolated prediction worker, a sealed prediction bundle, and post-prediction eligibility revalidation. Synthetic manifests are structurally incapable of returning a quality result. Real private-audio provider execution remains locked until the provider and data-use policy receive explicit approval.
+
+The authorized offline materializer stages into a private temporary directory, reserves the receipt in Postgres, and uploads the complete immutable manifest/case tree to `throughline-audio/evaluation-artifacts/<materializer receipt SHA-256>/`. The real CLI accepts only `THROUGHLINE_PRIVATE_ARTIFACT_STORE=supabase_storage_v1`. It requests the authoritative corpus commit only after Storage publication succeeds and removes local staging only after commit. Deterministic rejection rolls back the uploaded objects and leaves the receipt pending for reconciliation; ambiguous results preserve artifacts so a potentially committed corpus is never deleted speculatively.
+
+The server and materializer reject more than 249 cases, keeping the worst-case tree to 997 objects. The same-project `private-artifact-delete` Edge function accepts the receipt only and cannot receive a caller-selected bucket, prefix, path, case, recording, or account. Run `npm run eval:artifact-storage:test` for the Edge/Storage contract, `npm run eval:rollout-package:test` for the frozen package, and `node --test scripts/verify-evaluation-edge-storage-canary.test.mjs` for the hosted runner contract. The hosted runner itself is execution-locked and follows the separately governed commands in [hosted-backend.md](../docs/hosted-backend.md); running its local tests does not contact production. The older `npm run eval:artifact-canary` covers the historical local-filesystem/container boundary only; it is not the required hosted Supabase Edge/Storage canary.
 
 After provider output is normalized, the runner applies deterministic post-processing. For example, date strings like `tomorrow` or `Tuesday` are converted to ISO dates using fixture metadata. If a todo is dated for tomorrow, the runner also mirrors it into `tomorrow_todos` so the model does not have to maintain that duplicate invariant perfectly.
 

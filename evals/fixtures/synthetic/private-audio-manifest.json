@@ -1,0 +1,39 @@
+{
+  "manifest_version": "throughline-private-audio-manifest-v1",
+  "purpose": "synthetic_plumbing",
+  "created_at": "2026-08-22T00:00:00.000Z",
+  "disclosure_version": "synthetic-v1",
+  "policy_version": "synthetic-v1",
+  "split_hash": "26eaba40fd88d2700bc9ca43ad3e17c73604ec9c22d7745c4fe767b5be7fdb0c",
+  "content_set_hash": "ddd05da2c79e42a94bcf858264e9531f3d795c9ab483ca772a513fe70c87b551",
+  "label_contract_set_hash": "a7f09d30bb9d6bd7cd8eb678d9c3c7ee51ff4584e080419cbafdd0bbbb7bda47",
+  "inference_contract": {
+    "contract_sha256": "42e4eda46bf97eb6d17da75af02beb682dc07d80389b7a7371697433b8f79599",
+    "schema_sha256": "bf10d2db2c0ec8c4da20e51c52107aec61831e8d4b3f718e522fe0a22809cee6",
+    "normalizer_sha256": "4047bc0337869009f55f0c2a0fd51359db1028f44e5a2c0f2e2f8c89ea61aa66",
+    "keyset_sha256": "34f71d376193eb2607c5d0dc7a3536e58a1a7e2f21a3e0f758aef3051c9e5f25"
+  },
+  "materializer_receipt": null,
+  "cases": [
+    {
+      "id": "synthetic-001",
+      "split": "sealed_holdout",
+      "active": true,
+      "audio": {
+        "path": "audio/synthetic-note.txt",
+        "sha256": "6ac3b66c86c2a9b4c2a75052696b103eef356ca03fe8fddb1eb3eeab3db98f06",
+        "mime_type": "application/octet-stream"
+      },
+      "label": {
+        "kind": "diagnostic_grade",
+        "reviewed_fields": null,
+        "canonical_output": null,
+        "transcript": null,
+        "transcript_explicitly_corrected": false,
+        "agent_ready": null,
+        "exact_revision_id": null,
+        "inspected_preview": null
+      }
+    }
+  ]
+}

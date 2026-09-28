@@ -584,14 +584,15 @@ function main() {
     ]),
   );
   const selectedSummary = profileSummaries[args.profile];
-  const pass = selectedSummary.overall >= args.threshold && selectedSummary.criticalHallucinationCount === 0;
+  const plumbingPass = selectedSummary.overall >= args.threshold && selectedSummary.criticalHallucinationCount === 0;
 
   const report = {
     mode: args.predictions ? "predictions" : "golden_self_check",
+    plumbing_only: true,
     profile: args.profile,
     fixtures: fixtureFiles.length,
     threshold: args.threshold,
-    pass,
+    plumbing_pass: plumbingPass,
     summary: {
       ...profileSummaries.full,
       selectedProfile: args.profile,
@@ -603,7 +604,7 @@ function main() {
 
   console.log(JSON.stringify(report, null, 2));
 
-  if (!pass) {
+  if (!plumbingPass) {
     process.exitCode = 1;
   }
 }

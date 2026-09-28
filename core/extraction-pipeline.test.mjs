@@ -71,3 +71,67 @@ test("only explicit todos become checkable action items", () => {
     [{ text: "Call the dentist", source: "todo" }],
   );
 });
+
+test("normalization remains byte-for-byte stable across the shared-contract refactor", () => {
+  const note = normalizeExtraction({
+    type: "morning",
+    title: "  Launch morning  ",
+    summary: "",
+    most_important: [],
+    todos: [{
+      text: "Verify the release",
+      status: "done",
+      priority: "high",
+      due: "today",
+      for_date: "tomorrow",
+      context: "  After deployment  ",
+    }],
+    priorities: ["Ship the release", " Ship the release "],
+    intentions: ["Keep it small"],
+    accomplishments: [],
+    tomorrow_todos: [],
+    mood: "focused",
+    people: [],
+    projects: ["Throughline"],
+    tags: ["launch"],
+    centers_of_balance: ["profession", "unsupported"],
+  }, { user_local_date: "2026-08-22" });
+
+  assert.equal(
+    JSON.stringify(note),
+    JSON.stringify({
+      type: "morning",
+      title: "Launch morning",
+      summary: "Ship the release. Verify the release",
+      most_important: [
+        "Ship the release",
+        "Verify the release",
+        "Keep it small",
+      ],
+      todos: [{
+        text: "Verify the release",
+        status: "open",
+        priority: "high",
+        due: "2026-08-22",
+        for_date: "2026-08-23",
+        context: "After deployment",
+      }],
+      priorities: ["Ship the release", "Ship the release"],
+      intentions: ["Keep it small"],
+      accomplishments: [],
+      tomorrow_todos: ["Verify the release"],
+      mood: "focused",
+      people: [],
+      projects: ["Throughline"],
+      tags: ["launch"],
+      centers_of_balance: ["profession"],
+      action_items: [{
+        id: "act_verify-the-release",
+        text: "Verify the release",
+        status: "open",
+        source: "todo",
+        completed_at: null,
+      }],
+    }),
+  );
+});
