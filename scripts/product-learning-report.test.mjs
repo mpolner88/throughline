@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildWeeklySnapshot, renderMarkdown } from "./product-learning-report.mjs";
+import {
+  buildEvaluationAggregates,
+  buildWeeklySnapshot,
+  renderMarkdown,
+} from "./product-learning-report.mjs";
 
 const reportAt = new Date("2026-08-07T12:00:00.000Z");
 const event = (
@@ -436,4 +440,373 @@ test("keeps mixed KPI coverage and empty reconciliation non-decision-grade on th
   assert.equal(currentSource.query.executed_at, "2026-08-18T10:00:00.000Z");
   assert.match(currentSource.query.description, /private in-memory/i);
   assert.match(currentSource.query.sql, /recording_id/);
+});
+
+test("complete lineage excludes contributions with a non-current evaluation policy", () => {
+  const aggregates = buildEvaluationAggregates({
+    recordings: [{ id: "recording-a" }],
+    contracts: [{ id: "contract-a" }],
+    operations: [{
+      operation_id: "operation-a",
+      recording_id: "recording-a",
+      inference_contract_id: "contract-a",
+      status: "succeeded",
+    }],
+    attempts: [
+      { operation_id: "operation-a", stage: "transcription", status: "succeeded" },
+      { operation_id: "operation-a", stage: "extraction", status: "succeeded" },
+    ],
+    revisions: [
+      {
+        revision_id: "original-a",
+        recording_id: "recording-a",
+        processing_operation_id: "operation-a",
+        revision_kind: "original_model",
+      },
+      {
+        revision_id: "evaluated-a",
+        recording_id: "recording-a",
+        processing_operation_id: "operation-a",
+        revision_kind: "user_content_correction",
+      },
+    ],
+    evaluations: [{
+      evaluation_id: "evaluation-a",
+      recording_id: "recording-a",
+      processing_operation_id: "operation-a",
+      evaluated_revision_id: "evaluated-a",
+      evaluator_kind: "recording_user",
+      notice_version: "private_evaluation_notice_v1",
+      disclosure_version: "private_evaluation_disclosure_v1",
+    }],
+    contributions: [{
+      contribution_id: "contribution-a",
+      evaluation_id: "evaluation-a",
+      note_revision_id: "evaluated-a",
+      event_kind: "created",
+      notice_version: "private_evaluation_notice_v1",
+      disclosure_version: "private_evaluation_disclosure_v1",
+      policy_version: "superseded_policy",
+    }],
+  });
+
+  assert.deepEqual(aggregates.complete_lineage, { complete: 0, total: 0 });
+});
+
+test("diagnostic and reviewed counts require a linked active current contribution", () => {
+  const aggregates = buildEvaluationAggregates({
+    contributions: [
+      {
+        contribution_id: "active-contribution",
+        event_kind: "created",
+        notice_version: "private_evaluation_notice_v1",
+        disclosure_version: "private_evaluation_disclosure_v1",
+        policy_version: "private_evaluation_policy_v1",
+      },
+      {
+        contribution_id: "withdrawn-contribution",
+        event_kind: "created",
+        notice_version: "private_evaluation_notice_v1",
+        disclosure_version: "private_evaluation_disclosure_v1",
+        policy_version: "private_evaluation_policy_v1",
+      },
+      {
+        contribution_id: "withdrawal-event",
+        supersedes_contribution_id: "withdrawn-contribution",
+        event_kind: "withdrawn",
+        notice_version: "private_evaluation_notice_v1",
+        disclosure_version: "private_evaluation_disclosure_v1",
+        policy_version: "private_evaluation_policy_v1",
+      },
+    ],
+    corpusCases: [
+      {
+        case_id: "active-case",
+        contribution_id: "active-contribution",
+        label_kind: "diagnostic_grade",
+        label_completeness: "diagnostic_only",
+      },
+      {
+        case_id: "withdrawn-case-with-missed-invalidation",
+        contribution_id: "withdrawn-contribution",
+        label_kind: "diagnostic_grade",
+        label_completeness: "diagnostic_only",
+      },
+      {
+        case_id: "unlinked-case",
+        contribution_id: "missing-contribution",
+        label_kind: "reviewed_fields",
+        label_completeness: "reviewed_fields_only",
+        editable_correction_mask: ["summary"],
+      },
+    ],
+  });
+
+  assert.equal(aggregates.diagnostic_grade_cases, 1);
+  assert.deepEqual(aggregates.reviewed_fields, {
+    distinct_cases: 0,
+    reviewed_fields: 0,
+    transcript_explicit_cases: 0,
+  });
+});
+
+test("quality benchmark claim requires complete lineage and independent prediction coverage", () => {
+  const snapshot = buildWeeklySnapshot({
+    reportAt,
+    evaluationAggregates: {
+      available: true,
+      complete_lineage: { complete: 9, total: 10 },
+    },
+    benchmarkSummary: {
+      available: true,
+      purpose: "real_private_quality",
+      status: "quality_result",
+      winner: "candidate",
+      minimum_accepted_full_output_cases: 20,
+      holdout_passed: true,
+      integrity_conditions_passed: true,
+      accepted_full_output: {
+        eligible_cases: 20,
+        independently_predicted_cases: 20,
+        full_frozen_schema_valid_cases: 20,
+        exact_contract_cases: 20,
+        preview_bound_cases: 20,
+        manifest_matching_cases: 20,
+        sandboxed_cases: 20,
+        sealed_cases: 20,
+        current_cases: 20,
+        revalidated_cases: 20,
+      },
+    },
+  });
+
+  assert.deepEqual(snapshot.quality_evidence.complete_lineage_coverage, {
+    numerator: 9,
+    denominator: 10,
+    rate: 0.9,
+  });
+  assert.deepEqual(snapshot.quality_evidence.independent_prediction_coverage, {
+    numerator: 20,
+    denominator: 20,
+    rate: 1,
+  });
+  assert.equal(snapshot.quality_evidence.integrity_gate, "fail");
+  assert.equal(snapshot.quality_evidence.winner, null);
+});
+
+test("grade-only and partial corrections never enter the winner denominator", () => {
+  const snapshot = buildWeeklySnapshot({
+    reportAt,
+    evaluationAggregates: {
+      available: true,
+      complete_lineage: { complete: 70, total: 70 },
+      diagnostic_grade_cases: 40,
+      reviewed_fields: {
+        distinct_cases: 30,
+        reviewed_fields: 54,
+      },
+    },
+    benchmarkSummary: {
+      available: true,
+      purpose: "real_private_quality",
+      status: "insufficient_sample_size",
+      winner: "candidate",
+      minimum_accepted_full_output_cases: 20,
+      holdout_passed: true,
+      integrity_conditions_passed: true,
+      diagnostic_grade_cases: 40,
+      reviewed_field_cases: 30,
+      accepted_full_output: {
+        eligible_cases: 0,
+        independently_predicted_cases: 0,
+      },
+    },
+  });
+
+  assert.equal(snapshot.quality_evidence.diagnostic_grade_cases, 40);
+  assert.equal(snapshot.quality_evidence.reviewed_field_coverage.distinct_cases, 30);
+  assert.equal(snapshot.quality_evidence.reviewed_field_coverage.denominator, 54);
+  assert.equal(snapshot.quality_evidence.independent_prediction_coverage.denominator, 0);
+  assert.equal(snapshot.quality_evidence.integrity_gate, "insufficient_sample_size");
+  assert.equal(snapshot.quality_evidence.winner, null);
+});
+
+test("incomplete or contract-drifted full outputs never enter independent coverage", () => {
+  const snapshot = buildWeeklySnapshot({
+    reportAt,
+    evaluationAggregates: {
+      available: true,
+      complete_lineage: { complete: 20, total: 20 },
+    },
+    benchmarkSummary: {
+      available: true,
+      purpose: "real_private_quality",
+      status: "quality_result",
+      winner: "candidate",
+      minimum_accepted_full_output_cases: 20,
+      holdout_passed: true,
+      integrity_conditions_passed: true,
+      accepted_full_output: {
+        eligible_cases: 20,
+        independently_predicted_cases: 20,
+        full_frozen_schema_valid_cases: 18,
+        exact_contract_cases: 0,
+      },
+      rejection_counts: {
+        incomplete_keyset: 1,
+        extra_key: 1,
+        contract_drift: 20,
+      },
+    },
+  });
+
+  assert.equal(snapshot.quality_evidence.independent_prediction_coverage.numerator, 0);
+  assert.deepEqual(snapshot.quality_evidence.contract_integrity_rejections, {
+    contract_drift: 20,
+    extra_key: 1,
+    incomplete_keyset: 1,
+  });
+  assert.equal(snapshot.quality_evidence.integrity_gate, "fail");
+  assert.equal(snapshot.quality_evidence.winner, null);
+});
+
+test("quality evidence reports aggregate lifecycle and retention counts only", () => {
+  const privateTokens = {
+    id: "PRIVATE_ID",
+    receipt: "PRIVATE_RECEIPT_HASH",
+    path: "PRIVATE_PATH",
+    transcript: "PRIVATE_TRANSCRIPT",
+    note: "PRIVATE_NOTE",
+    reference: "PRIVATE_REFERENCE",
+    prediction: "PRIVATE_PREDICTION",
+    prompt: "PRIVATE_PROMPT",
+    feedback: "PRIVATE_FEEDBACK",
+    credential: "PRIVATE_CREDENTIAL",
+    provider_response: "PRIVATE_PROVIDER_RESPONSE",
+  };
+  const snapshot = buildWeeklySnapshot({
+    reportAt,
+    evaluationAggregates: {
+      available: true,
+      complete_lineage: { complete: 20, total: 20 },
+      operations_by_status: { started: 2, succeeded: 18, failed: 1 },
+      corpus_events_by_kind: {
+        materialized: 20,
+        revalidated: 20,
+        invalidated: 3,
+        raw_artifacts_deleted: 3,
+      },
+      retention_by_reason: {
+        standard_expired: 4,
+        evaluation_protected: 5,
+        eligibility_ended: 2,
+      },
+      quarantine_count: 6,
+      private_values: privateTokens,
+    },
+    benchmarkSummary: {
+      available: true,
+      purpose: "real_private_quality",
+      status: "quality_result",
+      winner: "candidate",
+      minimum_accepted_full_output_cases: 20,
+      holdout_passed: true,
+      integrity_conditions_passed: true,
+      accepted_full_output: {
+        eligible_cases: 20,
+        independently_predicted_cases: 20,
+        full_frozen_schema_valid_cases: 20,
+        exact_contract_cases: 20,
+        preview_bound_cases: 20,
+        manifest_matching_cases: 20,
+        sandboxed_cases: 20,
+        sealed_cases: 20,
+        current_cases: 20,
+        revalidated_cases: 20,
+      },
+      isolation_failures: { adapter_isolation_unavailable: 2 },
+      private_values: privateTokens,
+    },
+  });
+
+  assert.deepEqual(snapshot.quality_evidence.operations, {
+    started: 2,
+    succeeded: 18,
+    failed: 1,
+    total: 21,
+  });
+  assert.deepEqual(snapshot.quality_evidence.corpus_lifecycle, {
+    materialized: 20,
+    revalidated: 20,
+    invalidated: 3,
+    raw_artifacts_deleted: 3,
+  });
+  assert.deepEqual(snapshot.quality_evidence.retention, {
+    standard_expired: 4,
+    evaluation_protected: 5,
+    eligibility_ended: 2,
+  });
+  assert.deepEqual(snapshot.quality_evidence.quarantine, { count: 6 });
+  assert.deepEqual(snapshot.quality_evidence.isolation_failures, {
+    adapter_isolation_unavailable: 2,
+  });
+  assert.equal(snapshot.quality_evidence.integrity_gate, "pass");
+  assert.equal(snapshot.quality_evidence.winner, "candidate");
+
+  const serialized = `${JSON.stringify(snapshot)}\n${renderMarkdown(snapshot)}`;
+  for (const token of Object.values(privateTokens)) {
+    assert.doesNotMatch(serialized, new RegExp(token));
+  }
+});
+
+test("winner requires every counted full-output case to be manifest-matching and sandboxed", () => {
+  const snapshot = buildWeeklySnapshot({
+    reportAt,
+    evaluationAggregates: {
+      available: true,
+      complete_lineage: { complete: 20, total: 20 },
+    },
+    benchmarkSummary: {
+      available: true,
+      purpose: "real_private_quality",
+      status: "quality_result",
+      winner: "candidate",
+      minimum_accepted_full_output_cases: 20,
+      holdout_passed: true,
+      integrity_conditions_passed: true,
+      accepted_full_output: {
+        eligible_cases: 20,
+        independently_predicted_cases: 20,
+        full_frozen_schema_valid_cases: 20,
+        exact_contract_cases: 20,
+        preview_bound_cases: 20,
+        sealed_cases: 20,
+        current_cases: 20,
+        revalidated_cases: 20,
+      },
+    },
+  });
+
+  assert.equal(snapshot.quality_evidence.independent_prediction_coverage.numerator, 0);
+  assert.equal(snapshot.quality_evidence.integrity_gate, "fail");
+  assert.equal(snapshot.quality_evidence.winner, null);
+});
+
+test("missing evaluation tables and benchmark data remain a coverage gap", () => {
+  const snapshot = buildWeeklySnapshot({ reportAt });
+
+  assert.equal(snapshot.quality_evidence.availability, "coverage_gap");
+  assert.deepEqual(snapshot.quality_evidence.complete_lineage_coverage, {
+    numerator: null,
+    denominator: null,
+    rate: null,
+  });
+  assert.deepEqual(snapshot.quality_evidence.independent_prediction_coverage, {
+    numerator: null,
+    denominator: null,
+    rate: null,
+  });
+  assert.equal(snapshot.quality_evidence.integrity_gate, "insufficient_sample_size");
+  assert.equal(snapshot.quality_evidence.winner, null);
+  assert.match(renderMarkdown(snapshot), /quality evidence.*coverage gap/i);
 });

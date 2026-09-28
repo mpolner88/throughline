@@ -48,6 +48,11 @@ const activation = canonical.kpis?.activation_24h ?? {};
 const retention = canonical.kpis?.retention_days_2_7 ?? {};
 const failure = canonical.guardrails?.recording_failure_rate_7d ?? {};
 const quality = canonical.guardrails?.extraction_quality ?? {};
+const qualityEvidence = canonical.quality_evidence ?? {};
+const lineageCoverage = qualityEvidence.complete_lineage_coverage ?? {};
+const reviewedFieldCoverage = qualityEvidence.reviewed_field_coverage ?? {};
+const independentPredictionCoverage = qualityEvidence.independent_prediction_coverage ?? {};
+const evaluationTablesAvailable = qualityEvidence.source_availability?.evaluation_tables === true;
 const reconciliation = hasMeasurementAttributionContract(canonical)
   ? canonical.processing_reconciliation
   : undefined;
@@ -220,11 +225,65 @@ const snapshot = {
         freshness: canonical.generated_at
       },
       {
+        metric: "Complete evaluation lineage",
+        current: Number.isFinite(lineageCoverage.denominator)
+          ? `${lineageCoverage.numerator}/${lineageCoverage.denominator}`
+          : "coverage gap",
+        target_or_floor: "100% of eligible post-cutover owner evaluations",
+        decision_status: evaluationTablesAvailable && lineageCoverage.rate === 1
+          ? "Complete"
+          : (Number.isFinite(lineageCoverage.denominator) ? "Incomplete" : "Unavailable"),
+        freshness: canonical.generated_at
+      },
+      {
+        metric: "Independent full-schema predictions",
+        current: Number.isFinite(independentPredictionCoverage.denominator)
+          ? `${independentPredictionCoverage.numerator}/${independentPredictionCoverage.denominator}`
+          : "coverage gap",
+        target_or_floor: `100%; minimum ${qualityEvidence.minimum_accepted_full_output_cases ?? 20} accepted full outputs`,
+        decision_status: qualityEvidence.integrity_gate === "pass"
+          ? "Integrity pass"
+          : (qualityEvidence.integrity_gate === "fail" ? "Integrity fail" : "Collecting baseline"),
+        freshness: canonical.generated_at
+      },
+      {
         metric: "App Store acquisition",
         current: `${apple.cumulative.first_time_downloads} downloads`,
         target_or_floor: "Traffic input; no target set",
         decision_status: "Descriptive",
         freshness: `${apple.freshness_cutoff_utc} UTC`
+      }
+    ],
+    quality_evidence: [
+      {
+        metric: "Integrity gate",
+        current: qualityEvidence.integrity_gate?.replaceAll("_", " ") ?? "coverage gap",
+        detail: qualityEvidence.winner ? `winner: ${qualityEvidence.winner}` : "winner: none"
+      },
+      {
+        metric: "Diagnostic-grade cases",
+        current: qualityEvidence.diagnostic_grade_cases ?? null,
+        detail: "Diagnostic only; excluded from winner coverage"
+      },
+      {
+        metric: "Reviewed editable fields",
+        current: reviewedFieldCoverage.denominator ?? null,
+        detail: `${reviewedFieldCoverage.distinct_cases ?? "unavailable"} distinct cases; partial labels excluded from winner coverage`
+      },
+      {
+        metric: "Corpus lifecycle",
+        current: qualityEvidence.corpus_lifecycle?.materialized ?? null,
+        detail: `${qualityEvidence.corpus_lifecycle?.revalidated ?? "unavailable"} revalidated; ${qualityEvidence.corpus_lifecycle?.invalidated ?? "unavailable"} invalidated; ${qualityEvidence.corpus_lifecycle?.raw_artifacts_deleted ?? "unavailable"} raw-artifact deletions`
+      },
+      {
+        metric: "Retention",
+        current: qualityEvidence.retention?.evaluation_protected ?? null,
+        detail: `${qualityEvidence.retention?.standard_expired ?? "unavailable"} standard expired; ${qualityEvidence.retention?.eligibility_ended ?? "unavailable"} eligibility ended`
+      },
+      {
+        metric: "Quarantine",
+        current: qualityEvidence.quarantine?.count ?? null,
+        detail: "Count only; explanation text excluded"
       }
     ]
   }
@@ -356,6 +415,20 @@ const manifest = {
       ]
     },
     {
+      id: "quality_evidence",
+      title: "Evaluation integrity and lifecycle",
+      subtitle: "Aggregate-only evidence; diagnostic grades and partial labels remain outside full-output winner coverage.",
+      dataset: "quality_evidence",
+      sourceId: "canonical",
+      density: "compact",
+      defaultSort: { field: "metric", direction: "asc" },
+      columns: [
+        { field: "metric", label: "Measure", type: "text" },
+        { field: "current", label: "Aggregate", type: "text" },
+        { field: "detail", label: "Evidence boundary", type: "text" }
+      ]
+    },
+    {
       id: "operating_health",
       title: "KPI readiness and source health",
       subtitle: "A metric can be healthy but still not decision-grade.",
@@ -407,6 +480,16 @@ const manifest = {
       id: "reconciliation_table",
       type: "table",
       tableId: "processing_reconciliation"
+    },
+    {
+      id: "quality_heading",
+      type: "markdown",
+      body: "## Quality evidence integrity\n\nA benchmark winner remains empty until lineage and independent full-frozen-schema coverage are both 100%, the accepted-full sample is sufficient, and holdout and integrity gates pass. Missing evaluation sources are shown as coverage gaps, not healthy zeroes."
+    },
+    {
+      id: "quality_table",
+      type: "table",
+      tableId: "quality_evidence"
     },
     {
       id: "growth_heading",

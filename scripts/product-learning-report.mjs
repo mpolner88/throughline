@@ -7,6 +7,28 @@ const PAGE_SIZE = 1000;
 const DEFAULT_WINDOW_DAYS = 35;
 const REPORT_SCHEMA_VERSION = 2;
 const REPORT_QUERY_CONTRACT = "measurement_attribution_v2";
+const DEFAULT_QUALITY_SAMPLE_MINIMUM = 20;
+const QUALITY_REJECTION_CODES = [
+  "synthetic_or_plumbing",
+  "copied_or_golden_prediction",
+  "missing_prediction",
+  "duplicate_prediction",
+  "prediction_membership_mismatch",
+  "prediction_unsealed",
+  "materializer_receipt_invalid",
+  "stale_or_revoked",
+  "incomplete_keyset",
+  "extra_key",
+  "invalid_nested_value",
+  "preview_unbound",
+  "contract_drift",
+  "label_contract_mismatch",
+];
+const ISOLATION_FAILURE_CODES = [
+  "adapter_isolation_unavailable",
+  "adapter_policy_violation",
+  "reference_access_attempt",
+];
 const RECONCILIATION_COHORTS = [
   "debug",
   "internal_dogfood",
@@ -65,10 +87,15 @@ function requiredEnv(name) {
 }
 
 function parseArgs(argv) {
-  const args = { outputDir: ".throughline/product-learning", stdout: false };
+  const args = {
+    outputDir: ".throughline/product-learning",
+    qualitySummary: process.env.THROUGHLINE_QUALITY_EVIDENCE_SUMMARY?.trim() || null,
+    stdout: false,
+  };
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--stdout") args.stdout = true;
     if (argv[index] === "--output-dir") args.outputDir = argv[++index];
+    if (argv[index] === "--quality-summary") args.qualitySummary = argv[++index];
   }
   return args;
 }
@@ -93,6 +120,186 @@ async function fetchRows(table, params, config) {
     rows.push(...page);
     if (page.length < PAGE_SIZE) return rows;
   }
+}
+
+async function fetchRpcRows(functionName, body, config) {
+  const response = await fetch(`${config.url}/rest/v1/rpc/${functionName}`, {
+    method: "POST",
+    headers: {
+      apikey: config.serviceRoleKey,
+      authorization: `Bearer ${config.serviceRoleKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`${functionName} query failed (${response.status}): ${await response.text()}`);
+  }
+  const rows = await response.json();
+  if (!Array.isArray(rows)) throw new Error(`${functionName} query did not return rows`);
+  return rows;
+}
+
+function isEvaluationSchemaUnavailable(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /\b404\b|42P01|PGRST205|relation .* does not exist|schema cache/iu.test(message);
+}
+
+function countByExactValue(rows, key, values) {
+  return Object.fromEntries(values.map((value) => [
+    value,
+    rows.filter((row) => row?.[key] === value).length,
+  ]));
+}
+
+export function buildEvaluationAggregates({
+  recordings = [],
+  contracts = [],
+  operations = [],
+  attempts = [],
+  revisions = [],
+  evaluations = [],
+  contributions = [],
+  corpusCases = [],
+  corpusEvents = [],
+  quarantineCount = 0,
+  retentionCandidates = null,
+  windowStart = null,
+} = {}) {
+  const windowStartDate = asDate(windowStart);
+  const withinLifecycleWindow = (row) => {
+    if (!windowStartDate) return true;
+    const createdAt = asDate(row?.created_at);
+    return createdAt !== null && createdAt >= windowStartDate;
+  };
+  const recordingIds = new Set(recordings.map((row) => row?.id).filter(Boolean));
+  const contractIds = new Set(contracts.map((row) => row?.id).filter(Boolean));
+  const operationsById = new Map(
+    operations.filter((row) => row?.operation_id).map((row) => [row.operation_id, row]),
+  );
+  const revisionsById = new Map(
+    revisions.filter((row) => row?.revision_id).map((row) => [row.revision_id, row]),
+  );
+  const operationStages = new Map();
+  for (const attempt of attempts) {
+    if (!attempt?.operation_id || !["transcription", "extraction"].includes(attempt.stage)) continue;
+    const stages = operationStages.get(attempt.operation_id) ?? new Set();
+    if (attempt.status === "succeeded") stages.add(attempt.stage);
+    operationStages.set(attempt.operation_id, stages);
+  }
+  const originalRevisionBindings = new Set(revisions
+    .filter((revision) => revision?.revision_kind === "original_model")
+    .map((revision) => revision.processing_operation_id && revision.recording_id
+      ? `${revision.processing_operation_id}:${revision.recording_id}`
+      : null)
+    .filter(Boolean));
+  const supersededContributionIds = new Set(contributions
+    .map((contribution) => contribution.supersedes_contribution_id)
+    .filter(Boolean));
+  const activeContributions = contributions.filter((contribution) =>
+    contribution?.event_kind === "created" &&
+    !supersededContributionIds.has(contribution.contribution_id) &&
+    contribution.notice_version === "private_evaluation_notice_v1" &&
+    contribution.disclosure_version === "private_evaluation_disclosure_v1" &&
+    contribution.policy_version === "private_evaluation_policy_v1"
+  );
+  const activeContributionIds = new Set(activeContributions
+    .map((contribution) => contribution.contribution_id)
+    .filter(Boolean));
+  const contributionsByEvaluation = new Map();
+  for (const contribution of activeContributions) {
+    if (!contribution.evaluation_id) continue;
+    const rows = contributionsByEvaluation.get(contribution.evaluation_id) ?? [];
+    rows.push(contribution);
+    contributionsByEvaluation.set(contribution.evaluation_id, rows);
+  }
+  const eligibleEvaluations = evaluations.filter((evaluation) =>
+    evaluation?.evaluator_kind === "recording_user" &&
+    evaluation.notice_version === "private_evaluation_notice_v1" &&
+    evaluation.disclosure_version === "private_evaluation_disclosure_v1" &&
+    contributionsByEvaluation.has(evaluation.evaluation_id)
+  );
+  const completeLineageCount = eligibleEvaluations.filter((evaluation) => {
+    const operation = operationsById.get(evaluation.processing_operation_id);
+    const stages = operationStages.get(evaluation.processing_operation_id);
+    const evaluatedRevision = revisionsById.get(evaluation.evaluated_revision_id);
+    const contributionComplete = contributionsByEvaluation.get(evaluation.evaluation_id)
+      ?.some((contribution) => contribution.note_revision_id === evaluation.evaluated_revision_id);
+    return recordingIds.has(evaluation.recording_id) &&
+      operation?.recording_id === evaluation.recording_id &&
+      operation?.status === "succeeded" &&
+      contractIds.has(operation?.inference_contract_id) &&
+      stages?.has("transcription") && stages?.has("extraction") &&
+      originalRevisionBindings.has(
+        `${evaluation.processing_operation_id}:${evaluation.recording_id}`,
+      ) &&
+      evaluatedRevision?.recording_id === evaluation.recording_id &&
+      contributionComplete;
+  }).length;
+  const invalidatedCases = new Set(corpusEvents
+    .filter((event) => event?.event_kind === "invalidated")
+    .map((event) => event.case_id)
+    .filter(Boolean));
+  const activeCases = corpusCases.filter((corpusCase) =>
+    corpusCase?.case_id &&
+    activeContributionIds.has(corpusCase.contribution_id) &&
+    !invalidatedCases.has(corpusCase.case_id)
+  );
+  const diagnosticCases = activeCases.filter((corpusCase) =>
+    corpusCase.label_kind === "diagnostic_grade" &&
+    corpusCase.label_completeness === "diagnostic_only"
+  );
+  const reviewedCases = activeCases.filter((corpusCase) =>
+    corpusCase.label_kind === "reviewed_fields" &&
+    corpusCase.label_completeness === "reviewed_fields_only"
+  );
+  const reviewedFieldCount = reviewedCases.reduce((total, corpusCase) =>
+    total + new Set((Array.isArray(corpusCase.editable_correction_mask)
+      ? corpusCase.editable_correction_mask
+      : []).filter((field) => ["title", "summary", "most_important", "todos"].includes(field))).size,
+  0);
+  const retentionByReason = Array.isArray(retentionCandidates)
+    ? {
+      standard_expired: retentionCandidates.filter((row) =>
+        row?.candidate_reason === "historical_or_no_active_contribution"
+      ).length,
+      evaluation_protected: retentionCandidates.filter((row) =>
+        row?.candidate_reason === "active_current_contribution"
+      ).length,
+      eligibility_ended: retentionCandidates.filter((row) =>
+        row?.candidate_reason === "eligibility_ended"
+      ).length,
+    }
+    : null;
+
+  return {
+    available: true,
+    lifecycle_window_start: windowStartDate?.toISOString() ?? null,
+    complete_lineage: {
+      complete: completeLineageCount,
+      total: eligibleEvaluations.length,
+    },
+    diagnostic_grade_cases: diagnosticCases.length,
+    reviewed_fields: {
+      distinct_cases: reviewedCases.length,
+      reviewed_fields: reviewedFieldCount,
+      transcript_explicit_cases: reviewedCases.filter((corpusCase) =>
+        corpusCase.transcript_explicitly_corrected === true
+      ).length,
+    },
+    operations_by_status: countByExactValue(
+      operations.filter(withinLifecycleWindow),
+      "status",
+      ["started", "succeeded", "failed"],
+    ),
+    corpus_events_by_kind: countByExactValue(
+      corpusEvents.filter(withinLifecycleWindow),
+      "event_kind",
+      ["materialized", "revalidated", "invalidated", "raw_artifacts_deleted"],
+    ),
+    retention_by_reason: retentionByReason,
+    quarantine_count: nonnegativeInteger(quarantineCount),
+  };
 }
 
 function asDate(value) {
@@ -158,6 +365,212 @@ function countByAllowed(rows, key, allowed) {
     counts[category] = (counts[category] ?? 0) + 1;
   }
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function nonnegativeInteger(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : fallback;
+}
+
+function optionalNonnegativeInteger(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : null;
+}
+
+function boundedCounts(value, allowed) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries(allowed
+    .filter((key) => optionalNonnegativeInteger(source[key]) !== null)
+    .sort()
+    .map((key) => [key, nonnegativeInteger(source[key])]));
+}
+
+function fixedCounts(value, keys, { unavailableAsNull = false } = {}) {
+  const source = value && typeof value === "object" ? value : null;
+  return Object.fromEntries(keys.map((key) => [
+    key,
+    source ? nonnegativeInteger(source[key]) : (unavailableAsNull ? null : 0),
+  ]));
+}
+
+function coverage(numerator, denominator) {
+  const safeNumerator = optionalNonnegativeInteger(numerator);
+  const safeDenominator = optionalNonnegativeInteger(denominator);
+  if (safeNumerator === null || safeDenominator === null) {
+    return { numerator: null, denominator: null, rate: null };
+  }
+  return {
+    numerator: Math.min(safeNumerator, safeDenominator),
+    denominator: safeDenominator,
+    rate: round(percentage(Math.min(safeNumerator, safeDenominator), safeDenominator)),
+  };
+}
+
+function acceptedFullOutputCoverage(benchmarkSummary) {
+  if (
+    benchmarkSummary?.available !== true ||
+    benchmarkSummary?.purpose !== "real_private_quality"
+  ) return coverage(null, null);
+
+  const accepted = benchmarkSummary.accepted_full_output ?? {};
+  const denominator = optionalNonnegativeInteger(
+    accepted.eligible_cases ?? accepted.denominator_cases,
+  );
+  const independent = optionalNonnegativeInteger(
+    accepted.independently_predicted_cases ?? accepted.denominator_cases,
+  );
+  if (denominator === null || independent === null) return coverage(null, null);
+
+  const requiredCaseCounts = [
+    independent,
+    accepted.full_frozen_schema_valid_cases,
+    accepted.exact_contract_cases,
+    accepted.preview_bound_cases,
+    accepted.manifest_matching_cases,
+    accepted.sandboxed_cases,
+    accepted.sealed_cases,
+    accepted.current_cases,
+    accepted.revalidated_cases,
+  ].map(optionalNonnegativeInteger);
+  const numerator = requiredCaseCounts.some((value) => value === null)
+    ? 0
+    : Math.min(...requiredCaseCounts);
+  return coverage(numerator, denominator);
+}
+
+export function buildQualityEvidence({
+  evaluationAggregates = null,
+  benchmarkSummary = null,
+} = {}) {
+  const evaluationAvailable = evaluationAggregates?.available === true;
+  const benchmarkAvailable = benchmarkSummary?.available === true;
+  const lineage = evaluationAvailable
+    ? coverage(
+      evaluationAggregates.complete_lineage?.complete,
+      evaluationAggregates.complete_lineage?.total,
+    )
+    : coverage(null, null);
+  const independent = acceptedFullOutputCoverage(benchmarkSummary);
+  const minimum = nonnegativeInteger(
+    benchmarkSummary?.minimum_accepted_full_output_cases,
+    DEFAULT_QUALITY_SAMPLE_MINIMUM,
+  ) || DEFAULT_QUALITY_SAMPLE_MINIMUM;
+  const lineageComplete = lineage.denominator > 0 && lineage.rate === 1;
+  const independentComplete = independent.denominator > 0 && independent.rate === 1;
+  const sufficientSample = independent.denominator !== null &&
+    independent.denominator >= minimum;
+  const holdoutPassed = benchmarkSummary?.holdout_passed === true;
+  const integrityConditionsPassed = benchmarkSummary?.integrity_conditions_passed === true &&
+    benchmarkSummary?.status !== "invalid_run";
+  const accepted = benchmarkSummary?.accepted_full_output ?? {};
+  const allAcceptedCasesAttested = independent.denominator > 0 && [
+    accepted.independently_predicted_cases,
+    accepted.full_frozen_schema_valid_cases,
+    accepted.exact_contract_cases,
+    accepted.preview_bound_cases,
+    accepted.manifest_matching_cases,
+    accepted.sandboxed_cases,
+    accepted.sealed_cases,
+    accepted.current_cases,
+    accepted.revalidated_cases,
+  ].every((value) => optionalNonnegativeInteger(value) === independent.denominator);
+  const canPass = evaluationAvailable && benchmarkAvailable && lineageComplete &&
+    independentComplete && sufficientSample && holdoutPassed &&
+    integrityConditionsPassed && allAcceptedCasesAttested;
+  const hasDecisionSizedBenchmark = independent.denominator !== null &&
+    independent.denominator >= minimum;
+  const integrityGate = canPass
+    ? "pass"
+    : (!evaluationAvailable || !benchmarkAvailable || !hasDecisionSizedBenchmark
+      ? "insufficient_sample_size"
+      : "fail");
+  const winner = canPass && ["control", "candidate", "challenger", "tie"].includes(
+    benchmarkSummary?.winner,
+  ) ? benchmarkSummary.winner : null;
+  const operations = fixedCounts(
+    evaluationAggregates?.operations_by_status,
+    ["started", "succeeded", "failed"],
+    { unavailableAsNull: !evaluationAvailable },
+  );
+  operations.total = evaluationAvailable
+    ? operations.started + operations.succeeded + operations.failed
+    : null;
+  const reviewedFields = evaluationAggregates?.reviewed_fields ?? {};
+  const reviewedDenominator = evaluationAvailable
+    ? nonnegativeInteger(reviewedFields.reviewed_fields)
+    : null;
+  const reviewedNumerator = benchmarkAvailable
+    ? optionalNonnegativeInteger(
+      benchmarkSummary?.reviewed_fields?.independently_scored_fields,
+    )
+    : null;
+  const retentionAvailable = evaluationAvailable &&
+    evaluationAggregates?.retention_by_reason &&
+    typeof evaluationAggregates.retention_by_reason === "object";
+
+  return {
+    availability: evaluationAvailable && benchmarkAvailable
+      ? "available"
+      : (evaluationAvailable || benchmarkAvailable ? "collecting" : "coverage_gap"),
+    source_availability: {
+      evaluation_tables: evaluationAvailable,
+      benchmark_summary: benchmarkAvailable,
+      retention_selector: retentionAvailable,
+    },
+    lifecycle_window_start: evaluationAvailable
+      ? evaluationAggregates.lifecycle_window_start ?? null
+      : null,
+    complete_lineage_coverage: lineage,
+    diagnostic_grade_cases: evaluationAvailable
+      ? nonnegativeInteger(
+        evaluationAggregates.diagnostic_grade_cases ?? benchmarkSummary?.diagnostic_grade_cases,
+      )
+      : null,
+    reviewed_field_coverage: {
+      numerator: reviewedNumerator,
+      denominator: reviewedDenominator,
+      rate: reviewedNumerator === null || reviewedDenominator === null
+        ? null
+        : round(percentage(Math.min(reviewedNumerator, reviewedDenominator), reviewedDenominator)),
+      distinct_cases: evaluationAvailable
+        ? nonnegativeInteger(reviewedFields.distinct_cases)
+        : null,
+      transcript_explicit_cases: evaluationAvailable
+        ? nonnegativeInteger(reviewedFields.transcript_explicit_cases)
+        : null,
+    },
+    independent_prediction_coverage: independent,
+    minimum_accepted_full_output_cases: minimum,
+    accepted_full_output_sample_status: sufficientSample ? "sufficient" : "insufficient",
+    holdout_status: holdoutPassed ? "pass" : (benchmarkAvailable ? "fail" : "unavailable"),
+    contract_integrity_rejections: boundedCounts(
+      benchmarkSummary?.rejection_counts,
+      QUALITY_REJECTION_CODES,
+    ),
+    integrity_gate: integrityGate,
+    winner,
+    operations,
+    corpus_lifecycle: fixedCounts(
+      evaluationAggregates?.corpus_events_by_kind,
+      ["materialized", "revalidated", "invalidated", "raw_artifacts_deleted"],
+      { unavailableAsNull: !evaluationAvailable },
+    ),
+    isolation_failures: boundedCounts(
+      benchmarkSummary?.isolation_failures,
+      ISOLATION_FAILURE_CODES,
+    ),
+    retention: fixedCounts(
+      evaluationAggregates?.retention_by_reason,
+      ["standard_expired", "evaluation_protected", "eligibility_ended"],
+      { unavailableAsNull: !retentionAvailable },
+    ),
+    quarantine: {
+      count: evaluationAvailable
+        ? nonnegativeInteger(evaluationAggregates.quarantine_count)
+        : null,
+    },
+  };
 }
 
 function emptyReconciliationCohort() {
@@ -418,16 +831,22 @@ export function buildDashboardCanonicalSource(canonical = {}) {
         "select id, processing_status from public.throughline_recordings where id in (:linked_recording_id_chunk) order by created_at, id;",
         "select source, category, contact_allowed, status from public.throughline_product_feedback where created_at >= :window_start order by created_at desc, id desc;",
         "select answers->'quality_score' as quality_score, answers->'issue_types' as issue_types, answers->'agent_ready' as agent_ready from public.throughline_feedback where created_at >= :window_start order by created_at desc, id desc;",
+        "select status, count(*) from public.throughline_processing_operations where created_at >= :window_start group by status;",
+        "select event_kind, count(*) from public.throughline_evaluation_corpus_events where created_at >= :window_start group by event_kind;",
+        "select label_kind, label_completeness, count(*) from public.throughline_evaluation_corpus_cases where materialized_at >= :window_start group by label_kind, label_completeness;",
+        "select count(*) from public.throughline_evaluation_text_quarantine where created_at >= :window_start; -- count only; explanation is never selected",
       ].join("\n"),
-      description: "Restricted REST projections feed aggregate product metrics plus a private in-memory event-to-durable reconciliation; row-level join fields are never serialized into report data.",
+      description: "Restricted REST projections feed aggregate product metrics plus private in-memory reconciliation and lineage checks; row-level join fields are discarded and never serialized into report data.",
       executed_at: canonical.generated_at,
       filters: ["Demo promotion excluded from first real activation", "Aggregate output only", "Trailing 7-day reliability window", "Schema-v2 references only; no legacy heuristic join"],
-      tables_used: ["throughline_product_events", "throughline_recordings", "throughline_product_feedback", "throughline_feedback"],
+      tables_used: ["throughline_product_events", "throughline_recordings", "throughline_product_feedback", "throughline_feedback", "throughline_processing_operations", "throughline_inference_attempts", "throughline_note_revisions", "throughline_evaluations", "throughline_evaluation_contributions", "throughline_evaluation_corpus_cases", "throughline_evaluation_corpus_events", "throughline_evaluation_text_quarantine"],
       metric_definitions: [
         "24-hour activation = signed-in users with a first non-demo home recording_processed within 24 hours / users with auth_succeeded.",
         "Days 2-7 retention = mature activated users with another recording_processed event 48 hours to 7 days after first activation / mature activated users.",
         "Recording success rate = 1 - recording_failed / (recording_failed + recording_processed).",
         "Correct reconciliation rate = matched state-consistent schema-v2 outcomes / matched, event-only, durable-only, mismatch, and duplicate outcomes.",
+        "Complete-lineage coverage = active current owner evaluations with recording, operation, contract, both successful stages, immutable original, evaluated revision, disclosure, and contribution lineage / all eligible post-cutover owner evaluations.",
+        "Independent-prediction coverage uses only complete owner-inspected accepted-full-output cases valid against the exact frozen 14-key recursive contract; diagnostic grades and reviewed-field labels are excluded.",
       ],
     },
   };
@@ -438,6 +857,8 @@ export function buildWeeklySnapshot({
   recordings = [],
   productFeedback = [],
   extractionFeedback = [],
+  evaluationAggregates = null,
+  benchmarkSummary = null,
   reportAt = new Date(),
 }) {
   const now = asDate(reportAt) ?? new Date();
@@ -659,6 +1080,10 @@ export function buildWeeklySnapshot({
       },
     },
     processing_reconciliation: processingReconciliation,
+    quality_evidence: buildQualityEvidence({
+      evaluationAggregates,
+      benchmarkSummary,
+    }),
     recommendations,
   };
 }
@@ -672,6 +1097,10 @@ export function renderMarkdown(snapshot) {
   const quality = snapshot.guardrails.extraction_quality;
   const reconciliation = snapshot.processing_reconciliation;
   const productFeedback = snapshot.drivers.product_feedback;
+  const qualityEvidence = snapshot.quality_evidence ?? buildQualityEvidence();
+  const lineageCoverage = qualityEvidence.complete_lineage_coverage;
+  const independentCoverage = qualityEvidence.independent_prediction_coverage;
+  const reviewedCoverage = qualityEvidence.reviewed_field_coverage;
   const lines = [
     "# Throughline weekly product evidence",
     "",
@@ -713,6 +1142,22 @@ export function renderMarkdown(snapshot) {
     `- Legacy v1 unattributed outcome rows: ${formatCount(reconciliation.legacy_unattributed.outcome_events)}`,
     `- Final durable recordings without a schema-v2 upload marker: ${formatCount(reconciliation.legacy_unattributed.final_recordings_without_v2_upload_marker)}`,
     `- Public-baseline eligible outcomes: ${formatCount(reconciliation.public_baseline.eligible_outcomes)} (external, confirmed non-internal, App Store, schema v2, and matched only)`,
+    "",
+    "## Quality evidence integrity",
+    "",
+    `Quality evidence: ${qualityEvidence.availability.replaceAll("_", " ")}. Integrity gate: ${qualityEvidence.integrity_gate.replaceAll("_", " ")}; winner: ${qualityEvidence.winner ?? "none"}.`,
+    "",
+    `- Complete lineage coverage: ${formatRate(lineageCoverage.rate)} (${lineageCoverage.numerator ?? "unavailable"}/${lineageCoverage.denominator ?? "unavailable"})`,
+    `- Distinct diagnostic-grade cases: ${qualityEvidence.diagnostic_grade_cases ?? "unavailable"} (diagnostic only; excluded from winner coverage)`,
+    `- Reviewed-field coverage: ${formatRate(reviewedCoverage.rate)} (${reviewedCoverage.numerator ?? "unavailable"}/${reviewedCoverage.denominator ?? "unavailable"} fields across ${reviewedCoverage.distinct_cases ?? "unavailable"} cases; transcript-explicit cases: ${reviewedCoverage.transcript_explicit_cases ?? "unavailable"})`,
+    `- Independent full-schema prediction coverage: ${formatRate(independentCoverage.rate)} (${independentCoverage.numerator ?? "unavailable"}/${independentCoverage.denominator ?? "unavailable"}); minimum: ${qualityEvidence.minimum_accepted_full_output_cases}; sample: ${qualityEvidence.accepted_full_output_sample_status}; holdout: ${qualityEvidence.holdout_status}`,
+    `- Lifecycle count window starts: ${qualityEvidence.lifecycle_window_start ?? "unavailable"}`,
+    `- Processing operations in lifecycle window: ${JSON.stringify(qualityEvidence.operations)}`,
+    `- Corpus lifecycle events in lifecycle window: ${JSON.stringify(qualityEvidence.corpus_lifecycle)}`,
+    `- Isolation failures: ${Object.keys(qualityEvidence.isolation_failures).length ? JSON.stringify(qualityEvidence.isolation_failures) : "none observed or unavailable"}`,
+    `- Retention: ${JSON.stringify(qualityEvidence.retention)}`,
+    `- Quarantined explanations: ${qualityEvidence.quarantine.count ?? "unavailable"} (count only; text excluded)`,
+    `- Contract-integrity rejections: ${Object.keys(qualityEvidence.contract_integrity_rejections).length ? JSON.stringify(qualityEvidence.contract_integrity_rejections) : "none observed or unavailable"}`,
     "",
     "## Guardrails",
     "",
@@ -756,6 +1201,118 @@ async function fetchReconciliationRecordings(events, earliest, config) {
   return [...byId.values()];
 }
 
+async function fetchLinkedRecordings(recordings, evaluations, config) {
+  const byId = new Map(recordings.map((row) => [row.id, row]));
+  const missingIds = [...new Set(evaluations
+    .map((evaluation) => evaluation.recording_id)
+    .filter((id) => typeof id === "string" && id && !byId.has(id)))];
+  for (let index = 0; index < missingIds.length; index += 25) {
+    const rows = await fetchRows("throughline_recordings", {
+      select: "id,processing_status",
+      id: `in.(${missingIds.slice(index, index + 25).join(",")})`,
+      order: "created_at.asc,id.asc",
+    }, config);
+    for (const row of rows) byId.set(row.id, row);
+  }
+  return [...byId.values()];
+}
+
+async function fetchEvaluationAggregates(earliest, reportAt, recordings, config) {
+  try {
+    const [
+      contracts,
+      operations,
+      attempts,
+      revisions,
+      evaluations,
+      contributions,
+      corpusCases,
+      corpusEvents,
+      quarantineRows,
+    ] = await Promise.all([
+      fetchRows("throughline_inference_contracts", {
+        select: "id",
+        order: "created_at.asc,id.asc",
+      }, config),
+      fetchRows("throughline_processing_operations", {
+        select: "operation_id,recording_id,inference_contract_id,status,created_at",
+        order: "created_at.asc,operation_id.asc",
+      }, config),
+      fetchRows("throughline_inference_attempts", {
+        select: "operation_id,stage,status",
+        order: "created_at.asc,attempt_id.asc",
+      }, config),
+      fetchRows("throughline_note_revisions", {
+        select: "revision_id,recording_id,processing_operation_id,revision_kind",
+        order: "created_at.asc,revision_id.asc",
+      }, config),
+      fetchRows("throughline_evaluations", {
+        select: "evaluation_id,recording_id,processing_operation_id,evaluated_revision_id,evaluator_kind,notice_version,disclosure_version",
+        order: "created_at.asc,evaluation_id.asc",
+      }, config),
+      fetchRows("throughline_evaluation_contributions", {
+        select: "contribution_id,evaluation_id,note_revision_id,supersedes_contribution_id,event_kind,notice_version,disclosure_version,policy_version",
+        order: "created_at.asc,contribution_id.asc",
+      }, config),
+      fetchRows("throughline_evaluation_corpus_cases", {
+        select: "case_id,contribution_id,label_kind,label_completeness,editable_correction_mask,transcript_explicitly_corrected",
+        order: "materialized_at.asc,case_id.asc",
+      }, config),
+      fetchRows("throughline_evaluation_corpus_events", {
+        select: "case_id,event_kind,reason_code,created_at",
+        order: "created_at.asc,event_id.asc",
+      }, config),
+      fetchRows("throughline_evaluation_text_quarantine", {
+        select: "created_at",
+        created_at: `gte.${earliest}`,
+        order: "created_at.asc",
+      }, config),
+    ]);
+    const lineageRecordings = await fetchLinkedRecordings(recordings, evaluations, config);
+    let retentionCandidates = null;
+    const eligibleSince = process.env
+      .THROUGHLINE_EVALUATION_RETENTION_ELIGIBLE_SINCE?.trim();
+    if (eligibleSince && asDate(eligibleSince)) {
+      const ordinaryCutoff = new Date(reportAt.getTime() - 30 * DAY_MS).toISOString();
+      retentionCandidates = await fetchRpcRows(
+        "throughline_retention_candidates_v1",
+        {
+          ordinary_cutoff: ordinaryCutoff,
+          eligibility_cutoff: new Date(eligibleSince).toISOString(),
+          max_rows: 1000,
+        },
+        config,
+      );
+    }
+    return buildEvaluationAggregates({
+      recordings: lineageRecordings,
+      contracts,
+      operations,
+      attempts,
+      revisions,
+      evaluations,
+      contributions,
+      corpusCases,
+      corpusEvents,
+      quarantineCount: quarantineRows.length,
+      retentionCandidates,
+      windowStart: earliest,
+    });
+  } catch (error) {
+    if (isEvaluationSchemaUnavailable(error)) return { available: false };
+    throw error;
+  }
+}
+
+async function readBenchmarkSummary(summaryPath) {
+  if (!summaryPath) return null;
+  const value = JSON.parse(await fs.readFile(path.resolve(summaryPath), "utf8"));
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Quality evidence summary must be a JSON object");
+  }
+  return { ...value, available: true };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const reportAt = new Date();
@@ -796,11 +1353,17 @@ async function main() {
     }, config),
   ]);
   const recordings = await fetchReconciliationRecordings(events, earliest, config);
+  const [evaluationAggregates, benchmarkSummary] = await Promise.all([
+    fetchEvaluationAggregates(earliest, reportAt, recordings, config),
+    readBenchmarkSummary(args.qualitySummary),
+  ]);
   const snapshot = buildWeeklySnapshot({
     events,
     recordings,
     productFeedback,
     extractionFeedback,
+    evaluationAggregates,
+    benchmarkSummary,
     reportAt,
   });
   const markdown = renderMarkdown(snapshot);

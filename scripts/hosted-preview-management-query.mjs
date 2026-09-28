@@ -1,15 +1,40 @@
 import { isAllowedStartingStateManagementQuery } from "./preview-branch-contract.mjs";
+import {
+  assertMeasurementContractPass,
+  isAllowedMeasurementContractQuery,
+  measurementContractDefinition,
+} from "./measurement-structured-contract.mjs";
 
 const API_ORIGIN = "https://api.supabase.com";
-const MAX_QUERY_BYTES = 4_096;
-const MAX_RESPONSE_BYTES = 65_536;
+const CLASSIFICATION_MAX_QUERY_BYTES = 4_096;
+const STRUCTURED_CONTRACT_MAX_QUERY_BYTES = 65_536;
+const CLASSIFICATION_MAX_RESPONSE_BYTES = 65_536;
+const STRUCTURED_CONTRACT_MAX_RESPONSE_BYTES = 8_192;
 const QUERY_TIMEOUT_MS = 15_000;
 const PROJECT_REF_PATTERN = /^[a-z]{20}$/u;
 const ACCESS_TOKEN_PATTERN = /^sbp_(?:oauth_)?[a-f0-9]{40}$/u;
 const ALLOWED_STAGES = new Set([
   "classification_inventory",
   "classification_snapshot",
+  "measurement_contract_baseline",
+  "measurement_contract_attribution",
+  "measurement_contract_hardening",
 ]);
+
+const isStructuredContractStage = (stage) =>
+  stage === "measurement_contract_baseline" ||
+  stage === "measurement_contract_attribution" ||
+  stage === "measurement_contract_hardening";
+
+const maxQueryBytes = (stage) =>
+  isStructuredContractStage(stage)
+    ? STRUCTURED_CONTRACT_MAX_QUERY_BYTES
+    : CLASSIFICATION_MAX_QUERY_BYTES;
+
+const maxResponseBytes = (stage) =>
+  isStructuredContractStage(stage)
+    ? STRUCTURED_CONTRACT_MAX_RESPONSE_BYTES
+    : CLASSIFICATION_MAX_RESPONSE_BYTES;
 
 function managementQueryFailure(stage, safeReason, retryable = false) {
   const error = new Error(`Management query ${stage} failed: ${safeReason}`);
@@ -49,8 +74,11 @@ function requireInputs({
   }
   if (
     typeof sql !== "string" ||
-    new TextEncoder().encode(sql).byteLength > MAX_QUERY_BYTES ||
-    !isAllowedStartingStateManagementQuery(stage, sql)
+    new TextEncoder().encode(sql).byteLength > maxQueryBytes(stage) ||
+    !(
+      isAllowedStartingStateManagementQuery(stage, sql) ||
+      isAllowedMeasurementContractQuery(stage, sql)
+    )
   ) {
     throw managementQueryFailure(stage, "invalid_request");
   }
@@ -66,10 +94,11 @@ async function cancelBody(body) {
 }
 
 async function boundedResponseBytes(response, stage) {
+  const responseByteLimit = maxResponseBytes(stage);
   const declaredHeader = response.headers.get("content-length");
   if (
     declaredHeader !== null &&
-    (!/^\d+$/u.test(declaredHeader) || Number(declaredHeader) > MAX_RESPONSE_BYTES)
+    (!/^\d+$/u.test(declaredHeader) || Number(declaredHeader) > responseByteLimit)
   ) {
     await cancelBody(response.body);
     throw managementQueryFailure(stage, "invalid_response");
@@ -89,7 +118,7 @@ async function boundedResponseBytes(response, stage) {
         throw managementQueryFailure(stage, "invalid_response");
       }
       totalBytes += value.byteLength;
-      if (totalBytes > MAX_RESPONSE_BYTES) {
+      if (totalBytes > responseByteLimit) {
         await reader.cancel().catch(() => {});
         throw managementQueryFailure(stage, "invalid_response");
       }
@@ -180,4 +209,25 @@ export async function runChildManagementQuery({
     throw managementQueryFailure(stage, "invalid_response");
   }
   return rows;
+}
+
+export async function runChildMeasurementContract({
+  accessToken,
+  childBranch,
+  parentRef,
+  expectedBranchName,
+  phase,
+  fetchImpl = fetch,
+}) {
+  const definition = measurementContractDefinition(phase);
+  const rows = await runChildManagementQuery({
+    accessToken,
+    childBranch,
+    parentRef,
+    expectedBranchName,
+    sql: definition.sql,
+    stage: definition.transportStage,
+    fetchImpl,
+  });
+  return assertMeasurementContractPass(phase, rows);
 }
