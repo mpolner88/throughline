@@ -71,88 +71,63 @@ struct SecondaryButton: View {
 }
 
 struct AIProcessingConsentView: View {
-    enum Context { case recording, demoSave, settings }
+    enum Context { case recording, demoSave }
     var context: Context = .recording
+    var onAgree: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(AIProcessingPermission.storageKey) private var isAllowed = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    Eyebrow(text: "your choice")
-                    Text("AI voice processing").font(.throughlineHeading)
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Your voice, made useful")
+                        .font(.throughlineHeading)
                         .accessibilityAddTraits(.isHeader)
-                    Text("Choose whether Throughline may send your voice notes for AI processing.")
-                    disclosure("What is sent", "The audio you record, plus the transcript and text derived from it, so Throughline can create your transcript, summary and tasks. Saving a demo note sends its transcript again.")
-                    disclosure("Who processes it", "Supabase hosts Throughline’s backend and storage. Groq provides the third-party AI transcription and extraction.")
-                    disclosure("Your control", controlText)
-                    Link("read the privacy policy", destination: AIProcessingPermission.privacyURL)
-                    if context != .settings {
-                        Text(context == .demoSave
-                             ? "After allowing, tap save demo note to try again."
-                             : "After allowing, tap the recorder when you’re ready.")
-                            .foregroundStyle(.secondary)
+                    Text("Throughline sends your recordings and text to Groq to create transcripts, notes and tasks. Supabase hosts and stores them.")
+                        .fixedSize(horizontal: false, vertical: true)
+                    DisclosureGroup("How it works") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("AI stays on for this device until you turn it off in Settings. Turning it off stops new submissions; it doesn’t recall anything already sent. Saving a demo note sends its transcript again.")
+                            Link("Privacy policy", destination: AIProcessingPermission.privacyURL)
+                                .frame(minHeight: 44)
+                        }
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
                     }
                 }
-                .font(.body)
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(24)
             }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 10) {
-                    choiceButton(isAllowed ? "keep AI processing allowed" : "allow AI processing", allowed: true)
-                    choiceButton(isAllowed ? "withdraw permission" : "not now", allowed: false)
+                Button {
+                    AIProcessingPermission.shared.setAllowed(true)
+                    onAgree()
+                    dismiss()
+                } label: {
+                    Text(context == .demoSave ? "Agree and save note" : "Agree and record")
+                        .font(.body.weight(.medium))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .foregroundStyle(.white)
+                        .background(Theme.blue, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
                 }
+                .buttonStyle(.plain)
                 .padding(.horizontal, 24)
-                .padding(.vertical, 12)
+                .padding(.bottom, 16)
                 .background(.background)
             }
-            .navigationTitle("privacy")
+            .navigationTitle("Voice notes")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("close") { dismiss() }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Not now") { dismiss() }
                 }
             }
         }
-    }
-
-    private var controlText: String {
-        "This choice applies to Throughline on this device. "
-        + (context == .settings ? "" : "You can withdraw it later in Settings. ")
-        + "Withdrawing stops future submissions; it does not recall recordings or text already sent."
-    }
-
-    // Match the existing full-width brand buttons, allowing text and targets to grow.
-    private func choiceButton(_ title: String, allowed: Bool) -> some View {
-        Button {
-            AIProcessingPermission.shared.setAllowed(allowed)
-            dismiss()
-        } label: {
-            Text(title)
-                .font(.body.weight(.medium))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .foregroundStyle(allowed ? Color.white : Color.primary)
-                .background(allowed ? Theme.blue : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: Theme.cardRadius)
-                        .stroke(allowed ? Color.clear : Theme.border, lineWidth: 0.5)
-                }
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func disclosure(_ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline).accessibilityAddTraits(.isHeader)
-            Text(text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -161,7 +136,6 @@ struct AccountSettingsView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var captureQueue: CaptureQueue
     @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
-    @State private var showingAIProcessingConsent = false
     @State private var showingBackendSettings = false
     @State private var showingAgentConnection = false
     @State private var showingProductFeedback = false
@@ -209,11 +183,28 @@ struct AccountSettingsView: View {
                     }
                 }
 
-                Section("AI processing") {
-                    LabeledContent("permission", value: hasAIProcessingPermission ? "allowed" : "not allowed")
-                    Button("review AI processing") { showingAIProcessingConsent = true }
-                    Text(hasAIProcessingPermission ? "Review what is sent and withdraw permission for future submissions." : "Review what is sent and allow AI processing.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                Section {
+                    Toggle("AI voice notes", isOn: Binding(
+                        get: { hasAIProcessingPermission },
+                        set: { allowed in
+                            AIProcessingPermission.shared.setAllowed(allowed)
+                            Task {
+                                if allowed { await captureQueue.resume() }
+                                else { await captureQueue.interruptRecording() }
+                            }
+                        }
+                    ))
+                    DisclosureGroup("How it works") {
+                        Text("Groq turns your recordings and text into transcripts, notes and tasks. Supabase hosts and stores them. This setting applies to this device. Turning it off stops new submissions and keeps saved notes available; it doesn’t recall anything already sent. Turning it back on also resumes captures waiting on this phone.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Link("Privacy policy", destination: AIProcessingPermission.privacyURL)
+                    }
+                } header: {
+                    Text("voice notes")
+                } footer: {
+                    Text(hasAIProcessingPermission
+                         ? "Groq processes your recordings and text. Supabase hosts your notes."
+                         : "AI is off. Turn it on to record and save new voice notes using Groq and Supabase. Saved notes stay available.")
                 }
 
                 Section("agent") {
@@ -299,9 +290,6 @@ struct AccountSettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(deleteError ?? "Nothing was deleted. Try again in a moment.")
-        }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(context: .settings)
         }
         .sheet(isPresented: $showingBackendSettings) {
             BackendSettingsView()

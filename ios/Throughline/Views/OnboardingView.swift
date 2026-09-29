@@ -9,6 +9,7 @@ struct OnboardingView: View {
     @StateObject private var recorder = AudioRecorder()
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingAIProcessingConsent = false
+    @State private var aiContinuation = AIProcessingContinuation()
     @State private var isVisible = false
     @State private var step: Int
     @State private var capturedNote: ThroughlineNote?
@@ -81,8 +82,14 @@ struct OnboardingView: View {
         }
         .onAppear { isVisible = true; signInGeneration = appState.accountGeneration }
         .onDisappear { isVisible = false }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(context: appState.isSignedIn && capturedNote != nil ? .demoSave : .recording)
+        .sheet(isPresented: $showingAIProcessingConsent, onDismiss: {
+            let action = aiContinuation.consume(generation: appState.accountGeneration,
+                                                isActive: isVisible && scenePhase == .active)
+            if action == .recording { startRecording() }
+            else if action == .demoSave, appState.isSignedIn { finishOnboarding() }
+        }) {
+            AIProcessingConsentView(context: aiContinuation.action == .demoSave ? .demoSave : .recording,
+                                    onAgree: { aiContinuation.agree() })
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= 30 {
@@ -436,6 +443,7 @@ struct OnboardingView: View {
             stopAndUploadRecording()
         } else {
             guard AIProcessingPermission.shared.isAllowed else {
+                aiContinuation.begin(.recording, generation: appState.accountGeneration)
                 showingAIProcessingConsent = true
                 return
             }
@@ -445,7 +453,7 @@ struct OnboardingView: View {
 
     private func startRecording() {
         guard !isPreparingRecording, !recorder.isRecording, AIProcessingPermission.shared.isAllowed else { return }
-        let startingAccountID = appState.session?.user.id
+        let startingGeneration = appState.accountGeneration
 
         Task {
             isPreparingRecording = true
@@ -453,7 +461,7 @@ struct OnboardingView: View {
 
             await recorder.requestPermissionIfNeeded()
             guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed,
-                  appState.session?.user.id == startingAccountID, step == 1 else { return }
+                  appState.accountGeneration == startingGeneration, step == 1 else { return }
             do {
                 try recorder.start(limitSeconds: nil)
                 ProductAnalytics.track("demo_recording_started")
@@ -583,35 +591,49 @@ struct OnboardingView: View {
         }
         guard !isSavingDemoNote else { return }
 
+        let startingGeneration = appState.accountGeneration
+        let startingOwner = appState.session?.user.id
         Task {
+            guard isVisible, appState.accountGeneration == startingGeneration else { return }
             isSavingDemoNote = true
             authNotice = nil
             authError = nil
             defer { isSavingDemoNote = false }
 
             do {
-                let noteToSave = try await persistDemoNoteIfNeeded()
+                let noteToSave = try await persistDemoNoteIfNeeded(ownerID: startingOwner, generation: startingGeneration)
+                guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 appState.finishOnboarding(with: noteToSave)
             } catch is AIProcessingPermissionError {
+                guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 // Keep the demo on this screen; never present it as an account save.
                 authError = nil
-                authNotice = "Your demo has not been saved to your account. Allow AI processing, then try saving again."
+                authNotice = "Your demo is still here. Turn on AI voice notes to save it to your account."
+                aiContinuation.begin(.demoSave, generation: appState.accountGeneration)
                 showingAIProcessingConsent = true
             } catch {
+                guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 authError = error.localizedDescription
             }
         }
     }
 
-    private func persistDemoNoteIfNeeded() async throws -> ThroughlineNote? {
-        guard appState.isSignedIn, let capturedNote else { return capturedNote }
+    private func persistDemoNoteIfNeeded(ownerID: String?, generation: UUID) async throws -> ThroughlineNote? {
+        guard appState.accountGeneration == generation else { throw CancellationError() }
+        guard let ownerID, let capturedNote else { return capturedNote }
 
         var durableRecordingID: String?
         do {
             let response = try await UploadClient().saveDemoNote(
                 capturedNote,
-                duration: capturedRecordingDuration
+                duration: capturedRecordingDuration,
+                expectedOwnerID: ownerID,
+                beforeDispatch: {
+                    guard isVisible, scenePhase == .active,
+                          appState.accountGeneration == generation else { throw CancellationError() }
+                }
             )
+            guard isVisible, appState.accountGeneration == generation else { throw CancellationError() }
             durableRecordingID = response.id
             guard response.processingStatus == "processed", response.hasNote else {
                 throw UploadClientError.processingFailed(response.processingStatus)
@@ -637,6 +659,8 @@ struct OnboardingView: View {
             return savedNote
         } catch let error as AIProcessingPermissionError {
             throw error
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             ProductAnalytics.track(
                 "recording_failed",

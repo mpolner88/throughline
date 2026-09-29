@@ -660,8 +660,15 @@ struct UploadClient {
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
 
-    func saveDemoNote(_ note: ThroughlineNote, duration: Int) async throws -> UploadResponse {
-        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings"))
+    @MainActor
+    func saveDemoNote(_ note: ThroughlineNote, duration: Int, expectedOwnerID: String,
+                      beforeDispatch: () throws -> Void = {}) async throws -> UploadResponse {
+        try beforeDispatch()
+        guard let auth = try await AuthSessionRefresher.shared.validSession(),
+              auth.user.id == expectedOwnerID,
+              AuthSessionStore.currentSession?.user.id == expectedOwnerID else { throw CancellationError() }
+        var request = URLRequest(url: baseURL.appendingPathComponent("recordings"))
+        request.setValue("Bearer \(auth.accessToken)", forHTTPHeaderField: "Authorization")
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(
@@ -674,6 +681,8 @@ struct UploadClient {
             )
         )
 
+        try Task.checkCancellation()
+        try beforeDispatch()
         let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)

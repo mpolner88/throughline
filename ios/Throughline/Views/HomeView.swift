@@ -23,6 +23,7 @@ struct HomeView: View {
     @State private var microphoneDenied = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingAIProcessingConsent = false
+    @State private var aiContinuation = AIProcessingContinuation()
     @State private var isVisible = false
     @State private var uploadError: String?
     @State private var feedbackStatus: [String: FeedbackStatus] = [:]
@@ -140,8 +141,13 @@ struct HomeView: View {
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showingCaptureSignIn = false } } }
             }
         }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView()
+        .sheet(isPresented: $showingAIProcessingConsent, onDismiss: {
+            if aiContinuation.consume(generation: appState.accountGeneration,
+                                      isActive: isVisible && scenePhase == .active) == .recording {
+                startRecording()
+            }
+        }) {
+            AIProcessingConsentView(onAgree: { aiContinuation.agree() })
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= maxRecordingSeconds {
@@ -287,6 +293,7 @@ struct HomeView: View {
         if recorder.isRecording { stopAndUploadRecording() }
         else {
             guard AIProcessingPermission.shared.isAllowed else {
+                aiContinuation.begin(.recording, generation: appState.accountGeneration)
                 showingAIProcessingConsent = true
                 return
             }
