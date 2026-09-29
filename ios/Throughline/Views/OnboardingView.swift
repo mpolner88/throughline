@@ -1,17 +1,21 @@
+import AuthenticationServices
 import SwiftUI
+import UIKit
 
 struct OnboardingView: View {
     @EnvironmentObject private var appState: AppState
-    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @StateObject private var recorder = AudioRecorder()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var showingAIProcessingConsent = false
+    @State private var isVisible = false
     @State private var step: Int
     @State private var capturedNote: ThroughlineNote?
+    @State private var capturedRecordingDuration = 0
     @State private var uploadError: String?
-    @State private var showingBackendSettings = false
-    @State private var showingAIProcessingConsent = false
     @State private var isUploading = false
     @State private var isFinishingRecording = false
     @State private var isPreparingRecording = false
+    @State private var isSavingDemoNote = false
     @State private var authEmail = ""
     @State private var authPassword = ""
     @State private var authMode: AuthMode = .createAccount
@@ -20,7 +24,10 @@ struct OnboardingView: View {
     @State private var pendingConfirmationEmail: String?
     @State private var isAuthenticating = false
     @State private var isResendingConfirmation = false
-    @State private var suppressAuthModeReset = false
+    @State private var showingEmailAuth = false
+    @State private var appleRawNonce: String?
+    @State private var googleAuthSession: ASWebAuthenticationSession?
+    @State private var providerAvailability = AuthProviderAvailability()
     #if DEBUG
     private let debugStep: Int?
     #endif
@@ -30,6 +37,8 @@ struct OnboardingView: View {
         let debugStep = Self.debugInitialStep
         _step = State(initialValue: debugStep)
         _capturedNote = State(initialValue: debugStep >= 2 ? .sample : nil)
+        _authMode = State(initialValue: Self.debugInitialAuthMode)
+        _showingEmailAuth = State(initialValue: Self.debugShowsEmailAuth)
         self.debugStep = debugStep
         #else
         _step = State(initialValue: 0)
@@ -48,8 +57,6 @@ struct OnboardingView: View {
                 signInScreen.tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-
-            pageIndicator
         }
         .task {
             #if DEBUG
@@ -62,24 +69,18 @@ struct OnboardingView: View {
         .onChange(of: step) { _, newStep in
             trackOnboardingStep(newStep)
         }
+        .onAppear { isVisible = true }
+        .onDisappear { isVisible = false }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView(context: appState.isSignedIn && capturedNote != nil ? .demoSave : .recording)
+        }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= 30 {
                 stopAndUploadRecording()
             }
         }
-        .sheet(isPresented: $showingBackendSettings) {
-            BackendSettingsView()
-        }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(isCurrentlyAllowed: hasAIProcessingPermission) { allowed in
-                hasAIProcessingPermission = allowed
-                if allowed {
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(250))
-                        startRecording()
-                    }
-                }
-            }
+        .task {
+            await loadProviderAvailability()
         }
     }
 
@@ -87,67 +88,44 @@ struct OnboardingView: View {
         HStack {
             Wordmark()
             Spacer()
-
-            #if DEBUG
-            Button("backend") {
-                showingBackendSettings = true
-            }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundStyle(Theme.blue)
-            .buttonStyle(.plain)
-            #endif
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
         .padding(.bottom, 8)
     }
 
-    private var pageIndicator: some View {
-        HStack(spacing: 10) {
-            ForEach(0..<4, id: \.self) { index in
-                Capsule()
-                    .fill(index == step ? Theme.blue : Color.secondary.opacity(0.32))
-                    .frame(width: index == step ? 22 : 7, height: 7)
-                    .animation(.easeInOut(duration: 0.2), value: step)
-            }
-        }
-        .frame(height: 24)
-        .padding(.bottom, 12)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Onboarding step \(step + 1) of 4")
-    }
-
     private var heroScreen: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 20) {
-                Eyebrow(text: "morning capture")
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("voice")
-                    Text("→")
-                        .foregroundStyle(Theme.blue)
-                    Text("agent")
-                }
-                .font(.throughlineTitle)
-                .lineLimit(3)
+            VStack(alignment: .leading, spacing: 22) {
+                Eyebrow(text: "voice notes, structured")
+                Text("Say it.\nGet a plan.")
+                    .font(.throughlineTitle)
 
-                Text("the shortest path from your voice to your AI agent")
+                Text("Turn a daily or weekly voice note into organized to-dos your AI agent can read.")
                     .font(.system(size: 18))
                     .foregroundStyle(.secondary)
-                    .lineSpacing(4)
+                    .lineSpacing(7)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
 
-            Text("Throughline is where you speak notes for your AI agent.")
-                .font(.system(size: 15))
-                .foregroundStyle(.secondary)
-                .lineSpacing(4)
-                .padding(.bottom, 22)
-
-            PrimaryButton(title: "try it") {
+            PrimaryButton(title: "Try a 30-second note") {
                 ProductAnalytics.track("onboarding_started")
                 step = 1
             }
+
+            Button("Sign in") {
+                authMode = .signIn
+                showingEmailAuth = false
+                step = 3
+            }
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(Theme.blue)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .buttonStyle(.plain)
+            .accessibilityHint("Skip the demo and sign in to an existing account")
         }
         .padding(24)
     }
@@ -155,10 +133,10 @@ struct OnboardingView: View {
     private var recordScreen: some View {
         VStack(spacing: 28) {
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow(text: "demo recording")
-                Text("say what's on your mind")
+                Eyebrow(text: "30-second demo")
+                Text("Talk through today\nor the week.")
                     .font(.throughlineHeading)
-                Text("Before anything is sent, Throughline asks permission to send your audio to Supabase and Groq for transcription and note creation.")
+                Text("Say your priorities, errands, and follow-ups naturally.")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
@@ -199,8 +177,8 @@ struct OnboardingView: View {
         if let note = capturedNote {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Eyebrow(text: "ready")
-                    Text("your thoughts became a note")
+                    Eyebrow(text: "your plan")
+                    Text("Your voice note\nbecame to-dos.")
                         .font(.throughlineHeading)
                 }
 
@@ -218,14 +196,18 @@ struct OnboardingView: View {
 
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 9) {
-                        Eyebrow(text: "todos")
-                        ForEach(note.todos) { todo in
-                            Text(todo.text)
-                                .font(.system(size: 15))
+                        Eyebrow(text: "to-do plan")
+                        ForEach(note.displayImportantActionItems) { item in
+                            HStack(alignment: .firstTextBaseline, spacing: 9) {
+                                Image(systemName: "circle")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Theme.blue)
+                                Text(item.text)
+                                    .font(.system(size: 15))
+                            }
                         }
                     }
 
-                    FlowPills(note: note)
                 }
                 .padding(18)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -236,7 +218,9 @@ struct OnboardingView: View {
 
                 Spacer()
 
-                PrimaryButton(title: "continue →") {
+                PrimaryButton(title: "Save these to-do's") {
+                    authMode = .createAccount
+                    showingEmailAuth = false
                     step = 3
                 }
             }
@@ -267,8 +251,11 @@ struct OnboardingView: View {
     private var signInScreen: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow(text: authMode.eyebrow)
-                Text(authMode.heading)
+                let eyebrow = showingEmailAuth ? authMode.eyebrow : authMode.providerEyebrow
+                if !eyebrow.isEmpty {
+                    Eyebrow(text: eyebrow)
+                }
+                Text(showingEmailAuth ? authMode.heading : authMode.providerHeading)
                     .font(.throughlineHeading)
                 Text(authSupportingText)
                     .font(.system(size: 15))
@@ -280,96 +267,155 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                Picker("Account", selection: $authMode) {
-                    Text("create").tag(AuthMode.createAccount)
-                    Text("sign in").tag(AuthMode.signIn)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: authMode) { _, _ in
-                    if suppressAuthModeReset {
-                        suppressAuthModeReset = false
-                        return
+                if appState.isSignedIn {
+                    if let authNotice {
+                        AuthMessage(text: authNotice, tone: .notice)
                     }
-
-                    authError = nil
-                    authNotice = nil
-                    pendingConfirmationEmail = nil
-                    isResendingConfirmation = false
-                }
-
-                VStack(spacing: 10) {
-                    TextField("email address", text: $authEmail)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .submitLabel(.next)
-                        .font(.system(size: 16))
-                        .padding(.horizontal, 14)
-                        .frame(height: 48)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                                .stroke(Theme.border, lineWidth: 0.5)
+                    if let authError {
+                        AuthMessage(text: authError, tone: .error)
+                    }
+                    PrimaryButton(title: isSavingDemoNote ? "saving" : (capturedNote == nil ? "continue" : "save demo note")) {
+                        finishOnboarding()
+                    }
+                    .disabled(isSavingDemoNote)
+                    if capturedNote != nil {
+                        Button {
+                            appState.finishOnboarding(with: nil)
+                        } label: {
+                            Text("continue without saving demo")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
-
-                    SecureField("password", text: $authPassword)
-                        .textContentType(authMode == .createAccount ? .newPassword : .password)
-                        .submitLabel(.go)
-                        .onSubmit {
-                            if canSubmitAuth {
-                                authenticate()
+                        .buttonStyle(.plain)
+                        .disabled(isSavingDemoNote)
+                    }
+                } else if showingEmailAuth {
+                    VStack(spacing: 10) {
+                        TextField("email address", text: $authEmail)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .submitLabel(.next)
+                            .font(.system(size: 16))
+                            .padding(.horizontal, 14)
+                            .frame(height: 48)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                                    .stroke(Theme.border, lineWidth: 0.5)
                             }
-                        }
-                        .font(.system(size: 16))
-                        .padding(.horizontal, 14)
-                        .frame(height: 48)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                                .stroke(Theme.border, lineWidth: 0.5)
-                        }
-                }
 
-                if let authNotice {
-                    AuthMessage(text: authNotice, tone: .notice)
-                }
-
-                if let authError {
-                    AuthMessage(text: authError, tone: .error)
-                }
-
-                if pendingConfirmationEmail != nil {
-                    Button(isResendingConfirmation ? "sending confirmation" : "resend confirmation email") {
-                        resendConfirmationEmail()
+                        SecureField("password", text: $authPassword)
+                            .textContentType(authMode == .createAccount ? .newPassword : .password)
+                            .submitLabel(.go)
+                            .onSubmit {
+                                if canSubmitAuth {
+                                    authenticate()
+                                }
+                            }
+                            .font(.system(size: 16))
+                            .padding(.horizontal, 14)
+                            .frame(height: 48)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                                    .stroke(Theme.border, lineWidth: 0.5)
+                            }
                     }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.blue)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 36)
-                    .disabled(isResendingConfirmation)
-                }
 
-                PrimaryButton(title: isAuthenticating ? "working" : authMode.primaryTitle) {
-                    authenticate()
-                }
-                .disabled(isAuthenticating || !canSubmitAuth)
+                    if let authNotice {
+                        AuthMessage(text: authNotice, tone: .notice)
+                    }
 
-                if !canSubmitAuth {
-                    Text("Enter both email address and password to continue.")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    if let authError {
+                        AuthMessage(text: authError, tone: .error)
+                    }
+
+                    if pendingConfirmationEmail != nil {
+                        Button(isResendingConfirmation ? "sending confirmation" : "resend confirmation email") {
+                            resendConfirmationEmail()
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.blue)
                         .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .disabled(isResendingConfirmation)
+                    }
+
+                    PrimaryButton(title: isAuthenticating ? "working" : authMode.primaryTitle) {
+                        authenticate()
+                    }
+                    .disabled(isAuthenticating || !canSubmitAuth)
+
+                    Button(authMode.switchTitle) {
+                        switchEmailAuthMode()
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 38)
+
+                    Button("← other sign-in options") {
+                        showingEmailAuth = false
+                        authError = nil
+                        authNotice = nil
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 38)
+                } else {
+                    if providerAvailability.google || previewSocialProviders {
+                        ConsumerGoogleSignInButton {
+                            startGoogleSignIn()
+                        }
+                        .disabled(isAuthenticating)
+                    }
+
+                    if providerAvailability.apple || previewSocialProviders {
+                        SignInWithAppleButton(.continue) { request in
+                            prepareAppleSignIn(request)
+                        } onCompletion: { result in
+                            completeAppleSignIn(result)
+                        }
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(height: ProviderButtonMetrics.height)
+                        .clipShape(
+                            RoundedRectangle(
+                                cornerRadius: ProviderButtonMetrics.cornerRadius,
+                                style: .continuous
+                            )
+                        )
+                        .disabled(isAuthenticating)
+                    }
+
+                    ConsumerEmailSignInButton {
+                        showingEmailAuth = true
+                        authError = nil
+                        authNotice = nil
+                    }
+                    .disabled(isAuthenticating)
+
+                    if let authError {
+                        AuthMessage(text: authError, tone: .error)
+                    }
+
                 }
 
-                Button(authMode.switchTitle) {
-                    authMode = authMode == .createAccount ? .signIn : .createAccount
-                    authError = nil
-                    authNotice = nil
+                VStack(spacing: 3) {
+                    Text("By continuing you agree to Throughline’s")
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 3) {
+                        Link("Terms", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                        Text("and")
+                            .foregroundStyle(.secondary)
+                        Link("Privacy Policy", destination: URL(string: "https://mpolner88.github.io/throughline/privacy/")!)
+                    }
                 }
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12, weight: .regular))
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .multilineTextAlignment(.center)
+                .padding(.top, 6)
             }
         }
         .padding(24)
@@ -379,23 +425,25 @@ struct OnboardingView: View {
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
-            guard hasAIProcessingPermission else {
+            guard AIProcessingPermission.shared.isAllowed else {
                 showingAIProcessingConsent = true
                 return
             }
-
             startRecording()
         }
     }
 
     private func startRecording() {
-        guard !isPreparingRecording, !recorder.isRecording else { return }
+        guard !isPreparingRecording, !recorder.isRecording, AIProcessingPermission.shared.isAllowed else { return }
+        let startingAccountID = appState.session?.user.id
 
         Task {
             isPreparingRecording = true
             defer { isPreparingRecording = false }
 
             await recorder.requestPermissionIfNeeded()
+            guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed,
+                  appState.session?.user.id == startingAccountID, step == 1 else { return }
             do {
                 try recorder.start(limitSeconds: nil)
                 ProductAnalytics.track("demo_recording_started")
@@ -420,10 +468,10 @@ struct OnboardingView: View {
         }
 
         if recorder.isRecording {
-            return "tap to stop when you're done"
+            return "Tap again when you’re done"
         }
 
-        return "tap to start"
+        return "Tap again when you’re done"
     }
 
     private var recordButtonPhase: OnboardingRecordButtonPhase {
@@ -451,6 +499,10 @@ struct OnboardingView: View {
             return "Check \(pendingConfirmationEmail), including spam, for the confirmation link. After confirming, return here and sign in."
         }
 
+        if !showingEmailAuth {
+            return authMode.providerSupportingText
+        }
+
         return authMode.supportingText
     }
 
@@ -466,12 +518,6 @@ struct OnboardingView: View {
                 try await Task.sleep(for: .milliseconds(520))
                 isFinishingRecording = false
 
-                guard hasAIProcessingPermission else {
-                    try? FileManager.default.removeItem(at: fileURL)
-                    uploadError = "Allow AI processing before sending a recording to Supabase and Groq."
-                    return
-                }
-
                 isUploading = true
                 defer { isUploading = false }
 
@@ -480,19 +526,40 @@ struct OnboardingView: View {
                     duration: duration,
                     type: .freeform
                 )
-                capturedNote = response.displayNote
+                guard response.processingStatus == "processed", response.hasNote else {
+                    throw UploadClientError.processingFailed(response.processingStatus)
+                }
+                let note = response.displayNote
+                guard !note.displayMostImportant.isEmpty || !note.summary.isEmpty else {
+                    throw UploadClientError.processingFailed("empty_structure")
+                }
+                capturedRecordingDuration = duration
+                capturedNote = note
                 ProductAnalytics.track(
                     "demo_recording_completed",
-                    properties: ["processing_status": response.processingStatus]
+                    properties: [
+                        "processing_status": response.processingStatus,
+                        "duration_bucket": recordingDurationBucket(duration),
+                        "structured_items": String(note.displayMostImportant.count),
+                        "has_note": response.hasNote ? "true" : "false"
+                    ]
                 )
                 uploadError = nil
                 step = 2
             } catch {
                 isFinishingRecording = false
                 isUploading = false
+                if error is AIProcessingPermissionError {
+                    uploadError = "AI processing is off, so this recording was not sent. It cannot be retried from this screen."
+                    return
+                }
                 ProductAnalytics.track(
                     "recording_failed",
-                    properties: ["surface": "onboarding", "stage": "demo_upload"]
+                    properties: [
+                        "surface": "onboarding",
+                        "stage": "demo_upload",
+                        "failure_type": recordingFailureType(error)
+                    ]
                 )
                 uploadError = error.localizedDescription
             }
@@ -500,7 +567,240 @@ struct OnboardingView: View {
     }
 
     private func finishOnboarding() {
-        appState.finishOnboarding(with: capturedNote)
+        guard !isSavingDemoNote else { return }
+
+        Task {
+            isSavingDemoNote = true
+            authNotice = nil
+            authError = nil
+            defer { isSavingDemoNote = false }
+
+            do {
+                let noteToSave = try await persistDemoNoteIfNeeded()
+                appState.finishOnboarding(with: noteToSave)
+            } catch is AIProcessingPermissionError {
+                // Keep the demo on this screen; never present it as an account save.
+                authError = nil
+                authNotice = "Your demo has not been saved to your account. Allow AI processing, then try saving again."
+                showingAIProcessingConsent = true
+            } catch {
+                authError = error.localizedDescription
+            }
+        }
+    }
+
+    private func persistDemoNoteIfNeeded() async throws -> ThroughlineNote? {
+        guard appState.isSignedIn, let capturedNote else { return capturedNote }
+
+        var durableRecordingID: String?
+        do {
+            let response = try await UploadClient().saveDemoNote(
+                capturedNote,
+                duration: capturedRecordingDuration
+            )
+            durableRecordingID = response.id
+            guard response.processingStatus == "processed", response.hasNote else {
+                throw UploadClientError.processingFailed(response.processingStatus)
+            }
+
+            let savedNote = response.displayNote
+            ProductAnalytics.track(
+                "recording_uploaded",
+                properties: [
+                    "surface": "onboarding_promotion",
+                    "duration_bucket": recordingDurationBucket(capturedRecordingDuration)
+                ],
+                recordingID: response.id
+            )
+            ProductAnalytics.track(
+                "recording_processed",
+                properties: [
+                    "surface": "onboarding_promotion",
+                    "processing_status": response.processingStatus
+                ],
+                recordingID: response.id
+            )
+            return savedNote
+        } catch let error as AIProcessingPermissionError {
+            throw error
+        } catch {
+            ProductAnalytics.track(
+                "recording_failed",
+                properties: [
+                    "surface": "onboarding",
+                    "stage": durableRecordingID == nil ? "demo_promotion" : "processing",
+                    "failure_type": recordingFailureType(error)
+                ],
+                recordingID: durableRecordingID
+            )
+            return capturedNote
+        }
+    }
+
+    private func recordingDurationBucket(_ seconds: Int) -> String {
+        switch seconds {
+        case ..<5:
+            "under_5_seconds"
+        case 5..<15:
+            "5_to_14_seconds"
+        case 15..<60:
+            "15_to_59_seconds"
+        default:
+            "60_seconds_or_more"
+        }
+    }
+
+    private func recordingFailureType(_ error: Error) -> String {
+        guard let uploadError = error as? UploadClientError else {
+            return "client_error"
+        }
+
+        switch uploadError {
+        case .invalidResponse:
+            return "invalid_response"
+        case let .serverError(status, _):
+            return "http_\(status)"
+        case let .processingFailed(status):
+            return "processing_\(status)"
+        }
+    }
+
+    private func prepareAppleSignIn(_ request: ASAuthorizationAppleIDRequest) {
+        do {
+            let nonce = try AuthNonce.random()
+            appleRawNonce = nonce
+            request.requestedScopes = [.email, .fullName]
+            request.nonce = AuthNonce.sha256(nonce)
+            authError = nil
+            ProductAnalytics.track("auth_started", properties: ["mode": "apple"])
+        } catch {
+            authError = "Sign in with Apple could not start. Please try again."
+        }
+    }
+
+    private func loadProviderAvailability() async {
+        do {
+            providerAvailability = try await AuthClient().providerAvailability()
+        } catch {
+            providerAvailability = AuthProviderAvailability()
+        }
+    }
+
+    private var previewSocialProviders: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("--throughline-preview-social-auth")
+        #else
+        false
+        #endif
+    }
+
+    private func completeAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+        guard !isAuthenticating else { return }
+
+        switch result {
+        case let .success(authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let identityToken = credential.identityToken,
+                  let token = String(data: identityToken, encoding: .utf8),
+                  let nonce = appleRawNonce
+            else {
+                authError = "Apple did not return the information needed to sign in. Please try again."
+                return
+            }
+
+            Task {
+                isAuthenticating = true
+                defer { isAuthenticating = false }
+                do {
+                    let session = try await AuthClient().signInWithIDToken(
+                        provider: .apple,
+                        idToken: token,
+                        nonce: nonce
+                    )
+                    completeSocialAuthentication(session, mode: "apple")
+                } catch {
+                    failSocialAuthentication(error, mode: "apple")
+                }
+            }
+
+        case let .failure(error):
+            if let authorizationError = error as? ASAuthorizationError,
+               authorizationError.code == .canceled {
+                return
+            }
+            failSocialAuthentication(error, mode: "apple")
+        }
+    }
+
+    private func startGoogleSignIn() {
+        guard !isAuthenticating else { return }
+
+        do {
+            let callbackURL = URL(string: "throughline://auth/callback")!
+            let authURL = try AuthClient().oauthSignInURL(provider: .google, redirectTo: callbackURL)
+            ProductAnalytics.track("auth_started", properties: ["mode": "google"])
+            isAuthenticating = true
+            authError = nil
+
+            let session = ASWebAuthenticationSession(
+                url: authURL,
+                callbackURLScheme: callbackURL.scheme
+            ) { callbackURL, error in
+                Task { @MainActor in
+                    isAuthenticating = false
+                    if let webError = error as? ASWebAuthenticationSessionError,
+                       webError.code == .canceledLogin {
+                        return
+                    }
+
+                    guard let callbackURL else {
+                        failSocialAuthentication(error ?? AuthClientError.invalidResponse, mode: "google")
+                        return
+                    }
+
+                    do {
+                        let authSession = try await AuthClient().session(fromOAuthCallback: callbackURL)
+                        completeSocialAuthentication(authSession, mode: "google")
+                    } catch {
+                        failSocialAuthentication(error, mode: "google")
+                    }
+                }
+            }
+            session.presentationContextProvider = ThroughlineWebAuthenticationPresenter.shared
+            session.prefersEphemeralWebBrowserSession = false
+            googleAuthSession = session
+
+            if !session.start() {
+                isAuthenticating = false
+                authError = "Google sign-in could not start. Please try again."
+            }
+        } catch {
+            isAuthenticating = false
+            failSocialAuthentication(error, mode: "google")
+        }
+    }
+
+    private func completeSocialAuthentication(_ session: AuthSession, mode: String) {
+        appState.setSession(session)
+        authError = nil
+        authNotice = nil
+        ProductAnalytics.track(
+            "auth_succeeded",
+            properties: [
+                "mode": mode,
+                "account_state": session.user.inferredAccountState,
+                "onboarding_path": capturedNote == nil ? "direct" : "demo"
+            ]
+        )
+        finishOnboarding()
+    }
+
+    private func failSocialAuthentication(_ error: Error, mode: String) {
+        ProductAnalytics.track(
+            "auth_failed",
+            properties: ["mode": mode, "reason": authenticationFailureReason(error)]
+        )
+        authError = error.localizedDescription
     }
 
     private func authenticate() {
@@ -536,7 +836,11 @@ struct OnboardingView: View {
                 isResendingConfirmation = false
                 ProductAnalytics.track(
                     "auth_succeeded",
-                    properties: ["mode": authMode.analyticsValue]
+                    properties: [
+                        "mode": authMode.analyticsValue,
+                        "account_state": authMode == .createAccount ? "new" : "existing",
+                        "onboarding_path": capturedNote == nil ? "direct" : "demo"
+                    ]
                 )
                 finishOnboarding()
             } catch {
@@ -639,8 +943,19 @@ struct OnboardingView: View {
 
     private func switchToSignInPreservingAuthMessage() {
         guard authMode != .signIn else { return }
-        suppressAuthModeReset = true
         authMode = .signIn
+    }
+
+    private func switchEmailAuthMode() {
+        authMode = authMode == .createAccount ? .signIn : .createAccount
+        clearAuthenticationMessages()
+    }
+
+    private func clearAuthenticationMessages() {
+        authError = nil
+        authNotice = nil
+        pendingConfirmationEmail = nil
+        isResendingConfirmation = false
     }
 
     private func trackOnboardingStep(_ step: Int) {
@@ -681,6 +996,22 @@ struct OnboardingView: View {
 
         return min(max(step, 0), 3)
     }
+
+    private static var debugInitialAuthMode: AuthMode {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "--throughline-auth-mode"),
+              arguments.indices.contains(index + 1),
+              arguments[index + 1] == "sign-in"
+        else {
+            return .createAccount
+        }
+
+        return .signIn
+    }
+
+    private static var debugShowsEmailAuth: Bool {
+        ProcessInfo.processInfo.arguments.contains("--throughline-preview-email-auth")
+    }
     #endif
 }
 
@@ -702,10 +1033,33 @@ private enum AuthMode {
         }
     }
 
+    var providerEyebrow: String {
+        switch self {
+        case .createAccount: ""
+        case .signIn: "welcome back"
+        }
+    }
+
+    var providerHeading: String {
+        switch self {
+        case .createAccount: "Let’s Get Started.\nFor Free."
+        case .signIn: "sign in to Throughline"
+        }
+    }
+
+    var providerSupportingText: String {
+        switch self {
+        case .createAccount:
+            "Create an account to keep your to-dos and make them available to your AI agent."
+        case .signIn:
+            "Choose how you usually sign in. Your saved notes and tasks will be waiting for you."
+        }
+    }
+
     var supportingText: String {
         switch self {
         case .createAccount:
-            "Create an account to save voice notes. We’ll email a confirmation link before the first sign-in."
+            "Create an account with email to keep this note and everything you capture next."
         case .signIn:
             "Use the email and password for your Throughline account."
         }
@@ -721,7 +1075,7 @@ private enum AuthMode {
     var switchTitle: String {
         switch self {
         case .createAccount: "Already have an account? Sign in"
-        case .signIn: "Create a new account"
+        case .signIn: "Need an account? Create one"
         }
     }
 
@@ -730,6 +1084,89 @@ private enum AuthMode {
         case .createAccount: "create_account"
         case .signIn: "sign_in"
         }
+    }
+}
+
+private final class ThroughlineWebAuthenticationPresenter: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = ThroughlineWebAuthenticationPresenter()
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }
+            ?? ASPresentationAnchor()
+    }
+}
+
+private enum ProviderButtonMetrics {
+    static let height: CGFloat = 56
+    static let cornerRadius: CGFloat = 14
+    static let googleBorder = Color(red: 218 / 255, green: 224 / 255, blue: 232 / 255)
+    static let labelColor = Color(red: 15 / 255, green: 27 / 255, blue: 45 / 255)
+}
+
+private struct ConsumerGoogleSignInButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image("GoogleG")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 19, height: 19)
+                    .accessibilityHidden(true)
+
+                Text("Continue with Google")
+                    .font(.custom("GoogleSans-Medium", size: 17))
+                    .foregroundStyle(ProviderButtonMetrics.labelColor)
+            }
+            .modifier(ProviderButtonChrome())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Continue with Google")
+    }
+}
+
+private struct ConsumerEmailSignInButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("Continue with email")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Theme.blue)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Continue with email")
+    }
+}
+
+private struct ProviderButtonChrome: ViewModifier {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity)
+            .frame(height: ProviderButtonMetrics.height)
+            .background(.white)
+            .overlay {
+                RoundedRectangle(
+                    cornerRadius: ProviderButtonMetrics.cornerRadius,
+                    style: .continuous
+                )
+                .stroke(ProviderButtonMetrics.googleBorder, lineWidth: 1)
+            }
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: ProviderButtonMetrics.cornerRadius,
+                    style: .continuous
+                )
+            )
+            .opacity(isEnabled ? 1 : 0.55)
     }
 }
 
@@ -853,7 +1290,7 @@ private struct OnboardingRecordButton: View {
             return "stop recording"
         }
 
-        return "start recording"
+        return "Start demo recording"
     }
 
     private func syncAnimation(with phase: OnboardingRecordButtonPhase, animated: Bool) {

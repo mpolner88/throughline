@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidate C — The save receipt · Throughline capture durability</title>
+<style>
+  :root {
+    --blue: #2563EB;
+    --blue-lifted: #3B82F6;
+    --pill-bg: #EFF6FF;
+    --pill-text: #1E3A8C;
+    --bg: #FFFFFF;
+    --ink: #111114;
+    --sec: #6E6E73;
+    --border: rgba(17, 17, 20, 0.14);
+    --page: #F4F4F6;
+    --danger: #C93A3A;
+    --status-bg: rgba(37, 99, 235, 0.08);
+  }
+  [data-theme="dark"] {
+    --blue: #2563EB;
+    --blue-lifted: #3B82F6;
+    --pill-bg: rgba(59, 130, 246, 0.16);
+    --pill-text: #A9C4FF;
+    --bg: #0E0E10;
+    --ink: #F4F4F5;
+    --sec: #9A9AA1;
+    --border: rgba(244, 244, 245, 0.16);
+    --page: #050506;
+    --danger: #E06C6C;
+    --status-bg: rgba(59, 130, 246, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink);
+    padding: 48px 40px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .masthead { max-width: 880px; margin-bottom: 44px; }
+  .masthead .eyebrow { margin-bottom: 10px; }
+  .masthead h1 { font-size: 34px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 12px; }
+  .masthead p { font-size: 15px; line-height: 1.55; color: var(--sec); max-width: 640px; }
+  .masthead .thesis { color: var(--ink); margin-bottom: 8px; }
+  .theme-toggle {
+    position: fixed; top: 20px; right: 24px; z-index: 50;
+    font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--ink); cursor: pointer;
+  }
+  .eyebrow {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--sec);
+  }
+  .eyebrow.blue { color: var(--blue); }
+
+  .frames { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  .frame { width: 390px; }
+  .phone {
+    width: 390px; height: 844px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 44px;
+    overflow: hidden; display: flex; flex-direction: column; position: relative;
+  }
+  .statusbar {
+    height: 52px; flex: none; display: flex; align-items: center;
+    justify-content: space-between; padding: 10px 34px 0;
+    font-size: 15px; font-weight: 600;
+  }
+  .statusbar .right { font-size: 12px; letter-spacing: 2px; }
+  .topbar {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 14px;
+  }
+  .wordmark { font-size: 21px; font-weight: 500; letter-spacing: -0.01em;
+    border-bottom: 3px solid var(--blue); padding-bottom: 3px; line-height: 1.1; }
+  .gear { color: var(--ink); font-size: 18px; opacity: 0.85; }
+  .content { flex: 1; overflow: hidden; padding: 8px 24px 0; display: flex; flex-direction: column; gap: 22px; }
+  .dateblock { display: flex; flex-direction: column; gap: 10px; }
+  .datetext { font-size: 16px; font-weight: 500; }
+  .h-plan { font-size: 30px; font-weight: 500; letter-spacing: -0.01em; }
+
+  .task-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 0.7px solid var(--border); border-radius: 8px;
+    padding: 12px 11px; background: var(--bg);
+  }
+  .task-circle { width: 20px; height: 20px; border-radius: 50%; border: 1.8px solid var(--sec); flex: none; margin-top: 1px; }
+  .task-text { font-size: 15px; font-weight: 500; line-height: 1.35; }
+  .task-meta { font-size: 12px; color: var(--sec); margin-top: 3px; }
+
+  .card {
+    border: 0.7px solid var(--border); border-radius: 8px;
+    padding: 18px; display: flex; flex-direction: column; gap: 13px; background: var(--bg);
+  }
+  .card .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card .title { font-size: 19px; font-weight: 500; margin-top: 6px; }
+  .trash { width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center; color: var(--sec); font-size: 13px; flex: none; }
+  .prose { font-size: 14px; line-height: 1.5; color: var(--sec); }
+  .mini-section { display: flex; flex-direction: column; gap: 8px; }
+  .mini-item { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+  .mini-circle { width: 16px; height: 16px; border: 1.6px solid var(--sec); border-radius: 50%; flex: none; margin-top: 1px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { font-size: 11px; padding: 6px 9px; border-radius: 999px; background: var(--pill-bg); color: var(--pill-text); }
+  .truthline { font-size: 12px; color: var(--sec); display: flex; align-items: center; gap: 6px; }
+  .truthline .tick { color: var(--blue); font-size: 12px; }
+  .readnote { color: var(--blue); font-size: 13px; font-weight: 500; }
+  .duration { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  .btn-small {
+    font-size: 13px; font-weight: 500; padding: 10px 14px; min-height: 44px;
+    border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-outline { border: 0.7px solid var(--border); color: var(--ink); background: var(--bg); }
+  .btn-quiet { color: var(--sec); }
+
+  .recorder {
+    flex: none; border-top: 0.5px solid var(--border);
+    padding: 12px 24px 22px; display: flex; flex-direction: column; gap: 9px;
+    background: var(--bg);
+  }
+  .rec-btn {
+    border-radius: 8px; color: #fff; text-align: center;
+    background: linear-gradient(150deg, var(--blue-lifted), var(--blue) 62%);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.16);
+    border: 1px solid rgba(255,255,255,0.22);
+    padding: 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    min-height: 92px; justify-content: center;
+  }
+  .rec-mark { display: flex; gap: 18px; align-items: center; height: 24px; }
+  .rec-mark span { width: 34px; height: 5px; border-radius: 3px; background: #fff; display: block; }
+  .rec-ring { width: 34px; height: 34px; border-radius: 50%; border: 5px solid #fff; border-top-color: transparent; }
+  .rec-title { font-size: 16px; font-weight: 500; }
+  .rec-timer { font-size: 28px; font-weight: 600; font-family: ui-rounded, -apple-system, sans-serif; font-variant-numeric: tabular-nums; }
+  .rec-support { font-size: 13px; opacity: 0.86; }
+
+  /* ——— status row (dismissed receipt) ——— */
+  .pulse-row {
+    flex: none; display: flex; align-items: center; gap: 10px;
+    padding: 12px 24px; border-top: 0.5px solid var(--border);
+    font-size: 13px; font-weight: 500; color: var(--sec); background: var(--bg);
+  }
+  .pulse-row .view { margin-left: auto; color: var(--blue); font-weight: 500; }
+  .pulse-row .spin { width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--sec) 30%, transparent); border-top-color: var(--sec); flex: none; }
+  .pulse-row .warn { color: var(--danger); width: 13px; text-align: center; flex: none; font-weight: 600; }
+  .pulse-row .hold { color: var(--sec); width: 13px; text-align: center; flex: none; }
+
+  /* ——— the receipt sheet ——— */
+  .overlay-dim { position: absolute; inset: 0; background: rgba(0,0,0,0.34); border-radius: 44px; }
+  .receipt {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--bg); border-radius: 20px 20px 44px 44px;
+    padding: 10px 24px 30px; display: flex; flex-direction: column; gap: 18px;
+    border-top: 0.5px solid var(--border);
+  }
+  .grabber { width: 38px; height: 5px; border-radius: 3px; background: var(--border); margin: 2px auto 0; }
+  .receipt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+  .receipt-head .left { display: flex; flex-direction: column; gap: 5px; }
+  .receipt-title { font-size: 19px; font-weight: 500; }
+  .play-ghost { border: 0.7px solid var(--border); border-radius: 8px; min-height: 44px;
+    padding: 10px 14px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+
+  .thread { display: flex; flex-direction: column; }
+  .stage { display: flex; gap: 14px; }
+  .stage .rail { display: flex; flex-direction: column; align-items: center; width: 20px; flex: none; }
+  .stage .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--bg); flex: none; margin-top: 3px;
+  }
+  .stage.done .dot { background: var(--blue); border-color: var(--blue); }
+  .stage.active .dot { border-color: var(--blue); }
+  .stage.warn-stage .dot { border-color: var(--danger); }
+  .stage .line { width: 1.5px; flex: 1; background: var(--border); min-height: 22px; }
+  .stage.done .line { background: var(--blue); }
+  .stage:last-child .line { display: none; }
+  .stage .body { padding-bottom: 20px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .stage:last-child .body { padding-bottom: 2px; }
+  .stage-label { font-size: 15px; font-weight: 500; color: var(--sec); display: flex; align-items: center; gap: 8px; }
+  .stage.done .stage-label, .stage.active .stage-label { color: var(--ink); }
+  .stage-sub { font-size: 13px; color: var(--sec); line-height: 1.45; }
+  .stage-sub.warn-text { color: var(--danger); }
+  .stage .spin { width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--sec) 30%, transparent); border-top-color: var(--blue); flex: none; }
+  .stage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .receipt-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .receipt-foot .hint { font-size: 13px; color: var(--sec); line-height: 1.45; }
+  .receipt-foot .close { color: var(--blue); font-size: 15px; font-weight: 500; padding: 10px 4px; min-height: 44px; display: inline-flex; align-items: center; }
+
+  .anno { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .anno h3 { font-size: 15px; font-weight: 600; }
+  .anno p, .anno li { font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .anno ul { padding-left: 17px; }
+  .anno .a11y { border-left: 2px solid var(--blue); padding-left: 10px; }
+
+  .doc { max-width: 880px; margin-top: 72px; display: flex; flex-direction: column; gap: 16px; }
+  .doc h2 { font-size: 22px; font-weight: 500; }
+  .doc table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .doc th, .doc td { border: 1px solid var(--border); padding: 9px 11px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .doc th { font-weight: 600; background: color-mix(in srgb, var(--border) 24%, transparent); }
+  .doc p, .doc li { font-size: 14px; line-height: 1.55; color: var(--sec); }
+  .doc ul { padding-left: 18px; }
+  .ax .stage-label { font-size: 24px; }
+  .ax .stage-sub { font-size: 20px; }
+  .ax .receipt-title { font-size: 28px; }
+  .ax .btn-small, .ax .play-ghost { font-size: 21px; padding: 14px 16px; }
+  .ax .receipt-foot .hint { font-size: 20px; }
+</style>
+<script>if (new URLSearchParams(location.search).get("theme") === "dark") document.documentElement.dataset.theme = "dark";</script>
+</head>
+<body>
+<button class="theme-toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? '' : 'dark'">Light / Dark</button>
+
+<header class="masthead">
+  <div class="eyebrow blue">Capture durability · Candidate C · design-only mock · 2026-08-30 · synthetic content</div>
+  <h1>The save receipt</h1>
+  <p class="thesis">When you stop talking, a quiet sheet rises from the recorder and draws the capture’s journey as a literal throughline — on your phone → saved to your account → in today’s plan → readable by your agent. The brand’s line becomes the product’s proof. Swipe it away and the journey continues on its own; failure is the one thing that waits for you.</p>
+  <p>The receipt is also where replay always lives: you can listen to what you said at any stage, not only after a failure.</p>
+</header>
+
+<div class="frames">
+
+  <!-- F1: receipt risen, stage 1 done, stage 2 active -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content" style="opacity:.5">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="overlay-dim"></div>
+      <div class="receipt">
+        <div class="grabber"></div>
+        <div class="receipt-head">
+          <div class="left">
+            <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+            <div class="receipt-title">Saving your voice note</div>
+          </div>
+          <div class="play-ghost">▶ Play</div>
+        </div>
+        <div class="thread">
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">On your phone</div></div>
+          </div>
+          <div class="stage active">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Saving to your account<span class="spin"></span></div></div>
+          </div>
+          <div class="stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">In today’s plan</div></div>
+          </div>
+          <div class="stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Readable by your agent</div></div>
+          </div>
+        </div>
+        <div class="receipt-foot">
+          <div class="hint">This finishes on its own. You can keep recording.</div>
+          <div class="close">Close</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F1 · stopped → receipt rises</div>
+      <h3>The journey is drawn, not implied</h3>
+      <ul>
+        <li>Stage one is already true when the sheet appears: the audio is durably on the phone before anything else happens.</li>
+        <li>The vertical thread is the brand’s dot-line mark doing real work — each dot fills as its fact becomes true.</li>
+        <li>▶ Play is always present: you can hear yourself back at any stage.</li>
+      </ul>
+      <p class="a11y">Sheet is a standard modal for VoiceOver; stages are a list, each “stage n of 4, label, state.” Close is a visible button — dismissal never requires the swipe.</p>
+    </div>
+  </div>
+
+  <!-- F2: stage 2 done, structuring -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content" style="opacity:.5">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="overlay-dim"></div>
+      <div class="receipt">
+        <div class="grabber"></div>
+        <div class="receipt-head">
+          <div class="left">
+            <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+            <div class="receipt-title">Structuring your note</div>
+          </div>
+          <div class="play-ghost">▶ Play</div>
+        </div>
+        <div class="thread">
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">On your phone</div></div>
+          </div>
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Saved to your account</div></div>
+          </div>
+          <div class="stage active">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body">
+              <div class="stage-label">Structuring your note<span class="spin"></span></div>
+              <div class="stage-sub">Finding your to-dos and what matters most.</div>
+            </div>
+          </div>
+          <div class="stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Readable by your agent</div></div>
+          </div>
+        </div>
+        <div class="receipt-foot">
+          <div class="hint">This finishes on its own. You can keep recording.</div>
+          <div class="close">Close</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F2 · saved · structuring</div>
+      <h3>Durability is settled before intelligence begins</h3>
+      <ul>
+        <li>Two filled dots mean the thought can no longer be lost — the remaining stages are about usefulness, not safety.</li>
+        <li>When the last needed stage completes, the sheet settles down on its own and the finished note is in the plan.</li>
+        <li>With no agent connected the final stage reads “Ready for your agent.”</li>
+      </ul>
+      <p class="a11y">Each stage completion is announced once. Reduce Motion: dots switch state without animation; the sheet fades instead of sliding.</p>
+    </div>
+  </div>
+
+  <!-- F3: dismissed; recording again; status row -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="pulse-row"><span class="spin"></span>1 capture saving to your plan<span class="view">View</span></div>
+      <div class="recorder" style="border-top:none;">
+        <div class="rec-btn" style="padding:22px 16px; gap:8px;">
+          <div class="rec-ring"></div>
+          <div class="rec-title">Stop recording</div>
+          <div class="rec-timer duration">0:18 / 5:00</div>
+          <div class="rec-support">Listening… Tap when you’re done</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F3 · receipt dismissed · recording again</div>
+      <h3>Dismiss the ceremony, keep the truth</h3>
+      <ul>
+        <li>After Close (or swipe down), one quiet line above the recorder keeps the state visible: “1 capture saving to your plan · View.”</li>
+        <li>View reopens the receipt. Meanwhile a second thought is already being recorded — capture is never blocked.</li>
+      </ul>
+      <p class="a11y">The status row is a single button; VoiceOver reads count, state, then “View, button.”</p>
+    </div>
+  </div>
+
+  <!-- F4: settled -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:12 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:12 PM</div></div></div>
+        </div>
+        <div class="card">
+          <div class="head">
+            <div><div class="eyebrow">freeform · 6:12 PM</div><div class="title">ship the small thing</div></div>
+            <div class="trash">🗑</div>
+          </div>
+          <div class="mini-section">
+            <div class="eyebrow">most important</div>
+            <div class="mini-item"><div class="mini-circle"></div>Ship the small thing first</div>
+            <div class="mini-item"><div class="mini-circle"></div>Walk again tonight</div>
+          </div>
+          <div class="prose">I want to keep the morning light. Ship the small thing first, then walk again tonight.</div>
+          <div class="pills"><span class="pill">calm</span></div>
+          <div class="truthline"><span class="tick">✓</span>Saved · readable by your agent</div>
+          <div class="readnote">Read full note ›</div>
+        </div>
+      </div>
+      <div class="recorder">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F4 · structured · receipt gone</div>
+      <h3>Home returns to exactly the accepted Home</h3>
+      <ul>
+        <li>The receipt auto-settles when its work is done; no residue remains except the note itself and its truth line.</li>
+        <li>Shared with A and B: “Saved · readable by your agent” on the card — never claimed before MCP is connected.</li>
+      </ul>
+      <p class="a11y">One completion announcement: “Note ready in today’s plan.”</p>
+    </div>
+  </div>
+
+  <!-- F5: offline, dismissed row with count -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">✈</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="pulse-row"><span class="hold">◌</span>2 captures on your phone · save when you’re back online<span class="view">View</span></div>
+      <div class="recorder" style="border-top:none;">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F5 · offline</div>
+      <h3>Offline collapses to one honest line</h3>
+      <ul>
+        <li>The receipt doesn’t force itself on an offline drive: captures queue and the status row carries the count and the promise.</li>
+        <li>Opening View shows each capture’s receipt with “Waiting for connection” on stage two.</li>
+        <li>Saving resumes oldest-first on reconnect; the row updates and then disappears.</li>
+      </ul>
+      <p class="a11y">Connectivity return is announced once, when saving actually resumes.</p>
+    </div>
+  </div>
+
+  <!-- F6: failure in the receipt -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content" style="opacity:.5">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="overlay-dim"></div>
+      <div class="receipt">
+        <div class="grabber"></div>
+        <div class="receipt-head">
+          <div class="left">
+            <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+            <div class="receipt-title">Couldn’t save</div>
+          </div>
+          <div class="play-ghost">▶ Play</div>
+        </div>
+        <div class="thread">
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">On your phone</div></div>
+          </div>
+          <div class="stage warn-stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body">
+              <div class="stage-label">Saving to your account</div>
+              <div class="stage-sub warn-text">Couldn’t save. Your audio is still on your phone.</div>
+              <div class="stage-actions">
+                <div class="btn-small btn-primary">Save again</div>
+                <div class="btn-small btn-quiet">Discard</div>
+              </div>
+            </div>
+          </div>
+          <div class="stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">In today’s plan</div></div>
+          </div>
+          <div class="stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Readable by your agent</div></div>
+          </div>
+        </div>
+        <div class="receipt-foot">
+          <div class="hint">Your thought is safe on this phone until you decide.</div>
+          <div class="close">Close</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F6 · save failed · recovery in the receipt</div>
+      <h3>Failure stops the thread exactly where the truth stops</h3>
+      <ul>
+        <li>The first dot stays filled — the failure message can’t contradict the drawing above it.</li>
+        <li>Save again retries with the same capture ID (never a duplicate). Discard uses the shared native confirmation: “Discard this capture? The audio will be deleted from your phone and was never saved to your account.”</li>
+        <li>If dismissed, the status row becomes “1 capture needs attention · View” and persists across launches.</li>
+      </ul>
+      <p class="a11y">Failure announced once with the same words shown; actions are 44 pt buttons in focus order after the stage label.</p>
+    </div>
+  </div>
+
+  <!-- F7: stalled structuring -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content" style="opacity:.5">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="overlay-dim"></div>
+      <div class="receipt">
+        <div class="grabber"></div>
+        <div class="receipt-head">
+          <div class="left">
+            <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+            <div class="receipt-title">Structuring didn’t finish</div>
+          </div>
+          <div class="play-ghost">▶ Play</div>
+        </div>
+        <div class="thread">
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">On your phone</div></div>
+          </div>
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Saved to your account</div></div>
+          </div>
+          <div class="stage warn-stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body">
+              <div class="stage-label">Structuring your note</div>
+              <div class="stage-sub">Didn’t finish. Your audio is saved — structure it again any time.</div>
+              <div class="stage-actions">
+                <div class="btn-small btn-outline">Try structuring again</div>
+              </div>
+            </div>
+          </div>
+          <div class="stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">Readable by your agent</div></div>
+          </div>
+        </div>
+        <div class="receipt-foot">
+          <div class="hint">Nothing is lost. Saved audio stays in your account.</div>
+          <div class="close">Close</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F7 · structuring stalled or failed server-side</div>
+      <h3>Two filled dots make “nothing is lost” believable</h3>
+      <ul>
+        <li>The drawing carries the reassurance; the copy only names the next step.</li>
+        <li>Requires a re-process API path — open question for Codex.</li>
+      </ul>
+      <p class="a11y">Stall announced once; retry is a plain labeled button.</p>
+    </div>
+  </div>
+
+  <!-- F8: permission -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="recorder">
+        <div class="rec-btn">
+          <div class="rec-title">Microphone access is off</div>
+          <div class="rec-support">Turn it on in Settings to record. Your notes are unaffected.</div>
+          <div class="btn-small" style="background:#fff;color:var(--blue);margin-top:4px;">Open Settings</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F8 · microphone permission denied</div>
+      <h3>Shared treatment: the recorder explains and routes</h3>
+      <ul>
+        <li>Identical across all three candidates — the one primary surface carries the one needed action.</li>
+      </ul>
+      <p class="a11y">State readable before action; “Open Settings” is the labeled button.</p>
+    </div>
+  </div>
+
+  <!-- F9: AX stress -->
+  <div class="frame">
+    <div class="phone ax">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content" style="opacity:.5">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext" style="font-size:24px;">Saturday, August 29</div></div>
+      </div>
+      <div class="overlay-dim"></div>
+      <div class="receipt">
+        <div class="grabber"></div>
+        <div class="receipt-head">
+          <div class="left">
+            <div class="eyebrow">capture · <span class="duration" style="font-size:18px;">4:58</span></div>
+            <div class="receipt-title">Couldn’t save</div>
+          </div>
+        </div>
+        <div class="thread">
+          <div class="stage done">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body"><div class="stage-label">On your phone</div></div>
+          </div>
+          <div class="stage warn-stage">
+            <div class="rail"><div class="dot"></div><div class="line"></div></div>
+            <div class="body">
+              <div class="stage-label">Saving to your account</div>
+              <div class="stage-sub warn-text">Couldn’t save. Your audio is still on your phone.</div>
+              <div class="stage-actions" style="flex-direction:column; align-items:stretch;">
+                <div class="btn-small btn-primary">Save again</div>
+                <div class="btn-small btn-outline">▶ Play</div>
+                <div class="btn-small btn-quiet">Discard</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="receipt-foot">
+          <div class="close">Close</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F9 · accessibility stress: AX text size + long capture</div>
+      <h3>The sheet grows; later stages scroll, never vanish</h3>
+      <ul>
+        <li>At accessibility sizes the sheet becomes full-height and internally scrollable; stage text wraps; actions stack full-width.</li>
+        <li>All receipt text uses semantic Dynamic Type styles from day one.</li>
+      </ul>
+      <p class="a11y">Reduce Motion: sheet fades in place of sliding; dots switch without animation; no spinners (static glyph).</p>
+    </div>
+  </div>
+
+</div>
+
+<section class="doc">
+  <h2>State coverage</h2>
+  <table>
+    <tr><th>State</th><th>Treatment in Candidate C</th></tr>
+    <tr><td>Loading (saving / structuring)</td><td>Receipt thread stages F1–F2; dismissed work continues under the status row (F3).</td></tr>
+    <tr><td>Empty</td><td>No pending captures → no receipt, no row; Home is exactly today’s accepted Home.</td></tr>
+    <tr><td>Error / retry</td><td>F6 failure at the exact failed stage with Save again (idempotent), ▶ Play, confirmed Discard; F7 stalled structuring with re-request.</td></tr>
+    <tr><td>Offline / degraded</td><td>F5: collapsed count row with promise; per-capture receipts on View.</td></tr>
+    <tr><td>Permission denied</td><td>F8: recorder explains, offers Open Settings.</td></tr>
+    <tr><td>Long / localized content</td><td>Stage copy wraps; sheet scrolls internally; F9 shows 4:58 capture at AX sizes.</td></tr>
+    <tr><td>Light / dark</td><td>Page toggle top-right; accepted palette; the thread’s filled dots are the only blue in the sheet.</td></tr>
+    <tr><td>Dynamic Type</td><td>F9; semantic styles for all receipt text.</td></tr>
+    <tr><td>VoiceOver</td><td>Modal sheet; stages read as “stage n of 4”; one announcement per completion; visible Close (never swipe-only).</td></tr>
+    <tr><td>Reduce Motion</td><td>Fade instead of slide; static state glyphs; no dot animation.</td></tr>
+    <tr><td>Gesture alternatives</td><td>Swipe-to-dismiss is optional; Close and View are visible buttons; recovery is button-only.</td></tr>
+  </table>
+
+  <h2>What stays exactly as accepted</h2>
+  <ul>
+    <li>Home hierarchy, cards, and recorder states untouched. The receipt and status row exist only while a capture is in flight or needs attention.</li>
+  </ul>
+
+  <h2>Likely production mapping (for the eventual handoff, not implementation now)</h2>
+  <ul>
+    <li>New: durable capture outbox; `CaptureReceiptSheet` (extends the existing `ThroughlineMarker` dot-line language); status row above `bottomRecorder`; client capture ID for idempotent retry; local audio playback (AVAudioPlayer) for ▶ Play.</li>
+    <li>Changed: `stopAndUploadRecording` decomposes into keep → present receipt → background save; recorder unblocks after keep; `uploadError` banner and “saved” footer retire.</li>
+    <li>Open questions: server idempotency key; re-process endpoint; auto-settle timing after success (suggest ~1.2 s after “In today’s plan” fills, skipped under Reduce Motion in favor of immediate fade); receipt behavior when several captures are in flight (suggest the row aggregates and View shows the newest first).</li>
+  </ul>
+</section>
+</body>
+</html>

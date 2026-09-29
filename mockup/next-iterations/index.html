@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Throughline — next iterations, now vs next</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --surface-1: #F4F4F6; --surface-2: #FFFFFF; --page: #FAFAFB;
+    --text-primary: #111114; --text-secondary: #6E6E73; --text-muted: #9A9AA1;
+    --text-accent: #2563EB; --text-danger: #C93A3A; --text-warning: #7A4B00;
+    --bg-accent: #EFF6FF; --bg-warning: #FFF7E6;
+    --border: rgba(17,17,20,0.12); --border-strong: rgba(17,17,20,0.24); --border-accent: #2563EB;
+    --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface-1: #17171A; --surface-2: #0E0E10; --page: #050506;
+      --text-primary: #F4F4F5; --text-secondary: #9A9AA1; --text-muted: #6F747C;
+      --text-accent: #6EA0FF; --text-danger: #E06C6C; --text-warning: #F5C265;
+      --bg-accent: rgba(59,130,246,0.16); --bg-warning: #2A2210;
+      --border: rgba(244,244,245,0.14); --border-strong: rgba(244,244,245,0.28); --border-accent: #3B82F6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #17171A; --surface-2: #0E0E10; --page: #050506;
+    --text-primary: #F4F4F5; --text-secondary: #9A9AA1; --text-muted: #6F747C;
+    --text-accent: #6EA0FF; --text-danger: #E06C6C; --text-warning: #F5C265;
+    --bg-accent: rgba(59,130,246,0.16); --bg-warning: #2A2210;
+    --border: rgba(244,244,245,0.14); --border-strong: rgba(244,244,245,0.28); --border-accent: #3B82F6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--text-primary); padding: 40px 16px 96px; -webkit-font-smoothing: antialiased; }
+  main { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  header h1 { font-size: 30px; font-weight: 500; letter-spacing: -0.01em; margin: 10px 0 12px; }
+  header p, section > p { font-size: 15px; line-height: 1.6; color: var(--text-secondary); }
+  section { display: flex; flex-direction: column; gap: 14px; }
+  section h2 { font-size: 22px; font-weight: 500; }
+  .status { font-size: 12px; color: var(--text-secondary); }
+  button { font: 500 13px/1 -apple-system, sans-serif; padding: 9px 13px; border-radius: 8px;
+    border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-primary); cursor: pointer; }
+  .switch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+  .theme { position: fixed; top: 16px; right: 16px; background: var(--surface-2); }
+
+  .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;background:var(--surface-1);border-radius:12px;padding:16px}
+  @media (max-width: 640px) { .pair { grid-template-columns: minmax(0,1fr); } }
+  .lbl{font-size:12px;font-weight:500;color:var(--text-secondary);margin:0 0 8px 4px}
+  .ph{background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;font-size:14px;line-height:1.4}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 10px}
+  .wm{font-size:17px;font-weight:500;border-bottom:2.5px solid #2563EB;padding-bottom:2px;line-height:1.1}
+  .bd{flex:1;padding:6px 20px 14px;display:flex;flex-direction:column;gap:12px}
+  .eb{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary)}
+  .tk{display:flex;gap:10px;border:0.5px solid var(--border);border-radius:8px;padding:10px}
+  .ci{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text-muted);flex:none;margin-top:1px}
+  .mt{font-size:12px;color:var(--text-secondary)}
+  .ft{border-top:0.5px solid var(--border);padding:12px 20px 18px;display:flex;flex-direction:column;gap:10px}
+  .rec{background:#2563EB;color:#fff;border-radius:8px;padding:14px 12px;text-align:center;font-size:15px;font-weight:500}
+  .mk{display:flex;gap:14px;justify-content:center;margin-bottom:8px}.mk span{width:28px;height:4px;border-radius:2px;background:#fff}
+  .pb{font-size:13px;font-weight:500;padding:9px 12px;border-radius:8px;display:inline-block}
+  .cap{font-size:13px;color:var(--text-secondary);margin:10px 4px 0}
+  .rw{display:flex;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+  .tb{display:flex;gap:18px;padding:4px 20px 0;border-bottom:0.5px solid var(--border)}
+  .t{padding:8px 0 10px;font-size:14px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent}
+  .t.on{color:var(--text-primary);font-weight:500;border-bottom-color:#2563EB}
+  .nv{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:18px 20px 12px;border-bottom:0.5px solid var(--border)}
+  .cl{background:var(--surface-2);border:0.5px solid var(--border);border-radius:10px;padding:12px}
+  .mo{font-family:var(--font-mono);font-size:12px;line-height:1.5}
+  .st{display:flex;gap:12px}
+  .rl{display:flex;flex-direction:column;align-items:center;width:14px;flex:none}
+  .dt{width:12px;height:12px;border-radius:50%;border:2px solid var(--border-strong);margin-top:3px;flex:none}
+  .dt.f{background:#2563EB;border-color:#2563EB}.dt.a{border-color:#2563EB}
+  .ln{width:1.5px;flex:1;background:var(--border-strong);min-height:14px}.ln.f{background:#2563EB}
+  .sbd{flex:1;padding-bottom:18px;display:flex;flex-direction:column;gap:8px}
+</style>
+</head>
+<body>
+<button class="theme" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">Light / Dark</button>
+<main>
+  <header>
+    <div class="eb" style="color:var(--text-accent)">design-only mock · 2026-09-28 · synthetic content · nothing here is selected or built by this file</div>
+    <h1>Throughline — the next three iterations</h1>
+    <p>Each section shows the app as it is now beside the proposed next step. The order follows the product’s outcome ladder: capture without loss, trust the structure, let an agent read.</p>
+  </header>
+
+  <section>
+    <div class="status">Iteration 1 · backlog TL-CAP-001 · ready for mock · full state set in ../capture-durability/candidate-b.html</div>
+    <h2>Never lose a thought</h2>
+    <p>The capture waits in a one-line tray above the record button until it is safe. The recorder is free the moment the audio is kept on the phone.</p>
+    <div class="pair">
+      <div>
+        <p class="lbl">Now</p>
+        <div class="ph" style="min-height:560px">
+          <div class="top"><span class="wm">throughline</span><i class="ti ti-settings" style="font-size:18px" aria-hidden="true"></i></div>
+          <div class="bd">
+            <div><div class="eb">today</div><div style="font-weight:500;margin-top:6px">Monday, September 28</div></div>
+            <div style="font-size:22px;font-weight:500">Today’s plan</div>
+            <div class="eb">most important</div>
+            <div class="tk"><span class="ci"></span><div><div style="font-weight:500">Ship the small thing first</div><div class="mt">ship the small thing · 6:11 PM</div></div></div>
+            <div class="tk"><span class="ci"></span><div><div style="font-weight:500">Walk again tonight</div><div class="mt">ship the small thing · 6:11 PM</div></div></div>
+          </div>
+          <div class="ft">
+            <div style="font-size:13px;color:var(--text-danger);text-align:center">The Internet connection appears to be offline.</div>
+            <div class="rec"><div class="mk"><span></span><span></span></div>Start recording</div>
+          </div>
+        </div>
+        <p class="cap">The recording is lost. No replay, no retry.</p>
+      </div>
+      <div>
+        <p class="lbl">Next</p>
+        <div class="ph" style="min-height:560px">
+          <div class="top"><span class="wm">throughline</span><i class="ti ti-settings" style="font-size:18px" aria-hidden="true"></i></div>
+          <div class="bd">
+            <div><div class="eb">today</div><div style="font-weight:500;margin-top:6px">Monday, September 28</div></div>
+            <div style="font-size:22px;font-weight:500">Today’s plan</div>
+            <div class="eb">most important</div>
+            <div class="tk"><span class="ci"></span><div><div style="font-weight:500">Ship the small thing first</div><div class="mt">ship the small thing · 6:11 PM</div></div></div>
+            <div class="tk"><span class="ci"></span><div><div style="font-weight:500">Walk again tonight</div><div class="mt">ship the small thing · 6:11 PM</div></div></div>
+          </div>
+          <div class="ft">
+            <div id="tray" style="display:flex;flex-direction:column;gap:10px"></div>
+            <div class="rec"><div class="mk"><span></span><span></span></div>Start recording</div>
+          </div>
+        </div>
+        <p class="cap">The capture waits at the recorder until it’s safe.</p>
+      </div>
+    </div>
+    <div class="switch">Show the next design while the capture is
+      <button data-s="saving">Saving</button><button data-s="saved">Saved</button><button data-s="offline">Offline</button><button data-s="failed">Failed</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="status">Iteration 2 · backlog TL-TASK-001 · specified and built in PR #2 (unmerged, unreviewed) · source mock: mockup/list-redesign/index.html on that branch</div>
+    <h2>One running list</h2>
+    <p>Home becomes one task list in three tabs. Every task appears once, keeps a quiet link to the note it came from, and clears into a done group with undo.</p>
+    <div class="pair">
+      <div>
+        <p class="lbl">Now</p>
+        <div class="ph" style="min-height:700px">
+          <div class="top"><span class="wm">throughline</span><i class="ti ti-settings" style="font-size:18px" aria-hidden="true"></i></div>
+          <div class="bd">
+            <div style="font-size:22px;font-weight:500">Today’s plan</div>
+            <div style="border-left:1.5px solid #2563EB;padding-left:12px;display:flex;flex-direction:column;gap:6px">
+              <div class="eb">unfinished from last night</div>
+              <div style="color:var(--text-secondary)">Send Sarah the revised deck</div>
+              <div style="color:var(--text-secondary)">Draft the Sunday review outline</div>
+            </div>
+            <div class="eb">most important</div>
+            <div class="tk"><span class="ci"></span><div><div style="font-weight:500">Call Marcus about the deck</div><div class="mt">morning walk · 7:42 AM</div></div></div>
+            <div class="tk"><span class="ci"></span><div><div style="font-weight:500">Send Sarah the revised deck</div><div class="mt">morning walk · 7:42 AM</div></div></div>
+            <div style="border:0.5px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div class="eb">morning · 7:42 AM</div>
+              <div style="font-size:17px;font-weight:500">morning walk</div>
+              <div class="eb">most important</div>
+              <div style="display:flex;gap:8px"><span class="ci" style="width:15px;height:15px"></span>Call Marcus about the deck</div>
+              <div style="display:flex;gap:8px"><span class="ci" style="width:15px;height:15px"></span>Send Sarah the revised deck</div>
+            </div>
+          </div>
+          <div class="ft"><div class="rec"><div class="mk"><span></span><span></span></div>Start recording</div></div>
+        </div>
+        <p class="cap">One task shows up three times. “Last night” items were recorded this morning.</p>
+      </div>
+      <div>
+        <p class="lbl">Next</p>
+        <div class="ph" style="min-height:700px">
+          <div class="top"><span class="wm">throughline</span><span style="display:flex;gap:16px;align-items:center"><span style="color:var(--text-accent);font-weight:500">notes <i class="ti ti-arrow-right" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i></span><i class="ti ti-settings" style="font-size:18px" aria-hidden="true"></i></span></div>
+          <div class="tb" role="tablist">
+            <span class="t on" data-t="today" role="tab">today <span style="font-size:11px;color:var(--text-muted)">4</span></span>
+            <span class="t" data-t="week" role="tab">this week <span style="font-size:11px;color:var(--text-muted)">2</span></span>
+            <span class="t" data-t="later" role="tab">later <span style="font-size:11px;color:var(--text-muted)">3</span></span>
+          </div>
+          <div class="bd" style="padding-top:16px">
+            <div><div class="eb" id="eb">today</div><div id="hd" style="font-size:22px;font-weight:500;margin-top:6px">Monday, September 28</div><div class="mt" id="sb" style="margin-top:4px">Includes what you did not clear yesterday.</div></div>
+            <div id="ls">
+              <div class="rw"><span class="ci"></span><div><div style="font-weight:500">Reply to the TestFlight tester</div><div class="mt"><span style="background:var(--bg-warning);color:var(--text-warning);padding:0 6px;border-radius:999px;font-size:11px">from yesterday</span> yesterday · 6:10 pm</div></div></div>
+              <div class="rw"><span class="ci"></span><div><div style="font-weight:500">Call Marcus about the deck</div><div class="mt"><span style="color:var(--text-accent);font-weight:500">priority</span> morning walk · 7:42 am</div></div></div>
+              <div class="rw"><span class="ci"></span><div><div style="font-weight:500">Email Aaron the beta invite</div><div class="mt"><span style="color:var(--text-accent);font-weight:500">priority</span> after lunch · 12:15 pm</div></div></div>
+              <div class="rw"><span class="ci"></span><div><div style="font-weight:500">Pick up the dry cleaning</div><div class="mt">morning walk · 7:42 am</div></div></div>
+              <div class="eb" style="margin-top:14px">done</div>
+              <div class="rw" style="border-bottom:0"><span class="ci" style="background:#2563EB;border-color:#2563EB"></span><div><div style="color:var(--text-secondary);text-decoration:line-through">Ship the small thing first</div><div class="mt">after lunch · 12:15 pm <span style="color:var(--text-accent);font-weight:500">undo</span></div></div></div>
+            </div>
+          </div>
+          <div class="ft"><div class="rec"><div class="mk"><span></span><span></span></div>Start recording</div><div class="mt" style="text-align:center">tap to record</div></div>
+        </div>
+        <p class="cap">Every task appears once. Tap the tabs to look around.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="status">Iteration 3 · backlog TL-AGENT-001 · collecting evidence · exploratory, needs a server-side first-read signal that does not exist yet</div>
+    <h2>Connect your agent</h2>
+    <p>One guided path replaces the four-section settings form. The permission is stated in plain words, and the screen confirms the agent’s first read.</p>
+    <div class="pair">
+      <div>
+        <p class="lbl">Now</p>
+        <div class="ph" style="min-height:640px">
+          <div class="nv"><span></span><span style="font-weight:500">connect agent</span><span style="text-align:right;color:var(--text-accent)">done</span></div>
+          <div style="flex:1;background:var(--surface-1);padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+            <div class="eb" style="margin-left:4px">tool</div>
+            <div class="cl" style="padding:4px;display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:center;font-size:13px"><span style="background:var(--surface-1);border-radius:7px;padding:6px;font-weight:500">Claude Code</span><span style="padding:6px">Codex CLI</span></div>
+            <div class="eb" style="margin:8px 0 0 4px">agent token</div>
+            <div class="cl"><div class="mt" style="font-size:13px">Agent tokens can read your saved notes. Revoke tokens you no longer use.</div><div style="color:var(--text-accent);margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)"><i class="ti ti-key" style="font-size:16px;vertical-align:-2px" aria-hidden="true"></i> create new token</div></div>
+            <div class="eb" style="margin:8px 0 0 4px">terminal command</div>
+            <div class="cl mo" style="color:var(--text-muted);display:flex;justify-content:space-between;gap:8px">Create a token first.<i class="ti ti-copy" style="font-size:16px" aria-hidden="true"></i></div>
+            <div class="eb" style="margin:8px 0 0 4px">agent prompt</div>
+            <div class="cl mo" style="display:flex;justify-content:space-between;gap:8px"><span>Use the Throughline MCP server as read-only context from my voice notes. Start with get_today and list_open_todos…</span><i class="ti ti-copy" style="font-size:16px" aria-hidden="true"></i></div>
+          </div>
+        </div>
+        <p class="cap">Four sections, a token to manage, and no sign that it worked.</p>
+      </div>
+      <div>
+        <p class="lbl">Next</p>
+        <div class="ph" style="min-height:640px">
+          <div class="nv"><span></span><span style="font-weight:500">connect agent</span><span style="text-align:right;color:var(--text-accent)">done</span></div>
+          <div style="flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+            <div><div style="font-size:22px;font-weight:500">Connect your agent</div><div class="mt" style="font-size:13px;margin-top:6px">It can read your notes and to-dos. It can’t change anything.</div></div>
+            <div>
+              <div class="st"><div class="rl"><span class="dt f"></span><span class="ln f"></span></div><div class="sbd">
+                <div style="font-weight:500">Choose your agent</div>
+                <div style="display:flex;gap:8px"><span class="pb" style="background:var(--bg-accent);color:var(--text-accent)">Claude Code</span><span class="pb" style="border:0.5px solid var(--border-strong)">Codex CLI</span></div>
+              </div></div>
+              <div class="st"><div class="rl"><span class="dt f"></span><span class="ln" id="l2"></span></div><div class="sbd">
+                <div style="font-weight:500">Run one command on your computer</div>
+                <div class="cl mo" style="background:var(--surface-1);border:0">claude mcp add throughline …</div>
+                <div style="display:flex;gap:8px"><span class="pb" style="background:#2563EB;color:#fff"><i class="ti ti-copy" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Copy command</span><span class="pb" style="border:0.5px solid var(--border-strong)"><i class="ti ti-share-2" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Share</span></div>
+              </div></div>
+              <div class="st"><div class="rl"><span class="dt a" id="d3"></span></div><div class="sbd" style="padding-bottom:0">
+                <div style="font-weight:500">Ask it what’s on your plate today</div>
+                <div class="mt" id="s3" style="font-size:13px"><i class="ti ti-loader-2" style="font-size:15px;vertical-align:-2px" aria-hidden="true"></i> Waiting for your agent’s first read</div>
+              </div></div>
+            </div>
+            <div class="mt" style="margin-top:auto;border-top:0.5px solid var(--border);padding-top:12px">Revoke access any time in settings.</div>
+          </div>
+        </div>
+        <p class="cap">One path, one command, and proof that it worked.</p>
+      </div>
+    </div>
+    <div class="switch">Show the next design when the agent is
+      <button data-c="0">Waiting</button><button data-c="1">Connected</button>
+    </div>
+  </section>
+</main>
+<script>
+(function(){
+  var S={
+    saving:{i:'ti-loader-2',c:'var(--text-accent)',b:'On your phone.',t:'Saving to your account…',a:0},
+    saved:{i:'ti-circle-check',c:'var(--text-accent)',b:'Saved to your account.',t:'Structuring your note…',a:0},
+    offline:{i:'ti-cloud-off',c:'var(--text-secondary)',b:'On your phone.',t:'Saves when you’re back online.',a:0},
+    failed:{i:'ti-alert-circle',c:'var(--text-danger)',b:'Couldn’t save.',t:'Still on your phone.',a:1}
+  };
+  var tray=document.getElementById('tray'), sb=document.querySelectorAll('button[data-s]');
+  function show(k){
+    var s=S[k];
+    var h='<div style="display:flex;gap:8px;align-items:flex-start"><i class="ti '+s.i+'" style="font-size:18px;color:'+s.c+'" aria-hidden="true"></i><span style="font-family:var(--font-mono);font-size:13px">0:42</span><span style="font-size:13px"><span style="font-weight:500">'+s.b+'</span> <span style="color:var(--text-secondary)">'+s.t+'</span></span></div>';
+    if(s.a){h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pb" style="background:#2563EB;color:#fff">Save again</span><span class="pb" style="border:0.5px solid var(--border-strong)"><i class="ti ti-player-play" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Play</span><span class="pb" style="color:var(--text-secondary)">Discard</span></div>';}
+    tray.innerHTML=h;
+    sb.forEach(function(b){b.style.borderColor=b.dataset.s===k?'var(--border-accent)':'';});
+  }
+  sb.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.s);});});
+  show('failed');
+
+  var P='<span style="color:var(--text-accent);font-weight:500">priority</span> ';
+  var D={
+    week:{eb:'this week',hd:'Through Sunday',sb:'',r:[['Draft the Sunday review outline','tomorrow · morning walk · 7:42 am'],['Send Sarah the revised deck',P+'Wed, Sep 30 · morning walk · 7:42 am']]},
+    later:{eb:'later',hd:'No date yet',sb:'',r:[['Book a dentist appointment','no date · morning walk · 7:42 am'],['Rework the pricing page copy','no date · morning walk · 7:42 am'],['Read the pricing thread','Sat, Oct 10 · after lunch · 12:15 pm']]}
+  };
+  var ls=document.getElementById('ls'), first=ls.innerHTML, tabs=document.querySelectorAll('.t');
+  tabs.forEach(function(t){t.addEventListener('click',function(){
+    tabs.forEach(function(x){x.classList.toggle('on',x===t);});
+    var k=t.dataset.t;
+    if(k==='today'){document.getElementById('eb').textContent='today';document.getElementById('hd').textContent='Monday, September 28';document.getElementById('sb').textContent='Includes what you did not clear yesterday.';ls.innerHTML=first;return;}
+    var d=D[k];
+    document.getElementById('eb').textContent=d.eb;document.getElementById('hd').textContent=d.hd;document.getElementById('sb').textContent=d.sb;
+    ls.innerHTML=d.r.map(function(r,i){return '<div class="rw"'+(i===d.r.length-1?' style="border-bottom:0"':'')+'><span class="ci"></span><div><div style="font-weight:500">'+r[0]+'</div><div class="mt">'+r[1]+'</div></div></div>';}).join('');
+  });});
+
+  var cb=document.querySelectorAll('button[data-c]'), d3=document.getElementById('d3'), l2=document.getElementById('l2'), s3=document.getElementById('s3');
+  function conn(on){
+    d3.className=on?'dt f':'dt a'; l2.className=on?'ln f':'ln';
+    s3.innerHTML=on?'<i class="ti ti-circle-check" style="font-size:15px;vertical-align:-2px;color:var(--text-accent)" aria-hidden="true"></i> <span style="color:var(--text-primary)">Connected.</span> Read today’s list at 9:41 am':'<i class="ti ti-loader-2" style="font-size:15px;vertical-align:-2px" aria-hidden="true"></i> Waiting for your agent’s first read';
+    cb.forEach(function(x){x.style.borderColor=(x.dataset.c==='1')===on?'var(--border-accent)':'';});
+  }
+  cb.forEach(function(b){b.addEventListener('click',function(){conn(b.dataset.c==='1');});});
+  conn(false);
+})();
+</script>
+</body>
+</html>

@@ -449,3 +449,248 @@ Each decision should explain the call that was made, the alternatives considered
 **Reasoning:** Eval-candidate feedback preserves the learning loop while keeping user trust intact. Agents can propose prompt or post-processing changes from reviewed failures, and those changes must pass the eval suite before promotion.
 
 **Revisit when:** Feedback volume becomes large enough to justify semi-automated review, privacy controls mature, or there is a safe canary deployment path for extraction changes.
+
+---
+
+## 2026-08-17 — Core-quality target user and boundary
+
+**Decision:** Core quality work serves the individual who captures personal thoughts while driving, walking, or thinking, then needs durable structured notes and to-dos readable by their AI agent. It does not expand Throughline into a meeting recorder, team-transcription product, or generic audio archive.
+
+**Reasoning:** The quality program must measure the product promise it is improving, rather than optimize for a broader transcription category.
+
+**Revisit when:** Mike changes product priority or approves a change to the durable product charter.
+
+---
+
+## 2026-08-17 — Feedback evaluation and hybrid learning authority
+
+**Decision:** The user who recorded a note is the only human evaluator for that note. Feedback automation validates, deduplicates, classifies, and quarantines signals; ambiguous labels are excluded until they can be classified without inventing a label. Mike does not review examples, and there is no employee, contractor, or external-review queue. Safe prompt, schema, and normalizer changes may auto-promote only after declared quality, critical-error, reliability, latency, cost, canary, lineage, and rollback gates pass.
+
+**Reasoning:** This preserves user authority over their note while making learning repeatable, auditable, and safe to operate without a recurring manual review function.
+
+**Revisit when:** A change to data-use policy, the learning authority model, or a promotion gate is explicitly approved.
+
+---
+
+## 2026-08-17 — Onboarding and recording-limit baseline
+
+**Decision:** Onboarding is unchanged. The current recorded limits are a 30-second onboarding demo and a five-minute authenticated client cap per recording. A ten-minute daily allowance is intended but is not implemented or enforced; it must not be described as live.
+
+**Reasoning:** Documentation and quality work must not silently alter a user-facing experience or present an intended policy as runtime behavior.
+
+**Revisit when:** Mike explicitly approves an onboarding or recording-limit change after the relevant baseline and rollout evidence exist.
+
+---
+
+## 2026-08-17 — Premium limits and evaluation credits remain backlog-only
+
+**Decision:** Premium recordings up to 15 minutes and evaluation credits remain backlog items. They are not a current program milestone, implementation commitment, or credit-ledger build.
+
+**Reasoning:** Monetization and limits require decision-grade usage and cost evidence, and both are approval-bound changes.
+
+**Revisit when:** Mike prioritizes a bounded, approved pricing or recording-limit slice supported by decision-grade baselines.
+
+---
+
+## 2026-08-17 — Baseline-first quality changes and operating authority
+
+**Decision:** Establish a baseline through measurement before setting lift targets or changing a quality control. Mike decides what enters build, reviews product/design taste and judgment, and sets priority. Agents own baseline inspection, options, specifications, plans, implementation, verification, routine reversible rollout, measurement, and documentation; within an approved reversible slice, agents may implement and roll out routine reversible work without another approval.
+
+**Reasoning:** A baseline prevents false improvement claims, while the authority boundary keeps routine reversible progress moving without widening approval-bound work.
+
+**Revisit when:** The workflow authority matrix or canonical metric definitions change through an approved decision.
+
+---
+
+## 2026-08-17 — Evaluation truth and immutable lineage selected
+
+**Decision:** Select `TL-EVAL-001` for build after the verified `TL-DATA-001` migration and API rollout. The slice will preserve immutable inference contracts, processing attempts, original model output, user revisions, and owner-only evaluations before any model benchmark or learning promotion is interpreted.
+
+**Reasoning:** Current feedback is stored but unused, note edits overwrite originals, and the existing golden evaluator proves plumbing rather than model quality. Honest lineage is the dependency for measuring whether a transcription, extraction, or prompt candidate actually improves the voice-to-tasks result.
+
+**Revisit when:** The measurement rollout cannot establish its required compatibility and reconciliation gates, or the evaluation slice's bounded design changes materially.
+
+---
+
+## 2026-08-17 — Explicit evaluation contribution and audio-retention boundary
+
+**Decision:** Only the recording owner explicitly saving a 1–5 grade or a material content correction under the current contextual disclosure may make that recording eligible for Throughline's private evaluation corpus. Opening a note, completing or reopening a task, submitting general product feedback, inactivity, a no-op edit, legacy `should_remember`, or an inferred historical action does not qualify. Eligible audio that is still available may remain beyond the ordinary 30-day window until the user removes the evaluation contribution, deletes the note, or deletes the account. Historical grades may remain legacy aggregate signals but do not gain extended-retention eligibility without a new disclosed contribution action.
+
+**Reasoning:** This makes the recording user the only reviewer and gives Throughline reusable quality evidence without silently turning ordinary recordings or historical feedback into a corpus. It also keeps the retention exception narrow, reversible, and technically enforceable.
+
+**Revisit when:** Mike approves a different corpus trigger, retention duration, withdrawal model, or training use.
+
+---
+
+## 2026-08-17 — Quiet evaluation disclosure and no-training scope
+
+**Decision:** Put a short contextual explanation next to the grade or content-correction action and provide full policy detail, without changing onboarding or adding a blocking modal. Record the disclosure version and contribution action immutably. Evaluation contributions are for private quality evaluation only: no model training or fine-tuning, no automatic promotion, no advertising or tracking use, and no sharing with a model provider beyond the separately disclosed normal transcription and extraction inference. Free-text explanations remain quarantined and excluded from corpus scoring, candidate generation, promotion evidence, analytics, and tracked artifacts.
+
+**Reasoning:** The action-specific disclosure is restrained but clear about the new purpose, associated data, retention exception, and deletion controls. A hidden boolean or policy-only statement would not provide an honest, auditable user action.
+
+**Revisit when:** Mike approves training, fine-tuning, new provider sharing, a different disclosure surface, or another data-use-policy change.
+
+---
+
+## 2026-08-23 — Evaluation disclosure, preview, readiness, and removal treatment
+
+**Decision:** Use this exact contextual copy beside note grading and material content correction, not in onboarding: “Private quality check. Saving this grade or a content correction may keep this recording’s audio past 30 days until you remove the contribution. Not used to train models. Learn more.” The adjacent “What your agent will read” preview shows all 14 canonical extraction fields, including inspectable nested to-dos. Agent readiness is off by default, can be accepted only after the complete matching preview is shown, and resets whenever the note revision, canonical payload, output hash, schema, normalizer, or keyset changes. An evaluated note provides an owner-only control to remove its evaluation contribution.
+
+**Context:** The evaluation-truth slice needs an honest, quiet owner action that binds a grade and readiness judgment to the exact note revision being reviewed while keeping the audio-retention exception visible and reversible.
+
+**Reasoning:** Placing the disclosure at the contribution action gives the user relevant context without adding onboarding friction. Showing the exact agent-facing structure makes readiness a concrete judgment rather than a hidden boolean. Default-off and invalidation rules prevent stale acceptance, while note-level removal keeps the contribution reversible.
+
+**Revisit when:** Mike approves a different disclosure, surface, preview field set, readiness behavior, retention boundary, or removal model. This decision does not authorize a production rollout, publication, App Store submission, provider change, or broader data use.
+
+---
+
+## 2026-08-25 — Verified feedback iterations advance to internal TestFlight
+
+**Decision:** After a TestFlight feedback item is privately ingested, converted into a bounded specification, implemented, and verified, agents may archive a fresh build, upload it with Apple's internal-testing-only control, assign it to the existing `Internal QA` group, and verify tester visibility without requesting another approval for each iteration.
+
+**Reasoning:** The feedback loop creates user value only when the tester can install the corrected build. Repeating the same approval gate after every already-authorized internal iteration adds latency without changing the product, distribution population, or public risk boundary.
+
+**Revisit when:** The workflow would change App Store submission or public release state, add an external tester population, publish or change privacy disclosures, change provider/model/data-use policy, or alter another Mike-owned product boundary. Those actions remain separately approval-gated.
+
+---
+
+## 2026-08-27 — Discovery growth system selected for build
+
+**Decision:** Select `TL-DISC-001` and authorize agents to build, verify, and deploy the reversible owned discovery surface plus the repository-native discovery queue and workstream artifacts. The durable public promise is voice to structured notes and to-dos to a readable AI agent. “Fastest” remains an unverified message hypothesis. Paid spend, compensation, direct outreach, posting from Mike's accounts, community or directory submission, App Store changes, and live product changes require approval of the concrete action.
+
+**Reasoning:** The live App Store page explains the product, but the public website is still a support/privacy placeholder and discovery work lacks one evidence-bound production and learning loop. Shipping the owned, reversible layer creates proof and attribution without silently authorizing open-ended external commitments.
+
+**Revisit when:** Comparative evidence supports a stronger claim, the measurement contract changes, or Mike approves a concrete external distribution action.
+
+---
+
+## 2026-08-27 — Owned discovery surface deployed and enters measurement
+
+**Decision:** Accept the verified six-file static release and deploy it from a sparse worktree based directly on current `origin/main`. Pages build `1179780269` published commit `1770db3`; `TL-DISC-001` now enters `measuring`. No acquisition lift is claimed until aggregate traffic, App Store attribution, and downstream product evidence are available.
+
+**Reasoning:** The home and task-intent pages passed the full responsive, accessibility, link, metadata, image, claim, and public postflight gates. Shipping this reversible owned layer creates a usable destination and named campaign path without widening authority to third-party posting, outreach, submissions, spend, provider generation, App Store changes, or product changes.
+
+**Revisit when:** The first privacy-safe baseline is available or Mike approves one of the prepared external action packets.
+
+---
+
+## 2026-08-28 — Home feedback first slice rolled back after owner review
+
+**Decision:** Restore the preceding Home presentation and remove the presentation/projection work introduced in internal build `2026082601`, while preserving the newer backend, immutable-lineage, private-evaluation, and privacy-related source. Deliver the recovery as a fresh internal-only TestFlight build. Parts 1, 4, and 5 of the Home feedback slice are no longer active product direction.
+
+**Reasoning:** Mike rejected the canary's visual and information treatment after using it in TestFlight. The slice was intentionally reversible, so preserving the accepted backend and evaluation foundation while restoring the preceding Home UI is the smallest response to that product judgment.
+
+**Revisit when:** Mike selects a newly bounded Home mock or specification. Internal rollback build `2026082801` is recovery evidence, not a user-outcome improvement claim.
+
+---
+
+## 2026-08-29 — Stabilize the operating foundation before acceleration
+
+**Decision:** Treat `TL-OPS-002` as the leading operating slice before net-new product acceleration. Status and handoffs use four named perspectives—Current, Evidence, Next gate, and Authority. `product/backlog.json` records portfolio disposition while the relevant slice brief records execution phase; runtime, release, and metric-readiness labels remain separate. Canonical navigation and backlog integrity must pass the read-only foundation verifier before this slice closes.
+
+**Reasoning:** The audit found an undeclared backlog state, superseded internal-build actions, outdated architecture language, broken canonical navigation, and different authority interpretations across active records. It also found that capture durability and truthful saved/agent-readable state are a stronger product gate than another Home presentation. Resolving the operating contradictions first reduces the chance that the next agent accelerates the wrong slice or overstates evidence.
+
+**Revisit when:** The canonical source map or authority model changes, the verifier creates false constraints, or Mike selects the bounded capture-durability/truthful-save candidate. This decision authorizes reversible documentation and validation cleanup only; it does not authorize onboarding, Home, provider, model, policy, pricing, recording-limit, App Store submission, deployment, or public-release changes.
+
+---
+
+## 2026-08-29 — Separate product direction, design language, and feature priority
+
+**Decision:** Keep durable product direction and the outcome ladder in `docs/PRODUCT.md`; keep look, feel, interaction character, and design-review rules in `throughline-brand-decisions.md`; keep feature hypotheses, evidence, dependencies, priority, and one next gate in `product/backlog.json`. Product-facing candidates require fresh current-flow evidence and a bounded decision packet before build. An audit may recommend a direction, but it does not select a visual target, reprioritize the portfolio, or authorize implementation.
+
+**Reasoning:** The repository already had a coherent product promise and distinctive visual language, but runtime policies had leaked into the brand document, the immediate product wedge was implicit, historical design QA could be mistaken for current visual truth, and the core-quality program contained a personalization candidate missing from the canonical backlog. Separating these perspectives makes disagreements visible without creating another roadmap or strategy source.
+
+**Revisit when:** Mike changes the durable product promise, selects a new visual direction, reprioritizes the portfolio, or approves a different product/design decision path. This record does not approve a Home redesign, capture implementation, agent write capability, personalization, pricing, provider, policy, onboarding, release, or publication change.
+
+---
+
+## 2026-08-30 — Claude Code and Codex coordinate through selected repository handoffs
+
+**Decision:** Claude Code owns bounded UI exploration, inspectable mock candidates, and the selected-design specification; Codex owns scoped production implementation, verification, backend or implementation fixes, release evidence, and already-authorized internal-only TestFlight delivery. They coordinate through a committed, content-safe design handoff rather than direct agent invocation or conversation memory. Mike retains priority, what enters build, product/design selection, acceptance of the TestFlight journey, and exact App Store metadata/submission/public-release authority.
+
+**Context:** The repository already contains product, design, backlog, workflow, private TestFlight feedback intake, and dated internal-release evidence, but it did not contain a current Claude Code entry point, a shared handoff format, a deterministic UI-versus-bug routing boundary, or a reusable signed archive/upload runner. The legacy `agent-prompts.md` predates the current canon and is not a safe current kickoff.
+
+**Alternatives considered:** Let both agents independently design and implement; pass summaries manually between chats; make Claude Code call Codex directly; let every accepted TestFlight build flow automatically into public submission; use GitHub automation as the first integration layer.
+
+**Reasoning:** Repository artifacts are inspectable, versionable, and usable by either tool without coupling their APIs or sharing hidden context. One design owner and one implementation owner reduce taste drift and overlapping edits. Standing internal-TestFlight authority keeps bounded iteration fast, while a separate exact public-release gate protects metadata, privacy, review, and release decisions.
+
+**Revisit when:** A reviewed repository-native internal release runner and privacy-safe feedback router exist, the handoff creates measurable friction or design drift, or Mike changes role ownership or an approval-bound surface. This decision does not itself authorize an upload, App Store metadata mutation, submission, public release, provider/model/data-use change, onboarding change, pricing change, or recording-limit change.
+
+---
+
+## 2026-09-28 — Reaffirm design and engineering ownership with mutual review
+
+**Decision:** Mike requested an end-to-end return audit and a centralized workflow: Claude performs front-end design; Codex performs production implementation, complex engineering, and voice-note quality work; they review each other's work. Maintain the existing role split and add exact-revision feasibility and implementation-review receipts to the existing tandem and handoff documents.
+
+**Evidence:** The [return audit](docs/evidence/2026-09-28-return-audit.md) found substantial uncommitted August work and a separate September Claude cloud PR whose Git tree does not contain the local operating guides. The first implementation gate is a reviewed shared base that preserves both bodies of work. Green PR checks alone do not establish that base, peer review, deployment, or product acceptance.
+
+**Authority:** This records Mike's requested audit and process organization. It does not select the running-list PR or a capture candidate, authorize a merge, enable a quality behavior, resume a state-changing automation, approve new credentials, or change release/product-policy boundaries. Existing approved-slice authority remains unchanged.
+
+**Revisit when:** One bounded slice has completed the full cross-tool review and device acceptance loop, or Mike changes the role split. Keep practical lessons in the existing tandem workflow rather than creating another process system.
+
+---
+
+## 2026-09-28 — Reconcile the preserved base; capture recovery precedes the running list
+
+**Decision:** Mike approved Phase 2 for `codex/reconcile-september-base` and its new pull request only. Publish the reviewed August engineering work, operating guides and design artifacts, and incorporate the two newer main commits into that branch. Do not merge into main. Mike explicitly accepted first public repository publication of current state, product charter, workflow, backlog and metrics. The working-copy preservation and publication screens are recorded in the [reconciliation evidence](docs/evidence/2026-09-28-reconciliation-plan.md).
+
+**Product order:** Capture recovery (`TL-CAP-001`) first, then the running list (`TL-TASK-001`). Candidate B, “The recorder holds it,” is selected. The [draft capture handoff](docs/handoffs/2026-09-28-home-capture-recovery.md) remains `selected_pending_codex_feasibility_review`; preserve its SHA-256 `0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c` and all design assets byte-identically. Codex’s feasibility review follows Phase 2 against the committed revision as a separate task. Claude owns any later handoff edit. This decision does not authorize feature implementation.
+
+**Integration evidence:** Preservation commits and main-ancestry reconciliation produced source revision `a743aac555b7e59e25bc55c7a0659864ed02c548`. Both `1770db3` and `fd85d01` are ancestors; the one discovery-document conflict retained the newer local rollback evidence. Node/Deno tests, documentation/privacy checks, the isolated unsigned Simulator build and focused Swift contracts passed. The local database replay was unavailable; peer review remains pending. See the linked evidence for counts and limitations.
+
+**Authority:** Only this branch and its new PR may be published. Posting the PR #2 review and contacting Claude each require their own go-ahead. Main merges, force-pushes, branch deletion, deployments/migrations, deployment/TestFlight workflow dispatch, secrets, automations, behavior flags and Apple changes remain outside this approval. Moving or repointing the active checkout out of iCloud is a separate proposed action after the PR is open. The existing checkout and private recovery copy stay intact.
+
+**Revisit when:** The exact committed handoff receives its separate feasibility review, the reconciled base receives the required peer review, or Mike changes priority or approves one of the separately gated actions.
+
+
+---
+
+## 2026-09-28 — Approve the current-operation privacy policy text
+
+**Decision:** Mike approved the exact revised Markdown and HTML policy presented after the privacy publication audit. The approved text discloses the current server-side PostHog processing and account linkage, accurately describes the current AI-processing controls, and clearly marks Private Evaluation and its contribution/retention/removal controls as planned and not enabled. Account deletion is described separately from that future feature. The policy retains the no-training, no-fine-tuning and no-automatic-promotion boundaries.
+
+**Exact approved files:** `docs/privacy-policy.md`, SHA-256 `2b0b68dce68b816f9471df3855fe0d2e7462ae9050c7d0c8ae34a144e71c7fce`; `docs/privacy/index.html`, SHA-256 `4be13989c8a52153f4f9faf54770c564a483437ec54ce74803dfbc7d2a455965`. Any later wording change requires approval of the revised text before publication.
+
+**Authority:** Record the approval and publish these bounded policy/decision changes only on the already-authorized `codex/reconcile-september-base` branch and [PR #3](https://github.com/mpolner88/throughline/pull/3). The exact-text gate is satisfied for these bytes. Main merge remains unapproved and mutual review remains pending; GitHub Pages continues to serve main until a separately approved publication action. This does not enable evaluation, deploy functions or migrations, change secrets/flags, dispatch release workflows, or change App Store answers. App Store privacy answers will be finalized and updated with the next approved build as Mike requested; the known current linkage discrepancy remains unresolved until that action.
+
+**Product direction:** Mike reaffirmed capture recovery first, followed by the next running-list version. The selected capture tray still needs its committed-handoff feasibility findings resolved before build entry. Mike wants the learning loop enabled soon and asked to return to that separately; this records intent, not approval to enable production collection, benchmarking, training or automatic promotion.
+
+**Revisit when:** The approved policy bytes change, an exact main/publication action is approved, the capture handoff is ready for build, or Mike resumes the bounded learning-loop decision.
+
+
+## 2026-09-28 — Complete the approved nonsynced checkout migration
+
+**Decision and execution:** Mike approved moving the active checkout at exact starting revision `bda1058947397b7bf1b908a0a682eb3966868a54` to the real, user-restricted `throughline-local` directory outside iCloud. The filesystem migration and saved Codex project selection completed; Claude's subsequent review independently named the same active checkout and base `372178b`. The earlier September entry describing migration as future is superseded. Exact personal paths and private configuration receipts remain outside tracked files.
+
+**Preservation:** The old dirty checkout, original shortcut, separate `throughline-reconciliation` reference checkout and recovery copy remain intact. `.throughline/`, `.superpowers/`, `supabase/.temp` and `supabase/.branches` remain behind. No recreation is needed for immediate build work: regenerate reporting/task outputs only when needed, preserve historical reports/private feedback, and establish CLI linkage/branch context only during a later approved operation. Existing chats may retain their original directory context; verify the physical target for every task. Evidence: [integration follow-up](docs/evidence/2026-09-28-reconciliation-plan.md#review-integration-follow-up).
+
+## 2026-09-28 — Accept capture account and interruption defaults; authorize bounded re-review
+
+**D1:** Mike accepts one neutral tray row for other-account captures: “2 captures from another account. Sign in to that account to save them.” It offers Discard from phone after confirmation. Those captures are never uploaded, played, individually listed or counted under the signed-in account. This aggregate notice does not transfer ownership; discard is local only.
+
+**D2:** Mike accepts that a call, locking the phone or leaving the app ends recording and keeps playable audio as Stopped early. Background recording is outside this slice; unrecoverable audio follows the handoff's truthful interruption state.
+
+**Authority:** Review revision 2, disposition the base findings, integrate reviewed files and canonical corrections, and push only the existing `codex/reconcile-september-base` branch for PR #3. Return findings to Claude. Do not build capture or running list. Claude owns handoff/assets and sets `handoff_ready` only after findings are resolved. The immutable revision-2 review target is `75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9`; preserving it does not make it build-ready.
+
+**Still undecided:** R8 AI-consent removal and R9 Pages publication boundaries. Main merge and PR comments remain unapproved. Approved policy bytes stay unchanged; no migration, deployment, flag, secret, automation, App Store or TestFlight action follows. Private Evaluation remains deferred despite Mike's interest in returning to the learning loop soon. Product order remains capture recovery, then running list. Evidence: [Codex re-review](docs/evidence/2026-09-28-codex-capture-rereview.md) and [R8/R9 packet](docs/evidence/2026-09-28-main-merge-decisions.md).
+
+
+## 2026-09-28 — Restore AI permission and restrict the Pages publication surface
+
+**Decision:** Mike approved both recommendations in the [R8/R9 packet](docs/evidence/2026-09-28-main-merge-decisions.md): restore equivalent explicit AI-processing permission before inference, including demo transcript promotion, and limit GitHub Pages output to the intended public pages and assets. Adapt the prior permission gate to the reconciled source, verify persisted choice/refusal/withdrawal and request boundaries, and obtain independent engineering and Claude presentation review.
+
+**Scope:** Implementation and verification on `codex/reconcile-september-base`, followed by publication to existing draft PR #3. The exact main merge is not approved. Capture tray and running list are not implemented; Claude still resolves C1–C6 before capture readiness. Private Evaluation remains deferred. No provider, model, data-use, pricing, limits, backend migration/deployment, flags, secrets, automations, TestFlight or App Store action is included.
+
+**Latest direction:** Mike asked to leave privacy-policy work aside. The already approved policy files stay byte-identical; this follow-up does not revise them or require another policy discussion.
+
+**Evidence:** [Consent and Pages follow-up](docs/evidence/2026-09-28-consent-pages-follow-up.md) records exact source, checks, review and remaining release boundaries.
+
+## 2026-09-29 — Finish the selected capture-tray handoff
+
+**Decision:** Mike directed, “Finish the capture tray handoff.” Claude is authorized to revise the selected Candidate B handoff and its reference assets to resolve C1–C6; Codex reviews the exact revised contract, integrates the reviewed files and updates canonical state. D1 and D2 remain accepted. This is handoff completion, not capture-tray or running-list implementation.
+
+**Focus:** Mike stopped further AI-permission and privacy-policy work. The interrupted permission screenshot review and the pending onboarding-exit question are not part of this task. Existing product behavior is not changed by this direction. Capture recovery stays first, running list second, and Private Evaluation stays deferred.
+
+**Authority:** The existing PR #3 branch-only publication authorization remains the integration boundary. No main merge, feature implementation, migration execution, deployment, behavior flag, automation, provider/model/data-use/pricing/limit/onboarding or Apple action follows. A completed handoff records design and feasibility readiness; Mike retains build entry.
+
+**Completion evidence:** [Revision-3 handoff readiness](docs/evidence/2026-09-29-capture-handoff-ready.md) records the exact contract, mutual review, resolved findings and verification limits.

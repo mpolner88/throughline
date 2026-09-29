@@ -71,97 +71,87 @@ struct SecondaryButton: View {
 }
 
 struct AIProcessingConsentView: View {
+    enum Context { case recording, demoSave, settings }
+    var context: Context = .recording
     @Environment(\.dismiss) private var dismiss
-
-    let isCurrentlyAllowed: Bool
-    let onDecision: (Bool) -> Void
+    @AppStorage(AIProcessingPermission.storageKey) private var isAllowed = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Eyebrow(text: "your choice")
-                        Text("AI voice processing")
-                            .font(.throughlineHeading)
-                        Text("Throughline will not send a recording until you allow this.")
-                            .font(.system(size: 16))
+                    Eyebrow(text: "your choice")
+                    Text("AI voice processing").font(.throughlineHeading)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Choose whether Throughline may send your voice notes for AI processing.")
+                    disclosure("What is sent", "The audio you record, plus the transcript and text derived from it, so Throughline can create your transcript, summary and tasks. Saving a demo note sends its transcript again.")
+                    disclosure("Who processes it", "Supabase hosts Throughline’s backend and storage. Groq provides the third-party AI transcription and extraction.")
+                    disclosure("Your control", controlText)
+                    Link("read the privacy policy", destination: AIProcessingPermission.privacyURL)
+                    if context != .settings {
+                        Text(context == .demoSave
+                             ? "After allowing, tap save demo note to try again."
+                             : "After allowing, tap the recorder when you’re ready.")
                             .foregroundStyle(.secondary)
-                            .lineSpacing(4)
-                    }
-
-                    consentSection(
-                        title: "What is sent",
-                        text: "The audio recording you choose to create, plus the transcript and text derived from it."
-                    )
-
-                    consentSection(
-                        title: "Who receives it",
-                        text: "Throughline’s Supabase backend and Groq, our third-party AI processor."
-                    )
-
-                    consentSection(
-                        title: "Why",
-                        text: "Groq transcribes the audio and helps create the summary, tasks, and other structured note fields saved in Throughline."
-                    )
-
-                    consentSection(
-                        title: "Retention and control",
-                        text: "Throughline stores audio in Supabase for up to 30 days and keeps transcripts and notes until you delete them or your account. Groq does not use API inputs or outputs to train models and may temporarily retain them for service reliability or abuse monitoring for up to 30 days. You can withdraw permission here later; that stops future recordings from being sent."
-                    )
-
-                    Link(destination: AIProcessingPermission.privacyURL) {
-                        Label("read the privacy policy", systemImage: "hand.raised")
-                            .font(.system(size: 15, weight: .medium))
                     }
                 }
+                .font(.body)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(24)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                VStack(spacing: 12) {
-                    PrimaryButton(
-                        title: isCurrentlyAllowed ? "keep AI processing allowed" : "allow AI processing"
-                    ) {
-                        onDecision(true)
-                        dismiss()
-                    }
-
-                    SecondaryButton(
-                        title: isCurrentlyAllowed ? "withdraw permission" : "not now"
-                    ) {
-                        onDecision(false)
-                        dismiss()
-                    }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 10) {
+                    choiceButton(isAllowed ? "keep AI processing allowed" : "allow AI processing", allowed: true)
+                    choiceButton(isAllowed ? "withdraw permission" : "not now", allowed: false)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .padding(.bottom, 10)
-                .background(.regularMaterial)
-                .overlay(alignment: .top) {
-                    Divider()
-                }
+                .padding(.vertical, 12)
+                .background(.background)
             }
             .navigationTitle("privacy")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("close") {
-                        dismiss()
-                    }
+                    Button("close") { dismiss() }
                 }
             }
         }
     }
 
-    private func consentSection(title: String, text: String) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+    private var controlText: String {
+        "This choice applies to Throughline on this device. "
+        + (context == .settings ? "" : "You can withdraw it later in Settings. ")
+        + "Withdrawing stops future submissions; it does not recall recordings or text already sent."
+    }
+
+    // Match the existing full-width brand buttons, allowing text and targets to grow.
+    private func choiceButton(_ title: String, allowed: Bool) -> some View {
+        Button {
+            AIProcessingPermission.shared.setAllowed(allowed)
+            dismiss()
+        } label: {
             Text(title)
-                .font(.system(size: 16, weight: .semibold))
-            Text(text)
-                .font(.system(size: 15))
-                .foregroundStyle(.secondary)
-                .lineSpacing(4)
-                .fixedSize(horizontal: false, vertical: true)
+                .font(.body.weight(.medium))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .foregroundStyle(allowed ? Color.white : Color.primary)
+                .background(allowed ? Theme.blue : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.cardRadius)
+                        .stroke(allowed ? Color.clear : Theme.border, lineWidth: 0.5)
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func disclosure(_ title: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.headline).accessibilityAddTraits(.isHeader)
+            Text(text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -170,9 +160,9 @@ struct AccountSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
     @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
+    @State private var showingAIProcessingConsent = false
     @State private var showingBackendSettings = false
     @State private var showingAgentConnection = false
-    @State private var showingAIProcessingConsent = false
     @State private var showingProductFeedback = false
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
@@ -209,8 +199,16 @@ struct AccountSettingsView: View {
                     }
                 }
 
+                Section("AI processing") {
+                    LabeledContent("permission", value: hasAIProcessingPermission ? "allowed" : "not allowed")
+                    Button("review AI processing") { showingAIProcessingConsent = true }
+                    Text(hasAIProcessingPermission ? "Review what is sent and withdraw permission for future submissions." : "Review what is sent and allow AI processing.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+
                 Section("agent") {
                     Button {
+                        ProductAnalytics.track("agent_connection_opened")
                         showingAgentConnection = true
                     } label: {
                         Label("connect an agent", systemImage: "terminal")
@@ -247,21 +245,6 @@ struct AccountSettingsView: View {
                     }
                 }
 
-                Section("AI processing") {
-                    LabeledContent("permission") {
-                        Text(hasAIProcessingPermission ? "allowed" : "not allowed")
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Button("review AI processing") {
-                        showingAIProcessingConsent = true
-                    }
-
-                    Text("With permission, recordings are sent to Supabase and Groq for transcription and structured note creation.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-
                 #if DEBUG
                 Section("developer") {
                     Button("backend") {
@@ -289,16 +272,14 @@ struct AccountSettingsView: View {
         } message: {
             Text("This removes your Throughline account, memories, recordings, and agent tokens.")
         }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView(context: .settings)
+        }
         .sheet(isPresented: $showingBackendSettings) {
             BackendSettingsView()
         }
         .sheet(isPresented: $showingAgentConnection) {
             AgentConnectionView()
-        }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(isCurrentlyAllowed: hasAIProcessingPermission) {
-                hasAIProcessingPermission = $0
-            }
         }
         .sheet(isPresented: $showingProductFeedback) {
             ProductFeedbackView()
@@ -329,6 +310,7 @@ struct ProductFeedbackView: View {
     @State private var isSending = false
     @State private var didSend = false
     @State private var errorMessage: String?
+    @FocusState private var isMessageFocused: Bool
 
     private var trimmedMessage: String {
         message.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -366,6 +348,7 @@ struct ProductFeedbackView: View {
                             TextEditor(text: $message)
                                 .font(.system(size: 15))
                                 .frame(minHeight: 150)
+                                .focused($isMessageFocused)
                                 .accessibilityLabel("Feedback")
 
                             if message.isEmpty {
@@ -400,19 +383,29 @@ struct ProductFeedbackView: View {
                         }
                     }
 
-                    Section {
-                        Button(isSending ? "sending" : "send feedback") {
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !didSend {
+                    VStack(spacing: 0) {
+                        Divider()
+
+                        PrimaryButton(title: isSending ? "Sending…" : "Send feedback") {
                             submit()
                         }
                         .disabled(isSending || trimmedMessage.isEmpty || trimmedMessage.count > 4000)
+                        .accessibilityIdentifier("product-feedback-send")
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
                     }
+                    .background(.regularMaterial)
                 }
             }
             .navigationTitle("feedback")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(didSend ? "done" : "close") {
+                    Button(didSend ? "Done" : "Cancel") {
                         dismiss()
                     }
                     .disabled(isSending)
@@ -427,6 +420,7 @@ struct ProductFeedbackView: View {
     private func submit() {
         guard !isSending, !trimmedMessage.isEmpty, trimmedMessage.count <= 4000 else { return }
 
+        isMessageFocused = false
         isSending = true
         errorMessage = nil
         Task {
@@ -447,6 +441,10 @@ struct ProductFeedbackView: View {
                 didSend = true
             } catch {
                 errorMessage = error.localizedDescription
+                ProductAnalytics.track(
+                    "feedback_submit_failed",
+                    properties: ["surface": "product_feedback"]
+                )
             }
             isSending = false
         }
@@ -576,6 +574,10 @@ struct AgentConnectionView: View {
             let token = try await client.createAgentToken(name: selectedTool.tokenName)
             createdToken = token
             status = .ready
+            ProductAnalytics.track(
+                "agent_token_created",
+                properties: ["tool": selectedTool.rawValue]
+            )
             await loadTokens()
         } catch {
             status = .failed(error.localizedDescription)
@@ -590,6 +592,7 @@ struct AgentConnectionView: View {
                 createdToken = nil
             }
             status = .ready
+            ProductAnalytics.track("agent_token_revoked")
         } catch {
             status = .failed(error.localizedDescription)
         }
@@ -928,6 +931,9 @@ struct Pill: View {
 struct RecordButton: View {
     var isRecording: Bool
     var isBusy = false
+    var title: String
+    var detail: String? = nil
+    var supportingText: String? = nil
     var size: CGFloat
     let action: () -> Void
 
@@ -941,7 +947,7 @@ struct RecordButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 2) {
+            VStack(spacing: 7) {
                 ZStack {
                     if isBusy {
                         ProgressView()
@@ -959,9 +965,22 @@ struct RecordButton: View {
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.white)
+
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
+                }
+
+                if let supportingText {
+                    Text(supportingText)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.86))
+                }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: max(92, size + 36))
+            .frame(height: detail != nil || supportingText != nil ? 190 : max(92, size + 36))
             .background(recordingBackground)
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
@@ -973,6 +992,7 @@ struct RecordButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+        .accessibilityValue([detail, supportingText].compactMap { $0 }.joined(separator: ", "))
         .onAppear {
             syncAnimation(animated: false)
         }
@@ -993,14 +1013,6 @@ struct RecordButton: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-    }
-
-    private var title: String {
-        if isBusy {
-            return "saving"
-        }
-
-        return isRecording ? "stop recording" : "start recording"
     }
 
     private func syncAnimation(animated: Bool) {

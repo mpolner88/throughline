@@ -141,6 +141,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
     var createdAt: Date
     var type: RecordingType
     var processingStatus: String?
+    var currentRevisionID: String?
     var title: String
     var summary: String
     var transcript: String
@@ -162,6 +163,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         case createdAt
         case type
         case processingStatus
+        case currentRevisionID
         case title
         case summary
         case transcript
@@ -184,6 +186,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         createdAt: Date,
         type: RecordingType,
         processingStatus: String? = nil,
+        currentRevisionID: String? = nil,
         title: String,
         summary: String,
         transcript: String,
@@ -204,6 +207,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.type = type
         self.processingStatus = processingStatus
+        self.currentRevisionID = currentRevisionID
         self.title = title
         self.summary = summary
         self.transcript = transcript
@@ -227,6 +231,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         type = try container.decodeIfPresent(RecordingType.self, forKey: .type) ?? .freeform
         processingStatus = try container.decodeIfPresent(String.self, forKey: .processingStatus)
+        currentRevisionID = try container.decodeIfPresent(String.self, forKey: .currentRevisionID)
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? "voice note"
         summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
         transcript = try container.decodeIfPresent(String.self, forKey: .transcript) ?? ""
@@ -301,12 +306,12 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
             statusByText[Self.normalizedText(item.text)] = item
         }
 
-        return displayMostImportant.map { text in
-            if let item = statusByText[Self.normalizedText(text)] {
+        return todos.map { todo in
+            if let item = statusByText[Self.normalizedText(todo.text)] {
                 return item
             }
 
-            return ActionItem(id: Self.stableActionID(for: text), text: text, source: "most_important")
+            return ActionItem(id: Self.stableActionID(for: todo.text), text: todo.text, source: "todo")
         }
     }
 

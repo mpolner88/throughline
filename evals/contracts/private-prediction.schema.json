@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "throughline-private-predictions-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_version",
+    "manifest_sha256",
+    "contract_sha256",
+    "adapter",
+    "started_at",
+    "finished_at",
+    "predictions",
+    "seal_sha256"
+  ],
+  "properties": {
+    "bundle_version": { "const": "throughline-private-predictions-v1" },
+    "manifest_sha256": { "$ref": "#/$defs/hash" },
+    "contract_sha256": { "$ref": "#/$defs/hash" },
+    "adapter": { "type": "object" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "predictions": {
+      "type": "array",
+      "items": { "type": "object", "required": ["case_id", "output"] }
+    },
+    "seal_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}

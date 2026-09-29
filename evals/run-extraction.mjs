@@ -201,6 +201,7 @@ async function main() {
     JSON.stringify(
       {
         ok: true,
+        plumbing_only: true,
         provider: args.provider,
         fixtures: fixtureFiles.length,
         out: args.out,

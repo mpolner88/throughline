@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Never lose a spoken thought — three candidates at a glance</title>
+<style>
+  :root {
+    --blue: #2563EB; --blue-lifted: #3B82F6;
+    --bg: #FFFFFF; --ink: #111114; --sec: #6E6E73;
+    --border: rgba(17,17,20,0.14); --page: #F4F4F6; --danger: #C93A3A;
+    --status-bg: rgba(37,99,235,0.08);
+  }
+  [data-theme="dark"] {
+    --bg: #0E0E10; --ink: #F4F4F5; --sec: #9A9AA1;
+    --border: rgba(244,244,245,0.16); --page: #050506; --danger: #E06C6C;
+    --status-bg: rgba(59,130,246,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink); padding: 44px 36px 90px; -webkit-font-smoothing: antialiased; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sec); }
+  .eyebrow.blue { color: var(--blue); }
+  .theme-toggle { position: fixed; top: 18px; right: 22px; z-index: 50; font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+
+  header.masthead { max-width: 1240px; margin: 0 auto 20px; }
+  header.masthead h1 { font-size: 32px; font-weight: 500; letter-spacing: -0.01em; margin: 10px 0 12px; }
+  header.masthead p { font-size: 15px; line-height: 1.6; color: var(--sec); max-width: 720px; }
+  header.masthead p strong { color: var(--ink); font-weight: 500; }
+
+  /* shared lifecycle strip */
+  .lifecycle { max-width: 1240px; margin: 26px auto 40px; background: var(--bg);
+    border: 0.7px solid var(--border); border-radius: 8px; padding: 22px 26px; }
+  .lifecycle .eyebrow { margin-bottom: 16px; }
+  .steps { display: flex; align-items: flex-start; gap: 0; flex-wrap: wrap; }
+  .step { display: flex; align-items: flex-start; flex: 1; min-width: 150px; }
+  .step .node { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .step .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
+  .step .dot.hollow { background: var(--bg); border: 2px solid var(--blue); }
+  .step .label { font-size: 14px; font-weight: 500; }
+  .step .sub { font-size: 12px; color: var(--sec); line-height: 1.45; max-width: 150px; }
+  .step .link-line { flex: 1; height: 1.5px; background: var(--blue); margin: 5px 10px 0 10px; min-width: 18px; }
+  .lifecycle .foot { margin-top: 18px; font-size: 13px; color: var(--sec); line-height: 1.5; }
+  .lifecycle .foot strong { color: var(--ink); font-weight: 500; }
+
+  .columns { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; max-width: 1300px; margin: 0 auto; }
+  .col { width: 392px; display: flex; flex-direction: column; gap: 14px; }
+  .col-head { display: flex; flex-direction: column; gap: 6px; min-height: 96px; }
+  .col-head .name { font-size: 22px; font-weight: 500; }
+  .col-head .oneliner { font-size: 13.5px; line-height: 1.5; color: var(--sec); }
+  .shot-label { font-size: 12px; font-weight: 500; color: var(--sec); margin-bottom: -6px; }
+
+  /* screen-region cards: readable full-scale slices of the phone */
+  .region { background: var(--bg); border: 1px solid var(--border); border-radius: 18px;
+    overflow: hidden; display: flex; flex-direction: column; }
+  .r-top { padding: 16px 22px 0; display: flex; flex-direction: column; gap: 16px; }
+  .wordmark { font-size: 19px; font-weight: 500; border-bottom: 3px solid var(--blue); padding-bottom: 3px;
+    line-height: 1.1; align-self: flex-start; }
+  .h-plan { font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
+  .card { border: 0.7px solid var(--border); border-radius: 8px; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px; background: var(--bg); }
+  .card.capture { border-style: dashed; border-color: color-mix(in srgb, var(--blue) 55%, var(--border)); }
+  .status-row { display: flex; align-items: center; gap: 9px; background: var(--status-bg); border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; font-weight: 500; color: var(--sec); }
+  .status-row.alert { color: var(--ink); }
+  .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex: none; }
+  .excl { font-size: 14px; color: var(--sec); flex: none; width: 14px; text-align: center; }
+  .excl.warn { color: var(--danger); }
+  .duration { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .task-row { display: flex; align-items: flex-start; gap: 10px; border: 0.7px solid var(--border);
+    border-radius: 8px; padding: 11px; background: var(--bg); }
+  .task-circle { width: 19px; height: 19px; border-radius: 50%; border: 1.8px solid var(--sec); flex: none; }
+  .task-text { font-size: 14px; font-weight: 500; }
+  .task-meta { font-size: 11.5px; color: var(--sec); margin-top: 3px; }
+  .cap-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn-small { font-size: 13px; font-weight: 500; padding: 10px 14px; min-height: 42px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-outline { border: 0.7px solid var(--border); color: var(--ink); background: var(--bg); }
+  .btn-quiet { color: var(--sec); }
+  .pad-b { padding-bottom: 18px; }
+
+  .tray { border-top: 0.5px solid var(--border); }
+  .tray-head { padding: 10px 22px 0; }
+  .tray-row { display: flex; align-items: center; gap: 10px; padding: 12px 22px; }
+  .tray-row .state { flex: 1; font-size: 13px; font-weight: 500; color: var(--sec); line-height: 1.4; }
+  .tray-row .state strong { color: var(--ink); font-weight: 500; }
+  .tray-row .duration { font-size: 13px; color: var(--ink); }
+  .tray-actions { display: flex; gap: 8px; padding: 0 22px 12px 54px; flex-wrap: wrap; }
+  .spinner { width: 14px; height: 14px; border-radius: 50%; flex: none;
+    border: 2px solid color-mix(in srgb, var(--sec) 30%, transparent); border-top-color: var(--sec); }
+  .hold { width: 14px; text-align: center; color: var(--sec); font-size: 13px; flex: none; }
+  .hold.warn { color: var(--danger); }
+  .recorder { padding: 12px 22px 20px; }
+  .rec-btn { border-radius: 8px; color: #fff; text-align: center;
+    background: linear-gradient(150deg, var(--blue-lifted), var(--blue) 62%);
+    border: 1px solid rgba(255,255,255,0.22); box-shadow: 0 6px 14px rgba(37,99,235,0.16);
+    padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 7px; min-height: 88px; justify-content: center; }
+  .rec-mark { display: flex; gap: 17px; align-items: center; height: 22px; }
+  .rec-mark span { width: 32px; height: 5px; border-radius: 3px; background: #fff; display: block; }
+  .rec-title { font-size: 15px; font-weight: 500; }
+
+  .sheet { background: var(--bg); border-radius: 18px 18px 0 0; padding: 10px 22px 22px;
+    display: flex; flex-direction: column; gap: 16px; border-top: 0.5px solid var(--border); }
+  .grabber { width: 38px; height: 5px; border-radius: 3px; background: var(--border); margin: 2px auto 0; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .sheet-title { font-size: 18px; font-weight: 500; margin-top: 4px; }
+  .play-ghost { border: 0.7px solid var(--border); border-radius: 8px; min-height: 42px; padding: 9px 13px;
+    font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+  .stage { display: flex; gap: 13px; }
+  .stage .rail { display: flex; flex-direction: column; align-items: center; width: 18px; flex: none; }
+  .stage .sdot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); margin-top: 3px; }
+  .stage.done .sdot { background: var(--blue); border-color: var(--blue); }
+  .stage.active .sdot { border-color: var(--blue); }
+  .stage.warn-stage .sdot { border-color: var(--danger); }
+  .stage .line { width: 1.5px; flex: 1; background: var(--border); min-height: 16px; }
+  .stage.done .line { background: var(--blue); }
+  .stage:last-child .line { display: none; }
+  .stage .body { padding-bottom: 15px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .stage:last-child .body { padding-bottom: 0; }
+  .stage-label { font-size: 14.5px; font-weight: 500; color: var(--sec); display: flex; align-items: center; gap: 8px; }
+  .stage.done .stage-label, .stage.active .stage-label { color: var(--ink); }
+  .stage-sub { font-size: 12.5px; color: var(--sec); line-height: 1.45; }
+  .stage-sub.warn-text { color: var(--danger); }
+
+  .essence { font-size: 13px; line-height: 1.55; color: var(--sec); }
+  .essence strong { color: var(--ink); font-weight: 500; }
+  .open-link { font-size: 13.5px; font-weight: 500; color: var(--blue); text-decoration: none; }
+
+  .howto { max-width: 1240px; margin: 48px auto 0; background: var(--bg); border: 0.7px solid var(--border);
+    border-radius: 8px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; }
+  .howto p { font-size: 14px; line-height: 1.6; color: var(--sec); }
+  .howto strong { color: var(--ink); font-weight: 500; }
+  .howto a { color: var(--blue); text-decoration: none; font-weight: 500; }
+</style>
+<script>if (new URLSearchParams(location.search).get("theme") === "dark") document.documentElement.dataset.theme = "dark";</script>
+</head>
+<body>
+<button class="theme-toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? '' : 'dark'">Light / Dark</button>
+
+<header class="masthead">
+  <div class="eyebrow blue">TL-CAP-001 · capture durability · three design candidates · design-only mock · synthetic content</div>
+  <h1>Never lose a spoken thought</h1>
+  <p><strong>The problem today:</strong> when you stop recording, the audio sits in temporary storage while it uploads. If that upload fails, the thought is gone — a small red error, no replay, no retry. And while it saves, the record button is locked for up to 40 seconds.</p>
+  <p style="margin-top:8px;"><strong>The fix all three candidates share:</strong> the audio is kept safe on your phone the instant you stop, the recorder frees up immediately, and the app always tells you the truth about where your thought is. The candidates differ in one thing only — <strong>where that truth lives on screen</strong>.</p>
+</header>
+
+<div class="lifecycle">
+  <div class="eyebrow blue">the truthful lifecycle — same in all three candidates</div>
+  <div class="steps">
+    <div class="step">
+      <div class="node"><div class="dot"></div><div class="label">On your phone</div><div class="sub">Kept safe the instant you stop. Survives crashes and offline.</div></div>
+      <div class="link-line"></div>
+    </div>
+    <div class="step">
+      <div class="node"><div class="dot"></div><div class="label">Saved to your account</div><div class="sub">Audio is server-durable — the phone can die now.</div></div>
+      <div class="link-line"></div>
+    </div>
+    <div class="step">
+      <div class="node"><div class="dot hollow"></div><div class="label">In today’s plan</div><div class="sub">Structured into the note and to-dos.</div></div>
+      <div class="link-line"></div>
+    </div>
+    <div class="step">
+      <div class="node"><div class="dot hollow"></div><div class="label">Readable by your agent</div><div class="sub">Only claimed once MCP is actually connected.</div></div>
+    </div>
+  </div>
+  <div class="foot">If anything breaks along the way: <strong>Save again</strong> (never creates a duplicate), <strong>▶ Play</strong> your own voice back, or <strong>Discard</strong> with confirmation. Offline is a calm queue, not an error. The recorder is never blocked.</div>
+</div>
+
+<div class="columns">
+
+  <!-- Candidate A -->
+  <div class="col">
+    <div class="col-head">
+      <div class="eyebrow blue">Candidate A</div>
+      <div class="name">Born in place</div>
+      <div class="oneliner">The capture appears at the top of your notes — in the exact spot the finished note will occupy — and ages into it. Dashed border = not yet safe; solid = durable.</div>
+    </div>
+    <div class="shot-label">Right after you stop talking — top of Today’s plan:</div>
+    <div class="region">
+      <div class="r-top pad-b">
+        <div class="wordmark">throughline</div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="card capture">
+          <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+          <div class="status-row"><span class="dot-live"></span>On your phone. Saving to your account…</div>
+        </div>
+        <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+      </div>
+    </div>
+    <div class="shot-label">If saving fails — the same card becomes the recovery:</div>
+    <div class="region">
+      <div class="r-top pad-b">
+        <div class="card capture">
+          <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+          <div class="status-row alert"><span class="excl warn">!</span>Couldn’t save. Your audio is still on your phone.</div>
+          <div class="cap-actions">
+            <div class="btn-small btn-primary">Save again</div>
+            <div class="btn-small btn-outline">▶ Play</div>
+            <div class="btn-small btn-quiet">Discard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="essence"><strong>Essence:</strong> zero new surfaces — the note’s earliest life stage simply lives where the note will live. Smallest change; the trade-off is that something not-yet-durable sits inside the plan list.</div>
+    <a class="open-link" href="candidate-a.html">Full mock — 9 states, light &amp; dark ›</a>
+  </div>
+
+  <!-- Candidate B -->
+  <div class="col">
+    <div class="col-head">
+      <div class="eyebrow blue">Candidate B · recommended</div>
+      <div class="name">The recorder holds it</div>
+      <div class="oneliner">Nothing leaves the recorder until it’s safe. Captures dock in a one-line tray above the record button, and only enter Today’s plan as finished, durable notes.</div>
+    </div>
+    <div class="shot-label">Right after you stop talking — bottom of the screen:</div>
+    <div class="region">
+      <div class="tray" style="border-top:none;">
+        <div class="tray-row">
+          <span class="dot-live"></span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>On your phone.</strong> Saving to your account…</span>
+        </div>
+      </div>
+      <div class="recorder">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="shot-label">If saving fails — recovery pinned at thumb height:</div>
+    <div class="region">
+      <div class="tray" style="border-top:none;">
+        <div class="tray-row">
+          <span class="hold warn">!</span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>Couldn’t save.</strong> Still on your phone.</span>
+        </div>
+        <div class="tray-actions">
+          <div class="btn-small btn-primary">Save again</div>
+          <div class="btn-small btn-outline">▶ Play</div>
+          <div class="btn-small btn-quiet">Discard</div>
+        </div>
+      </div>
+      <div class="recorder">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="essence"><strong>Essence:</strong> a physical logic — the capture stays with the instrument that made it until it’s truly safe. The plan never contains anything fragile; a driver sees the state at arm’s length.</div>
+    <a class="open-link" href="candidate-b.html">Full mock — 9 states, light &amp; dark ›</a>
+  </div>
+
+  <!-- Candidate C -->
+  <div class="col">
+    <div class="col-head">
+      <div class="eyebrow blue">Candidate C</div>
+      <div class="name">The save receipt</div>
+      <div class="oneliner">A quiet sheet rises from the recorder and draws the journey as a literal throughline, dot by dot. Swipe it away and it finishes on its own; failure is the one thing that waits.</div>
+    </div>
+    <div class="shot-label">Right after you stop talking — the receipt rises:</div>
+    <div class="region">
+      <div class="sheet">
+        <div class="grabber"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+            <div class="sheet-title">Saving your voice note</div>
+          </div>
+          <div class="play-ghost">▶ Play</div>
+        </div>
+        <div>
+          <div class="stage done"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body"><div class="stage-label">On your phone</div></div></div>
+          <div class="stage active"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body"><div class="stage-label">Saving to your account<span class="spinner"></span></div></div></div>
+          <div class="stage"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body"><div class="stage-label">In today’s plan</div></div></div>
+          <div class="stage"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body"><div class="stage-label">Readable by your agent</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="shot-label">If saving fails — the thread stops where the truth stops:</div>
+    <div class="region">
+      <div class="sheet">
+        <div class="grabber"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="eyebrow">capture · <span class="duration">0:42</span></div>
+            <div class="sheet-title">Couldn’t save</div>
+          </div>
+          <div class="play-ghost">▶ Play</div>
+        </div>
+        <div>
+          <div class="stage done"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body"><div class="stage-label">On your phone</div></div></div>
+          <div class="stage warn-stage"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body">
+            <div class="stage-label">Saving to your account</div>
+            <div class="stage-sub warn-text">Couldn’t save. Your audio is still on your phone.</div>
+            <div class="cap-actions"><div class="btn-small btn-primary">Save again</div><div class="btn-small btn-quiet">Discard</div></div>
+          </div></div>
+          <div class="stage"><div class="rail"><div class="sdot"></div><div class="line"></div></div><div class="body"><div class="stage-label">In today’s plan</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="essence"><strong>Essence:</strong> the strongest brand statement — the promise drawn as the product’s own mark. The trade-off: a sheet appears after every capture (it auto-dismisses, but it is ceremony).</div>
+    <a class="open-link" href="candidate-c.html">Full mock — 9 states, light &amp; dark ›</a>
+  </div>
+
+</div>
+
+<div class="howto">
+  <div class="eyebrow blue">how to review</div>
+  <p>Each full mock shows the same nine moments so the candidates compare fairly: stopped, saving, recording-while-structuring, settled, offline, failed, stalled, permission denied, and an accessibility stress test — each with copy, behavior, and VoiceOver/Reduce&nbsp;Motion notes. Use the <strong>Light / Dark</strong> button on any page.</p>
+  <p>The decision brief with the full comparison table is in <a href="index.html">index.html</a>. Selection is yours: A, B, C, a hybrid, or reject all three. Nothing touches production until you choose and the handoff is written.</p>
+</div>
+</body>
+</html>

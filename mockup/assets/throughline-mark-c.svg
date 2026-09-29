@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 96" role="img" aria-labelledby="title desc">
+  <title id="title">Throughline mark C</title>
+  <desc id="desc">A continuous circle that exits with a slight upward motion.</desc>
+  <path
+    d="M16 50 L76 50 C76 32.3 91.3 18 109 18 C126.7 18 141 32.3 141 50 C141 67.7 126.7 82 109 82 C91.3 82 76 67.7 76 50 L136 50 C151 50 163 45 176 36"
+    fill="none"
+    stroke="#2563EB"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

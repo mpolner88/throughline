@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-08-17T08:05:00-07:00",
+  "apple": {
+    "freshness_cutoff_utc": "2026-08-13",
+    "latest_day": {
+      "date": "2026-08-13",
+      "first_time_downloads": 2,
+      "impressions": 35,
+      "product_page_views": 0,
+      "official_conversion_rate": 0.0667
+    },
+    "prior_day": {
+      "date": "2026-08-12",
+      "first_time_downloads": 1,
+      "impressions": 59,
+      "product_page_views": 1,
+      "official_conversion_rate": 0.0244
+    },
+    "cumulative": {
+      "first_time_downloads": 7,
+      "impressions": 355,
+      "product_page_views": 30,
+      "official_conversion_rate": 0.0282
+    },
+    "crashes_status": "not_enough_data",
+    "retention_status": "not_enough_data"
+  },
+  "canaries": {
+    "checked_at": "2026-08-17T08:01:00-07:00",
+    "auth": {
+      "passed": true,
+      "checks_passed": 8,
+      "checks_total": 8,
+      "warnings": []
+    },
+    "recording": {
+      "passed": true,
+      "pipeline_passed": true,
+      "quality_complete": true,
+      "http_ok": true,
+      "processing_status": "processed",
+      "warnings": []
+    }
+  },
+  "posthog": {
+    "status": "current",
+    "window": "2026-08-07 through 2026-08-17 Pacific",
+    "app_opened": 74,
+    "canonical_app_opened": 73,
+    "difference": 1,
+    "event_totals": {
+      "onboarding_started": 20,
+      "demo_recording_completed": 17,
+      "auth_succeeded": 9,
+      "recording_processed": 22
+    },
+    "deployment_verification_included": true,
+    "note": "One-event difference is explained by the known early deployment-verification event."
+  }
+}

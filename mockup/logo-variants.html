@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Throughline Logo Variants</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --blue: #2563eb;
+        --blue-2: #3b82f6;
+        --blue-3: #1d4ed8;
+        --ink: #0a0a0a;
+        --muted: #777b84;
+        --line: #e6e7eb;
+        --paper: #ffffff;
+        --wash: #f6f7f9;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--wash);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      main {
+        width: min(1180px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 42px 0 56px;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        margin: 0 0 9px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(34px, 5vw, 64px);
+        font-weight: 560;
+        letter-spacing: 0;
+      }
+
+      .note {
+        max-width: 530px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        display: grid;
+        gap: 18px;
+        min-height: 310px;
+        padding: 22px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .card.current {
+        border-color: rgba(37, 99, 235, 0.38);
+      }
+
+      .variant-head {
+        display: flex;
+        align-items: first baseline;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .variant-name {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 560;
+        letter-spacing: 0;
+      }
+
+      .badge {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .mark-stage {
+        display: grid;
+        place-items: center;
+        min-height: 108px;
+        border-radius: 8px;
+        background: #fbfbfc;
+        border: 1px solid var(--line);
+      }
+
+      .mark-stage svg {
+        width: min(78%, 250px);
+        height: auto;
+        overflow: visible;
+      }
+
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 38px;
+      }
+
+      .lockup svg {
+        width: 82px;
+        height: auto;
+        overflow: visible;
+      }
+
+      .lockup span {
+        font-size: 26px;
+        font-weight: 560;
+        letter-spacing: 0;
+      }
+
+      .tile-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .tile {
+        display: grid;
+        place-items: center;
+        width: 76px;
+        aspect-ratio: 1;
+        border-radius: 18px;
+        background: linear-gradient(145deg, var(--blue-2), var(--blue) 64%, var(--blue-3));
+        box-shadow: 0 16px 34px rgba(37, 99, 235, 0.2);
+      }
+
+      .tile svg {
+        width: 70%;
+        height: auto;
+        overflow: visible;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.42;
+      }
+
+      svg {
+        display: block;
+      }
+
+      @media (max-width: 920px) {
+        header {
+          display: block;
+        }
+
+        .note {
+          margin-top: 16px;
+        }
+
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100vw - 28px, 520px);
+          padding-top: 28px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">logo exploration</p>
+          <h1>Five more Throughline marks</h1>
+        </div>
+        <p class="note">Version A is the current production direction. B-F keep the same idea: one line enters, becomes a memory object, crosses through the center, and continues outward.</p>
+      </header>
+
+      <section class="grid">
+        <article class="card current">
+          <div class="variant-head">
+            <h2 class="variant-name">A. Current</h2>
+            <span class="badge">baseline</span>
+          </div>
+          <div class="mark-stage">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="lockup">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>throughline</span>
+          </div>
+          <div class="tile-row">
+            <div class="tile">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M18 48 L78 48 C78 31.4 91.4 18 108 18 C124.6 18 138 31.4 138 48 C138 64.6 124.6 78 108 78 C91.4 78 78 64.6 78 48 L174 48" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="small">Balanced, literal, already wired into the app.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="variant-head">
+            <h2 class="variant-name">B. Fuller circle</h2>
+            <span class="badge">most iconic</span>
+          </div>
+          <div class="mark-stage">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M14 48 L74 48 C74 29.2 89.2 14 108 14 C126.8 14 142 29.2 142 48 C142 66.8 126.8 82 108 82 C89.2 82 74 66.8 74 48 L178 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="lockup">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M14 48 L74 48 C74 29.2 89.2 14 108 14 C126.8 14 142 29.2 142 48 C142 66.8 126.8 82 108 82 C89.2 82 74 66.8 74 48 L178 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>throughline</span>
+          </div>
+          <div class="tile-row">
+            <div class="tile">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M14 48 L74 48 C74 29.2 89.2 14 108 14 C126.8 14 142 29.2 142 48 C142 66.8 126.8 82 108 82 C89.2 82 74 66.8 74 48 L178 48" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="small">Bigger memory object, still direct and quiet.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="variant-head">
+            <h2 class="variant-name">C. Lifted exit</h2>
+            <span class="badge">most active</span>
+          </div>
+          <div class="mark-stage">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M16 50 L76 50 C76 32.3 91.3 18 109 18 C126.7 18 141 32.3 141 50 C141 67.7 126.7 82 109 82 C91.3 82 76 67.7 76 50 L136 50 C151 50 163 45 176 36" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="lockup">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M16 50 L76 50 C76 32.3 91.3 18 109 18 C126.7 18 141 32.3 141 50 C141 67.7 126.7 82 109 82 C91.3 82 76 67.7 76 50 L136 50 C151 50 163 45 176 36" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>throughline</span>
+          </div>
+          <div class="tile-row">
+            <div class="tile">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M16 50 L76 50 C76 32.3 91.3 18 109 18 C126.7 18 141 32.3 141 50 C141 67.7 126.7 82 109 82 C91.3 82 76 67.7 76 50 L136 50 C151 50 163 45 176 36" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="small">Adds forward motion, a little less meditative.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="variant-head">
+            <h2 class="variant-name">D. Threaded</h2>
+            <span class="badge">most human</span>
+          </div>
+          <div class="mark-stage">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M15 47 L73 47 C76 29 91 17 109 18 C127 19 140 33 140 50 C140 68 126 80 108 80 C90 80 77 66 78 48 L177 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="lockup">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M15 47 L73 47 C76 29 91 17 109 18 C127 19 140 33 140 50 C140 68 126 80 108 80 C90 80 77 66 78 48 L177 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>throughline</span>
+          </div>
+          <div class="tile-row">
+            <div class="tile">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M15 47 L73 47 C76 29 91 17 109 18 C127 19 140 33 140 50 C140 68 126 80 108 80 C90 80 77 66 78 48 L177 48" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="small">More voice-note warmth, less pure geometry.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="variant-head">
+            <h2 class="variant-name">E. Lens</h2>
+            <span class="badge">best lockup</span>
+          </div>
+          <div class="mark-stage">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M16 48 L66 48 C66 28 84 16 110 16 C136 16 154 28 154 48 C154 68 136 80 110 80 C84 80 66 68 66 48 L176 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="lockup">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M16 48 L66 48 C66 28 84 16 110 16 C136 16 154 28 154 48 C154 68 136 80 110 80 C84 80 66 68 66 48 L176 48" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>throughline</span>
+          </div>
+          <div class="tile-row">
+            <div class="tile">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M16 48 L66 48 C66 28 84 16 110 16 C136 16 154 28 154 48 C154 68 136 80 110 80 C84 80 66 68 66 48 L176 48" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="small">Wider, calmer, stronger next to the word.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="variant-head">
+            <h2 class="variant-name">F. Compact</h2>
+            <span class="badge">best icon</span>
+          </div>
+          <div class="mark-stage">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M24 48 L82 48 C82 34 94 22 108 22 C122 22 134 34 134 48 C134 62 122 74 108 74 C94 74 82 62 82 48 L168 48" fill="none" stroke="#2563EB" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="lockup">
+            <svg viewBox="0 0 192 96" aria-hidden="true">
+              <path d="M24 48 L82 48 C82 34 94 22 108 22 C122 22 134 34 134 48 C134 62 122 74 108 74 C94 74 82 62 82 48 L168 48" fill="none" stroke="#2563EB" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>throughline</span>
+          </div>
+          <div class="tile-row">
+            <div class="tile">
+              <svg viewBox="0 0 192 96" aria-hidden="true">
+                <path d="M24 48 L82 48 C82 34 94 22 108 22 C122 22 134 34 134 48 C134 62 122 74 108 74 C94 74 82 62 82 48 L168 48" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="small">Reads most clearly at small home-screen size.</p>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidate B — The recorder holds it · Throughline capture durability</title>
+<style>
+  :root {
+    --blue: #2563EB;
+    --blue-lifted: #3B82F6;
+    --pill-bg: #EFF6FF;
+    --pill-text: #1E3A8C;
+    --bg: #FFFFFF;
+    --ink: #111114;
+    --sec: #6E6E73;
+    --border: rgba(17, 17, 20, 0.14);
+    --page: #F4F4F6;
+    --danger: #C93A3A;
+    --status-bg: rgba(37, 99, 235, 0.08);
+  }
+  [data-theme="dark"] {
+    --blue: #2563EB;
+    --blue-lifted: #3B82F6;
+    --pill-bg: rgba(59, 130, 246, 0.16);
+    --pill-text: #A9C4FF;
+    --bg: #0E0E10;
+    --ink: #F4F4F5;
+    --sec: #9A9AA1;
+    --border: rgba(244, 244, 245, 0.16);
+    --page: #050506;
+    --danger: #E06C6C;
+    --status-bg: rgba(59, 130, 246, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink);
+    padding: 48px 40px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .masthead { max-width: 880px; margin-bottom: 44px; }
+  .masthead .eyebrow { margin-bottom: 10px; }
+  .masthead h1 { font-size: 34px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 12px; }
+  .masthead p { font-size: 15px; line-height: 1.55; color: var(--sec); max-width: 640px; }
+  .masthead .thesis { color: var(--ink); margin-bottom: 8px; }
+  .theme-toggle {
+    position: fixed; top: 20px; right: 24px; z-index: 50;
+    font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--ink); cursor: pointer;
+  }
+  .eyebrow {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--sec);
+  }
+  .eyebrow.blue { color: var(--blue); }
+
+  .frames { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  .frame { width: 390px; }
+  .phone {
+    width: 390px; height: 844px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 44px;
+    overflow: hidden; display: flex; flex-direction: column; position: relative;
+  }
+  .statusbar {
+    height: 52px; flex: none; display: flex; align-items: center;
+    justify-content: space-between; padding: 10px 34px 0;
+    font-size: 15px; font-weight: 600;
+  }
+  .statusbar .right { font-size: 12px; letter-spacing: 2px; }
+  .topbar {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 14px;
+  }
+  .wordmark { font-size: 21px; font-weight: 500; letter-spacing: -0.01em;
+    border-bottom: 3px solid var(--blue); padding-bottom: 3px; line-height: 1.1; }
+  .gear { color: var(--ink); font-size: 18px; opacity: 0.85; }
+  .content { flex: 1; overflow: hidden; padding: 8px 24px 0; display: flex; flex-direction: column; gap: 22px; }
+  .dateblock { display: flex; flex-direction: column; gap: 10px; }
+  .datetext { font-size: 16px; font-weight: 500; }
+  .h-plan { font-size: 30px; font-weight: 500; letter-spacing: -0.01em; }
+
+  .task-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 0.7px solid var(--border); border-radius: 8px;
+    padding: 12px 11px; background: var(--bg);
+  }
+  .task-circle {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.8px solid var(--sec); flex: none; margin-top: 1px;
+  }
+  .task-text { font-size: 15px; font-weight: 500; line-height: 1.35; }
+  .task-meta { font-size: 12px; color: var(--sec); margin-top: 3px; }
+
+  .card {
+    border: 0.7px solid var(--border); border-radius: 8px;
+    padding: 18px; display: flex; flex-direction: column; gap: 13px; background: var(--bg);
+  }
+  .card .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card .title { font-size: 19px; font-weight: 500; margin-top: 6px; }
+  .trash {
+    width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--sec); font-size: 13px; flex: none;
+  }
+  .prose { font-size: 14px; line-height: 1.5; color: var(--sec); }
+  .mini-section { display: flex; flex-direction: column; gap: 8px; }
+  .mini-item { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+  .mini-circle { width: 16px; height: 16px; border: 1.6px solid var(--sec); border-radius: 50%; flex: none; margin-top: 1px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { font-size: 11px; padding: 6px 9px; border-radius: 999px; background: var(--pill-bg); color: var(--pill-text); }
+  .truthline { font-size: 12px; color: var(--sec); display: flex; align-items: center; gap: 6px; }
+  .truthline .tick { color: var(--blue); font-size: 12px; }
+  .readnote { color: var(--blue); font-size: 13px; font-weight: 500; }
+  .duration { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ——— the tray ——— */
+  .tray { flex: none; border-top: 0.5px solid var(--border); background: var(--bg); }
+  .tray-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px 0;
+  }
+  .tray-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 24px; min-height: 48px;
+  }
+  .tray-row + .tray-row { border-top: 0.5px solid var(--border); }
+  .tray-row .state { flex: 1; font-size: 13px; font-weight: 500; color: var(--sec); line-height: 1.4; }
+  .tray-row .state strong { color: var(--ink); font-weight: 500; }
+  .tray-row.failed .state strong { color: var(--ink); }
+  .tray-actions { display: flex; gap: 8px; padding: 0 24px 12px 58px; flex-wrap: wrap; }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%; flex: none;
+    border: 2px solid color-mix(in srgb, var(--sec) 30%, transparent);
+    border-top-color: var(--sec);
+  }
+  .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex: none; margin: 3px; }
+  .hold { width: 14px; text-align: center; color: var(--sec); font-size: 13px; flex: none; }
+  .hold.warn { color: var(--danger); }
+  .tray .duration { font-size: 13px; color: var(--ink); flex: none; }
+  .btn-small {
+    font-size: 13px; font-weight: 500; padding: 10px 14px; min-height: 44px;
+    border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-outline { border: 0.7px solid var(--border); color: var(--ink); background: var(--bg); }
+  .btn-quiet { color: var(--sec); }
+
+  .recorder {
+    flex: none; border-top: 0.5px solid var(--border);
+    padding: 12px 24px 22px; display: flex; flex-direction: column; gap: 9px;
+    background: var(--bg);
+  }
+  .recorder.no-top { border-top: none; }
+  .rec-btn {
+    border-radius: 8px; color: #fff; text-align: center;
+    background: linear-gradient(150deg, var(--blue-lifted), var(--blue) 62%);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.16);
+    border: 1px solid rgba(255,255,255,0.22);
+    padding: 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    min-height: 92px; justify-content: center;
+  }
+  .rec-mark { display: flex; gap: 18px; align-items: center; height: 24px; }
+  .rec-mark span { width: 34px; height: 5px; border-radius: 3px; background: #fff; display: block; }
+  .rec-ring { width: 34px; height: 34px; border-radius: 50%; border: 5px solid #fff; border-top-color: transparent; }
+  .rec-title { font-size: 16px; font-weight: 500; }
+  .rec-timer { font-size: 28px; font-weight: 600; font-family: ui-rounded, -apple-system, sans-serif; font-variant-numeric: tabular-nums; }
+  .rec-support { font-size: 13px; opacity: 0.86; }
+
+  .overlay-dim { position: absolute; inset: 0; background: rgba(0,0,0,0.34); border-radius: 44px; }
+  .action-sheet { position: absolute; left: 10px; right: 10px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .sheet-group { border-radius: 14px; overflow: hidden; background: var(--bg); }
+  .sheet-title { padding: 14px; text-align: center; font-size: 13px; color: var(--sec); border-bottom: 0.5px solid var(--border); }
+  .sheet-btn { padding: 16px; text-align: center; font-size: 17px; }
+  .sheet-btn.destructive { color: var(--danger); }
+  .sheet-btn.cancel { background: var(--bg); border-radius: 14px; font-weight: 600; }
+
+  .anno { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .anno h3 { font-size: 15px; font-weight: 600; }
+  .anno p, .anno li { font-size: 13px; line-height: 1.5; color: var(--sec); }
+  .anno ul { padding-left: 17px; }
+  .anno .a11y { border-left: 2px solid var(--blue); padding-left: 10px; }
+
+  .doc { max-width: 880px; margin-top: 72px; display: flex; flex-direction: column; gap: 16px; }
+  .doc h2 { font-size: 22px; font-weight: 500; }
+  .doc table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .doc th, .doc td { border: 1px solid var(--border); padding: 9px 11px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .doc th { font-weight: 600; background: color-mix(in srgb, var(--border) 24%, transparent); }
+  .doc p, .doc li { font-size: 14px; line-height: 1.55; color: var(--sec); }
+  .doc ul { padding-left: 18px; }
+  .ax .tray-row .state { font-size: 20px; }
+  .ax .tray .duration { font-size: 20px; }
+  .ax .btn-small { font-size: 21px; padding: 14px 16px; }
+  .ax .eyebrow { font-size: 16px; }
+</style>
+<script>if (new URLSearchParams(location.search).get("theme") === "dark") document.documentElement.dataset.theme = "dark";</script>
+</head>
+<body>
+<button class="theme-toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? '' : 'dark'">Light / Dark</button>
+
+<header class="masthead">
+  <div class="eyebrow blue">Capture durability · Candidate B · design-only mock · 2026-08-30 · synthetic content</div>
+  <h1>The recorder holds it</h1>
+  <p class="thesis">Nothing leaves the recorder until it’s safe. Every capture docks in a quiet tray directly above the record button — on your phone, saving, structuring — and only moves up into Today’s plan when it has actually become a durable, structured note. The plan never contains anything fragile.</p>
+  <p>The tray is glanceable at arm’s length: one line per capture, thumb-height, gone the moment it’s empty.</p>
+</header>
+
+<div class="frames">
+
+  <!-- F1 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="tray">
+        <div class="tray-row">
+          <span class="dot-live"></span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>On your phone.</strong> Saving to your account…</span>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F1 · stopped → kept on phone</div>
+      <h3>The capture stays with the instrument that made it</h3>
+      <ul>
+        <li>On stop, the audio moves to the durable outbox and a one-line row docks above the record button.</li>
+        <li>“On your phone. Saving to your account…” — location first, activity second.</li>
+        <li>Today’s plan above is untouched; nothing fragile enters the list.</li>
+      </ul>
+      <p class="a11y">VoiceOver: tray is a labeled region, “Captures, 1 item”; row reads duration then state.</p>
+    </div>
+  </div>
+
+  <!-- F2 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="tray">
+        <div class="tray-row">
+          <span class="spinner"></span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>Saved to your account.</strong> Structuring your note…</span>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F2 · saved to account · structuring</div>
+      <h3>Truth advances one clause at a time</h3>
+      <ul>
+        <li>The row’s bold clause is always the durable fact; the trailing clause is the current activity.</li>
+        <li>Reduce Motion: spinner becomes a static glyph; row updates are plain text swaps.</li>
+      </ul>
+      <p class="a11y">One VoiceOver announcement per stage change, none per polling tick.</p>
+    </div>
+  </div>
+
+  <!-- F3 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="tray">
+        <div class="tray-row">
+          <span class="spinner"></span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>Saved.</strong> Structuring…</span>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn" style="padding:22px 16px; gap:8px;">
+          <div class="rec-ring"></div>
+          <div class="rec-title">Stop recording</div>
+          <div class="rec-timer duration">0:18 / 5:00</div>
+          <div class="rec-support">Listening… Tap when you’re done</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F3 · new recording while the last one structures</div>
+      <h3>The tray keeps working at thumb height while you talk</h3>
+      <ul>
+        <li>Recording expands the button exactly as today; the tray compresses its copy (“Saved. Structuring…”) but stays visible and truthful.</li>
+        <li>Capture is never blocked by saving or structuring.</li>
+      </ul>
+      <p class="a11y">The tray remains in the accessibility tree during recording and keeps announcing stage changes.</p>
+    </div>
+  </div>
+
+  <!-- F4 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:12 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:12 PM</div></div></div>
+        </div>
+        <div class="card">
+          <div class="head">
+            <div><div class="eyebrow">freeform · 6:12 PM</div><div class="title">ship the small thing</div></div>
+            <div class="trash">🗑</div>
+          </div>
+          <div class="mini-section">
+            <div class="eyebrow">most important</div>
+            <div class="mini-item"><div class="mini-circle"></div>Ship the small thing first</div>
+            <div class="mini-item"><div class="mini-circle"></div>Walk again tonight</div>
+          </div>
+          <div class="prose">I want to keep the morning light. Ship the small thing first, then walk again tonight.</div>
+          <div class="pills"><span class="pill">calm</span></div>
+          <div class="truthline"><span class="tick">✓</span>Saved · readable by your agent</div>
+          <div class="readnote">Read full note ›</div>
+        </div>
+      </div>
+      <div class="recorder">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F4 · structured · tray empty again</div>
+      <h3>Arrival in the plan is the reward</h3>
+      <ul>
+        <li>When structuring completes, the row leaves the tray and the finished note appears in Today’s plan — the accepted card, plus the truth line “Saved · readable by your agent.”</li>
+        <li>Motion: the row slides up into the list (brief, explanatory). Reduce Motion: crossfade only. The tray collapses to nothing; Home is exactly today’s accepted Home.</li>
+        <li>No agent connected → “Saved · ready for your agent.”</li>
+      </ul>
+      <p class="a11y">Completion announced once: “Note ready in today’s plan.”</p>
+    </div>
+  </div>
+
+  <!-- F5 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">✈</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="tray">
+        <div class="tray-head"><div class="eyebrow">2 captures on your phone · save when you’re back online</div></div>
+        <div class="tray-row">
+          <span class="hold">◌</span>
+          <span class="duration">1:12</span>
+          <span class="state"><strong>On your phone.</strong> Waiting for connection.</span>
+        </div>
+        <div class="tray-row">
+          <span class="hold">◌</span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>On your phone.</strong> Waiting for connection.</span>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F5 · offline</div>
+      <h3>A visible, calm queue at the recorder</h3>
+      <ul>
+        <li>The tray header states the total and the promise; each row is individually truthful.</li>
+        <li>Recording remains available offline; saving resumes oldest-first on reconnect.</li>
+        <li>More than three rows collapse to “+ 2 more on your phone”.</li>
+      </ul>
+      <p class="a11y">Header is the region label, so a VoiceOver user hears the count before the rows.</p>
+    </div>
+  </div>
+
+  <!-- F6 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="tray">
+        <div class="tray-row failed">
+          <span class="hold warn">!</span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>Couldn’t save.</strong> Still on your phone.</span>
+        </div>
+        <div class="tray-actions">
+          <div class="btn-small btn-primary">Save again</div>
+          <div class="btn-small btn-outline">▶ Play</div>
+          <div class="btn-small btn-quiet">Discard</div>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+      <div class="overlay-dim"></div>
+      <div class="action-sheet">
+        <div class="sheet-group">
+          <div class="sheet-title">Discard this capture? The audio will be deleted from your phone and was never saved to your account.</div>
+          <div class="sheet-btn destructive">Discard capture</div>
+        </div>
+        <div class="sheet-btn cancel">Cancel</div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F6 · save failed · recovery (discard confirmation shown)</div>
+      <h3>Recovery happens where your thumb already is</h3>
+      <ul>
+        <li>The failed row expands to show three 44 pt actions: Save again (same capture ID — never a duplicate), ▶ Play, Discard with native confirmation.</li>
+        <li>The row stays pinned until resolved; it never silently disappears.</li>
+      </ul>
+      <p class="a11y">Actions are ordinary buttons after the row in focus order; no gesture anywhere.</p>
+    </div>
+  </div>
+
+  <!-- F7 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="tray">
+        <div class="tray-row failed">
+          <span class="hold">!</span>
+          <span class="duration">0:42</span>
+          <span class="state"><strong>Saved to your account.</strong> Structuring didn’t finish.</span>
+        </div>
+        <div class="tray-actions">
+          <div class="btn-small btn-outline">Try structuring again</div>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F7 · structuring stalled or failed server-side</div>
+      <h3>The row still leads with what is safe</h3>
+      <ul>
+        <li>“Saved to your account. Structuring didn’t finish.” — the durable fact stays bold even in failure.</li>
+        <li>One action re-requests structuring (needs a re-process API path — open question for Codex).</li>
+        <li>The item does not enter Today’s plan until it is a real note, keeping the plan trustworthy.</li>
+      </ul>
+      <p class="a11y">Stall announced once; button is plainly labeled.</p>
+    </div>
+  </div>
+
+  <!-- F8 -->
+  <div class="frame">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Saturday, August 29</div></div>
+        <div class="h-plan">Today’s plan</div>
+        <div class="mini-section">
+          <div class="eyebrow">most important</div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Ship the small thing first</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+          <div class="task-row"><div class="task-circle"></div><div><div class="task-text">Walk again tonight</div><div class="task-meta">ship the small thing · 6:11 PM</div></div></div>
+        </div>
+      </div>
+      <div class="recorder">
+        <div class="rec-btn">
+          <div class="rec-title">Microphone access is off</div>
+          <div class="rec-support">Turn it on in Settings to record. Your notes are unaffected.</div>
+          <div class="btn-small" style="background:#fff;color:var(--blue);margin-top:4px;">Open Settings</div>
+        </div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F8 · microphone permission denied</div>
+      <h3>Shared treatment: the recorder explains and routes</h3>
+      <ul>
+        <li>Identical to Candidate A — the recorder carries the state and the one useful action. The tray is absent; permission affects future captures only.</li>
+      </ul>
+      <p class="a11y">State is readable before the action; “Open Settings” is the labeled button.</p>
+    </div>
+  </div>
+
+  <!-- F9 -->
+  <div class="frame">
+    <div class="phone ax">
+      <div class="statusbar"><span>9:41</span><span class="right">▲▲▲ ᯤ ▮</span></div>
+      <div class="topbar"><div class="wordmark">throughline</div><div class="gear">⚙</div></div>
+      <div class="content">
+        <div class="dateblock"><div class="eyebrow">today</div><div class="datetext" style="font-size:24px;">Saturday, August 29</div></div>
+      </div>
+      <div class="tray">
+        <div class="tray-head"><div class="eyebrow">1 capture on your phone</div></div>
+        <div class="tray-row failed" style="align-items:flex-start;">
+          <span class="hold warn" style="font-size:20px;">!</span>
+          <span class="duration">4:58</span>
+          <span class="state"><strong>Couldn’t save.</strong> Still on your phone.</span>
+        </div>
+        <div class="tray-actions" style="flex-direction:column; align-items:stretch; padding-left:24px;">
+          <div class="btn-small btn-primary">Save again</div>
+          <div class="btn-small btn-outline">▶ Play</div>
+          <div class="btn-small btn-quiet">Discard</div>
+        </div>
+      </div>
+      <div class="recorder no-top">
+        <div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title" style="font-size:24px;">Start recording</div></div>
+      </div>
+    </div>
+    <div class="anno">
+      <div class="eyebrow blue">F9 · accessibility stress: AX text size + long capture</div>
+      <h3>Rows become paragraphs; nothing is lost</h3>
+      <ul>
+        <li>At accessibility sizes the tray row wraps naturally and actions stack full-width; the tray may take real height — content scrolls, truth doesn’t truncate.</li>
+        <li>All tray text uses semantic Dynamic Type styles from day one.</li>
+      </ul>
+      <p class="a11y">Reduce Motion: rows appear/leave by crossfade; no slide, no spin.</p>
+    </div>
+  </div>
+
+</div>
+
+<section class="doc">
+  <h2>State coverage</h2>
+  <table>
+    <tr><th>State</th><th>Treatment in Candidate B</th></tr>
+    <tr><td>Loading (saving / structuring)</td><td>Tray rows with staged bold-truth copy; F1–F3.</td></tr>
+    <tr><td>Empty</td><td>Tray does not exist when nothing is pending — Home is exactly today’s accepted Home.</td></tr>
+    <tr><td>Error / retry</td><td>F6 failed row with Save again (idempotent), Play, confirmed Discard; F7 stalled structuring with re-request.</td></tr>
+    <tr><td>Offline / degraded</td><td>F5: counted queue with promise header; auto-resume oldest-first.</td></tr>
+    <tr><td>Permission denied</td><td>F8: recorder explains, offers Open Settings.</td></tr>
+    <tr><td>Long / localized content</td><td>F9: rows wrap to any length; over three rows collapse to a count.</td></tr>
+    <tr><td>Light / dark</td><td>Page toggle top-right; accepted palette; tray uses background + hairlines only.</td></tr>
+    <tr><td>Dynamic Type</td><td>F9; semantic styles for all tray text.</td></tr>
+    <tr><td>VoiceOver</td><td>Tray is a labeled region with count; rows read duration then state; actions are buttons in order.</td></tr>
+    <tr><td>Reduce Motion</td><td>No spinners (static glyph), crossfade instead of slide-to-list.</td></tr>
+    <tr><td>Gesture alternatives</td><td>Zero gestures introduced; every action is a visible 44 pt button.</td></tr>
+  </table>
+
+  <h2>What stays exactly as accepted</h2>
+  <ul>
+    <li>Home hierarchy and cards untouched; the note list never shows transient state. The recorder idle/recording states are unchanged; the tray docks between content and recorder only while work is pending.</li>
+  </ul>
+
+  <h2>Likely production mapping (for the eventual handoff, not implementation now)</h2>
+  <ul>
+    <li>New: durable capture outbox; `CaptureTrayView` docked in `HomeView` above `bottomRecorder`; client capture ID for idempotent retry.</li>
+    <li>Changed: `stopAndUploadRecording` decomposes into keep → enqueue → background save; recorder unblocks after keep; `uploadError` banner and “saved” footer retire.</li>
+    <li>Open questions: server idempotency key; re-process endpoint; tray behavior if a future tab bar changes the bottom edge; outbox storage cap policy.</li>
+  </ul>
+</section>
+</body>
+</html>

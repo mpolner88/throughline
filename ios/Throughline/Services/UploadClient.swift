@@ -176,6 +176,7 @@ struct RecordingPayload: Decodable {
     let processingStatus: String?
     let transcriptRaw: String?
     let structuredNote: StructuredNotePayload?
+    var currentRevisionID: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -184,18 +185,38 @@ struct RecordingPayload: Decodable {
         case processingStatus = "processing_status"
         case transcriptRaw = "transcript_raw"
         case structuredNote = "structured_note"
+        case currentRevisionID = "current_revision_id"
     }
 
     var throughlineNote: ThroughlineNote? {
         guard let structuredNote else { return nil }
+
+        let normalizedTitle = structuredNote.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fallbackTitle = structuredNote.mostImportant.first
+            ?? structuredNote.priorities.first
+            ?? structuredNote.todos.first?.text
+            ?? structuredNote.actionItems.first?.text
+            ?? "voice note"
+        let title = normalizedTitle.isEmpty ? fallbackTitle : normalizedTitle
+
+        let normalizedSummary = structuredNote.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        let summaryCandidates = structuredNote.mostImportant
+            + structuredNote.priorities
+            + structuredNote.todos.map(\.text)
+            + structuredNote.actionItems.map(\.text)
+        let fallbackSummary = Array(summaryCandidates.prefix(2)).joined(separator: ". ")
+        let summary = normalizedSummary.isEmpty
+            ? (fallbackSummary.isEmpty ? title : fallbackSummary)
+            : normalizedSummary
 
         return ThroughlineNote(
             id: id,
             createdAt: createdAtDate,
             type: structuredNote.type ?? type ?? .freeform,
             processingStatus: processingStatus,
-            title: structuredNote.title,
-            summary: structuredNote.summary,
+            currentRevisionID: currentRevisionID,
+            title: title,
+            summary: summary,
             transcript: transcriptRaw ?? "",
             mostImportant: structuredNote.mostImportant,
             actionItems: structuredNote.actionItems,
@@ -227,6 +248,7 @@ struct RecordingPayload: Decodable {
             createdAt: createdAtDate,
             type: type ?? .freeform,
             processingStatus: status,
+            currentRevisionID: currentRevisionID,
             title: "voice note captured",
             summary: UploadResponse.summary(for: status),
             transcript: transcriptRaw ?? "Recording saved. Transcript will appear here after processing.",
@@ -354,7 +376,50 @@ struct RecordingListItem: Decodable {
 }
 
 struct RecordingDetailResponse: Decodable {
-    let recording: RecordingPayload
+    var recording: RecordingPayload
+    let currentRevisionID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case recording
+        case currentRevisionID = "current_revision_id"
+    }
+
+    var resolvedRecording: RecordingPayload {
+        var value = recording
+        if value.currentRevisionID == nil { value.currentRevisionID = currentRevisionID }
+        return value
+    }
+}
+
+struct EvaluationReadinessPreviewResponse: Decodable {
+    let preview: AgentReadinessPreview
+}
+
+struct EvaluationContributionResponse: Decodable {
+    let evaluationID: String
+    let evaluatedRevisionID: String
+    let contributionID: String
+    let eligible: Bool
+    let idempotent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case evaluationID = "evaluation_id"
+        case evaluatedRevisionID = "evaluated_revision_id"
+        case contributionID = "contribution_id"
+        case eligible, idempotent
+    }
+}
+
+struct EvaluationContributionRemovalResponse: Decodable {
+    let withdrawn: Bool
+    let audioDeleted: Bool
+    let idempotent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case withdrawn
+        case audioDeleted = "audio_deleted"
+        case idempotent
+    }
 }
 
 struct AgentTokenSummary: Identifiable, Decodable {
@@ -420,37 +485,51 @@ struct ProductFeedbackResponse: Decodable {
     let status: String
 }
 
-struct ProductEvent: Codable, Identifiable {
-    let id: String
-    let eventName: String
-    let sessionID: String
-    let occurredAt: String
-    let appVersion: String?
-    let buildNumber: String?
-    let properties: [String: String]
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case eventName = "event_name"
-        case sessionID = "session_id"
-        case occurredAt = "occurred_at"
-        case appVersion = "app_version"
-        case buildNumber = "build_number"
-        case properties
-    }
-}
-
 enum ProductAnalytics {
-    static func track(_ eventName: String, properties: [String: String] = [:]) {
+    private static let firstOpenedAtKey = "throughline.analytics.firstOpenedAt"
+
+    static func track(
+        _ eventName: String,
+        properties: [String: String] = [:],
+        recordingID: String? = nil
+    ) {
+        guard !isPreviewLaunch else { return }
+
         Task {
-            await ProductEventQueue.shared.enqueue(eventName: eventName, properties: properties)
+            await ProductEventQueue.shared.enqueue(
+                eventName: eventName,
+                properties: properties,
+                recordingID: recordingID
+            )
         }
+    }
+
+    static func trackFirstOpen(route: String) {
+        guard !isPreviewLaunch,
+              UserDefaults.standard.string(forKey: firstOpenedAtKey) == nil
+        else {
+            return
+        }
+
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        UserDefaults.standard.set(timestamp, forKey: firstOpenedAtKey)
+        track("first_opened", properties: ["route": route])
     }
 
     static func flush() {
         Task {
             await ProductEventQueue.shared.flush()
         }
+    }
+
+    private static var isPreviewLaunch: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains(where: {
+            $0.hasPrefix("--throughline-preview-") || $0 == "--throughline-onboarding-step"
+        })
+        #else
+        false
+        #endif
     }
 }
 
@@ -460,6 +539,7 @@ private actor ProductEventQueue {
     private static let storageKey = "throughline.pendingProductEvents"
     private static let sessionID = UUID().uuidString.lowercased()
     private var pendingEvents: [ProductEvent]
+    private var distributionChannel: ProductEventDistributionChannel?
     private var isFlushing = false
 
     init() {
@@ -471,7 +551,20 @@ private actor ProductEventQueue {
         }
     }
 
-    func enqueue(eventName: String, properties: [String: String]) async {
+    func enqueue(
+        eventName: String,
+        properties: [String: String],
+        recordingID: String?
+    ) async {
+        let eventDistributionChannel: ProductEventDistributionChannel
+        if let distributionChannel {
+            eventDistributionChannel = distributionChannel
+        } else {
+            let detectedChannel = await ProductEventAttribution.currentDistributionChannel()
+            distributionChannel = detectedChannel
+            eventDistributionChannel = detectedChannel
+        }
+
         pendingEvents.append(
             ProductEvent(
                 id: "evt_\(UUID().uuidString.lowercased())",
@@ -480,6 +573,9 @@ private actor ProductEventQueue {
                 occurredAt: Self.timestamp(),
                 appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
                 buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+                schemaVersion: 2,
+                distributionChannel: eventDistributionChannel,
+                recordingID: recordingID,
                 properties: properties
             )
         )
@@ -530,18 +626,24 @@ private actor ProductEventQueue {
 struct UploadClient {
     var baseURL = BackendConfiguration.currentBaseURL
     var apiToken = BackendConfiguration.currentAPIToken
+    private let session: URLSession
+    private let aiPermission: AIProcessingPermission
 
     init(
         baseURL: URL = BackendConfiguration.currentBaseURL,
-        apiToken: String? = BackendConfiguration.currentAPIToken
+        apiToken: String? = BackendConfiguration.currentAPIToken,
+        session: URLSession = .shared,
+        aiPermission: AIProcessingPermission = .shared
     ) {
         self.baseURL = baseURL
         self.apiToken = apiToken
+        self.session = session
+        self.aiPermission = aiPermission
     }
 
     func health() async throws -> HealthResponse {
         let request = try await authorizedRequest(url: baseURL.appendingPathComponent("health"))
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(HealthResponse.self, from: data)
     }
@@ -562,7 +664,7 @@ struct UploadClient {
         request.setValue(Self.localTimestamp(), forHTTPHeaderField: "X-Throughline-User-Local-Time")
         request.httpBody = try Data(contentsOf: fileURL)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
@@ -583,14 +685,33 @@ struct UploadClient {
         request.setValue(Self.localTimestamp(), forHTTPHeaderField: "X-Throughline-User-Local-Time")
         request.httpBody = try Data(contentsOf: fileURL)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await aiPermission.data(for: request, session: session)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(UploadResponse.self, from: data)
+    }
+
+    func saveDemoNote(_ note: ThroughlineNote, duration: Int) async throws -> UploadResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            DemoNoteSaveRequest(
+                transcript: note.transcript,
+                duration: duration,
+                type: note.type.rawValue,
+                userLocalTime: Self.localTimestamp(),
+                timezone: TimeZone.current.identifier
+            )
+        )
+
+        let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
 
     func listNotes() async throws -> [ThroughlineNote] {
         let listRequest = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings"))
-        let (listData, listResponse) = try await URLSession.shared.data(for: listRequest)
+        let (listData, listResponse) = try await session.data(for: listRequest)
         try validate(response: listResponse, data: listData)
 
         let list = try JSONDecoder().decode(RecordingListResponse.self, from: listData)
@@ -608,9 +729,9 @@ struct UploadClient {
         let request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("recordings")
             .appendingPathComponent(id))
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
-        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
 
     func deleteRecording(id: String) async throws {
@@ -619,7 +740,7 @@ struct UploadClient {
             .appendingPathComponent(id))
         request.httpMethod = "DELETE"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -634,29 +755,59 @@ struct UploadClient {
             ActionItemUpdateRequest(text: text, completed: isCompleted)
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
-        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
 
-    func updateRecording(recordingID: String, draft: NoteEditDraft) async throws -> RecordingPayload {
+    func updateRecording(recordingID: String, draft: NoteEditDraft, expectedRevisionID: String?) async throws -> RecordingPayload {
         var request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("recordings")
             .appendingPathComponent(recordingID))
         request.httpMethod = "PATCH"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(RecordingEditRequest(draft: draft))
+        request.httpBody = try JSONEncoder().encode(RecordingEditRequest(draft: draft, expectedRevisionID: expectedRevisionID))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
-        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).recording
+        return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
+    }
+
+    func evaluationReadinessPreview(recordingID: String, revisionID: String) async throws -> AgentReadinessPreview {
+        var components = URLComponents(url: baseURL.appendingPathComponent("recordings").appendingPathComponent(recordingID).appendingPathComponent("evaluation-readiness-preview"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "revision_id", value: revisionID.lowercased())]
+        guard let url = components?.url else { throw UploadClientError.invalidResponse }
+        let request = try await authorizedRequest(url: url)
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(EvaluationReadinessPreviewResponse.self, from: data).preview
+    }
+
+    func saveEvaluation(recordingID: String, request body: EvaluationContributionRequest) async throws -> EvaluationContributionResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings").appendingPathComponent(recordingID).appendingPathComponent("evaluations"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(EvaluationContributionResponse.self, from: data)
+    }
+
+    func removeEvaluationContribution(recordingID: String, idempotencyKey: UUID = UUID()) async throws -> EvaluationContributionRemovalResponse {
+        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings").appendingPathComponent(recordingID).appendingPathComponent("evaluation-contribution"))
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["idempotency_key": idempotencyKey.uuidString.lowercased()])
+        let (data, response) = try await session.data(for: request)
+        try validate(response: response, data: data)
+        return try JSONDecoder().decode(EvaluationContributionRemovalResponse.self, from: data)
     }
 
     func deleteAccount() async throws {
         var request = try await authorizedRequest(url: baseURL.appendingPathComponent("account"))
         request.httpMethod = "DELETE"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -664,7 +815,7 @@ struct UploadClient {
         let request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("agent")
             .appendingPathComponent("tokens"))
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(AgentTokenListResponse.self, from: data).tokens
     }
@@ -677,7 +828,7 @@ struct UploadClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(CreateAgentTokenRequest(name: name))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(AgentTokenCreateResponse.self, from: data)
     }
@@ -689,7 +840,7 @@ struct UploadClient {
             .appendingPathComponent(id))
         request.httpMethod = "DELETE"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -715,7 +866,7 @@ struct UploadClient {
             )
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(FeedbackResponse.self, from: data)
     }
@@ -728,7 +879,7 @@ struct UploadClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(ProductEventBatchRequest(events: events))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -751,7 +902,7 @@ struct UploadClient {
             )
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(ProductFeedbackResponse.self, from: data)
     }
@@ -811,6 +962,22 @@ private struct ProductEventBatchRequest: Encodable {
     let events: [ProductEvent]
 }
 
+private struct DemoNoteSaveRequest: Encodable {
+    let transcript: String
+    let duration: Int
+    let type: String
+    let userLocalTime: String
+    let timezone: String
+
+    enum CodingKeys: String, CodingKey {
+        case transcript = "transcript_raw"
+        case duration = "duration_seconds"
+        case type
+        case userLocalTime = "user_local_time"
+        case timezone
+    }
+}
+
 private struct ProductFeedbackRequest: Encodable {
     let category: String
     let message: String
@@ -844,6 +1011,11 @@ private struct RecordingEditRequest: Encodable {
     let transcript: String
     let mostImportant: [String]
     let todos: [String]
+    let expectedCurrentRevisionID: String?
+    let idempotencyKey: String?
+    let noticeVersion: String?
+    let disclosureVersion: String?
+    let policyVersion: String?
 
     enum CodingKeys: String, CodingKey {
         case title
@@ -851,14 +1023,24 @@ private struct RecordingEditRequest: Encodable {
         case transcript
         case mostImportant = "most_important"
         case todos
+        case expectedCurrentRevisionID = "expected_current_revision_id"
+        case idempotencyKey = "idempotency_key"
+        case noticeVersion = "notice_version"
+        case disclosureVersion = "disclosure_version"
+        case policyVersion = "policy_version"
     }
 
-    init(draft: NoteEditDraft) {
+    init(draft: NoteEditDraft, expectedRevisionID: String?) {
         title = draft.trimmedTitle
         summary = draft.trimmedSummary
         transcript = draft.trimmedTranscript
         mostImportant = draft.mostImportant
         todos = draft.todos
+        expectedCurrentRevisionID = expectedRevisionID?.lowercased()
+        idempotencyKey = expectedRevisionID == nil ? nil : UUID().uuidString.lowercased()
+        noticeVersion = expectedRevisionID == nil ? nil : EvaluationContributionRequest.noticeVersion
+        disclosureVersion = expectedRevisionID == nil ? nil : EvaluationContributionRequest.disclosureVersion
+        policyVersion = expectedRevisionID == nil ? nil : EvaluationContributionRequest.policyVersion
     }
 }
 
@@ -877,11 +1059,14 @@ struct FeedbackResponse: Decodable {
 enum UploadClientError: LocalizedError {
     case invalidResponse
     case serverError(Int, String)
+    case processingFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
             "The backend returned an invalid response."
+        case let .processingFailed(status):
+            "Throughline could not structure this recording (\(status)). Please try again."
         case let .serverError(status, body):
             if status == 401 {
                 #if DEBUG

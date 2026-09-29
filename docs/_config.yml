@@ -1,0 +1,20 @@
+# Pages publishes /docs. Keep operating records and unreleased designs off the site.
+# Exclusions are source-relative; quoted globs use Ruby File.fnmatch semantics.
+# https://jekyllrb.com/docs/configuration/options/#global-configuration
+exclude:
+  - "*.md"
+  - "**/*.md"
+  - evidence
+  - handoffs
+  - history
+  - programs
+  - prompts
+  - releases
+  - slices
+  - superpowers
+  - templates
+  # Preserve Jekyll 3's build-tool exclusions when replacing its default list.
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
