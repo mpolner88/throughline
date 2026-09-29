@@ -9,6 +9,8 @@
   Revision 2, 2026-09-28: adds the states required by Codex's feasibility review of revision 1
   (unconfirmed save, sign-in required, another account, stopped early, interrupted, no storage)
   and corrects the discard copy. States 1-12 are unchanged apart from the discard dialog (8).
+  Revision 3, 2026-09-29: adds states 22 (recording still being checked) and 23 (account deletion
+  not confirmed) for Codex's revision-2 findings C3 and C5. States 1-21 render unchanged.
   Design-only. Synthetic content. No production code.
   Gallery:            selected-mock.html
   One state, bare:    selected-mock.html?only=failed            (fills the viewport; used for reference screenshots)
@@ -264,20 +266,27 @@
       note: 'The account rejected this phone’s sign-in. The audio stays here and saves only to the same account.',
       body: PLAN, tray: tray(SIGNIN_ROWS, '2 captures waiting to save', 'Sign in'), rec: REC_IDLE },
     { id: 'other', title: '17 · Captures from another account',
-      note: 'Never played, listed or saved under the account now signed in. Recommended default; Mike confirms.',
+      note: 'Never played, listed, counted or saved under the account now signed in. Decided by Mike (D1).',
       body: PLAN, tray: tray(row('hold', '', '2 captures from another account.', 'Sign in to that account to save them.') + singleAction('Discard from phone', 'quiet')), rec: REC_IDLE },
     { id: 'early', title: '18 · Stopped early, kept',
-      note: 'A call, leaving the app, or full storage ended the recording. What was recorded is kept and saved.',
+      note: 'A call, locking the phone, leaving the app, or full storage ended the recording. Playable audio is kept and saved (D2).',
       body: PLAN, tray: tray(row('live', '0:42', 'On your phone.', 'Stopped early. Saving to your account…')), rec: REC_IDLE },
     { id: 'interrupted', title: '19 · Interrupted, nothing recoverable',
-      note: 'Told once, plainly. The duration is blank when it is not known. The row stays until dismissed.',
+      note: 'Only for audio confirmed unreadable. Told once, plainly. The duration is blank when it is not known. The row stays until dismissed.',
       body: PLAN, tray: tray(row('warn', '', 'Recording interrupted.', 'The audio couldn’t be recovered.') + singleAction('Dismiss')), rec: REC_IDLE },
     { id: 'storage', title: '20 · Not enough space to record',
       note: 'Recording does not start until the phone can hold it. Tapping again re-checks.',
       body: PLAN, tray: '', rec: REC_STORAGE, lined: true },
     { id: 'ax-signin', title: '21 · Sign in at accessibility text size', ax: true,
       note: 'The header action drops below its label. Nothing truncates.',
-      body: DATE, tray: tray(SIGNIN_ROWS, '2 captures waiting to save', 'Sign in'), rec: REC_IDLE }
+      body: DATE, tray: tray(SIGNIN_ROWS, '2 captures waiting to save', 'Sign in'), rec: REC_IDLE },
+    { id: 'audio-check', title: '22 · Recording kept, still being checked',
+      note: 'The file is safely stored but could not be read yet. Nothing is sent or deleted; the check runs again when the phone allows.',
+      body: PLAN, tray: tray(row('hold', '0:42', 'On your phone.', 'Checking the recording…')), rec: REC_IDLE },
+    { id: 'deletion-pending', title: '23 · Account deletion not confirmed',
+      note: 'The answer was lost or incomplete. Captures are held and never sent until deletion is confirmed or definitely refused.',
+      body: PLAN, tray: tray(row('hold', '1:12', 'On your phone.', 'Held, not sent.') + row('hold', '0:42', 'On your phone.', 'Held, not sent.'),
+        'account deletion not confirmed', 'Try again'), rec: REC_IDLE }
   ];
 
   function phone(s) {
@@ -299,7 +308,7 @@
   app.innerHTML = '<button class="theme-toggle" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme===\'dark\'?\'\':\'dark\'">Light / Dark</button>'
     + '<header class="masthead"><div class="eyebrow blue">TL-CAP-001 · selected design · frozen 2026-09-28 · design-only · synthetic content</div>'
     + '<h1>Capture recovery: the recorder holds it</h1>'
-    + '<p>Nothing leaves the recorder until it is safe. Each capture docks in a one-line tray above the record button and moves into Today’s plan only as a finished note. These twenty-one states are the target for the first slice. Revision 2 adds states 13–21 and corrects the discard wording in state 8.</p></header>'
+    + '<p>Nothing leaves the recorder until it is safe. Each capture docks in a one-line tray above the record button and moves into Today’s plan only as a finished note. These twenty-three states are the target for the first slice. Revision 2 added states 13–21 and corrected the discard wording in state 8; revision 3 adds states 22 and 23.</p></header>'
     + '<div class="frames">' + STATES.map(function (s) {
       return '<div class="frame" id="' + s.id + '">' + phone(s) + '<div class="anno"><h3>' + s.title + '</h3><p>' + s.note + '</p></div></div>';
     }).join('') + '</div>';
