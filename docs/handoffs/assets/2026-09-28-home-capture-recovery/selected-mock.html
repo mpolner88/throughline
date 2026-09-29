@@ -6,6 +6,9 @@
 <title>Capture recovery — selected design (tray) · Throughline handoff 2026-09-28</title>
 <!--
   Frozen design target for docs/handoffs/2026-09-28-home-capture-recovery.md.
+  Revision 2, 2026-09-28: adds the states required by Codex's feasibility review of revision 1
+  (unconfirmed save, sign-in required, another account, stopped early, interrupted, no storage)
+  and corrects the discard copy. States 1-12 are unchanged apart from the discard dialog (8).
   Design-only. Synthetic content. No production code.
   Gallery:            selected-mock.html
   One state, bare:    selected-mock.html?only=failed            (fills the viewport; used for reference screenshots)
@@ -76,6 +79,8 @@
 
   .tray { flex: none; border-top: 0.5px solid var(--border); background: var(--bg); }
   .tray-head { padding: 10px 24px 0; }
+  .tray-head.with-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
+  .btn.text { color: var(--blue); padding: 10px 0 10px 14px; }
   .tray-row { display: flex; align-items: center; gap: 10px; padding: 12px 24px; min-height: 48px; }
   .tray-row + .tray-row { border-top: 0.5px solid var(--border); }
   .tray-row .state { flex: 1; font-size: 13px; font-weight: 500; color: var(--sec); line-height: 1.4; }
@@ -126,6 +131,8 @@
   .ax .tray-actions { flex-direction: column; align-items: stretch; padding-left: 24px; }
   .ax .tray-row { align-items: flex-start; }
   .ax .glyph { font-size: 20px; }
+  .ax .tray-head.with-action { flex-direction: column; align-items: stretch; gap: 0; padding-top: 10px; }
+  .ax .btn.text { justify-content: flex-start; padding-left: 0; }
 </style>
 </head>
 <body>
@@ -170,19 +177,39 @@
   function actions(playLabel) {
     return '<div class="tray-actions"><div class="btn primary">Save again</div><div class="btn outline">' + playLabel + '</div><div class="btn quiet">Discard</div></div>';
   }
-  function tray(inner, head) {
-    return '<div class="tray">' + (head ? '<div class="tray-head"><div class="eyebrow">' + head + '</div></div>' : '') + inner + '</div>';
+  function tray(inner, head, headAction) {
+    var headHTML = '';
+    if (head && headAction) {
+      headHTML = '<div class="tray-head with-action"><div class="eyebrow">' + head + '</div><div class="btn text">' + headAction + '</div></div>';
+    } else if (head) {
+      headHTML = '<div class="tray-head"><div class="eyebrow">' + head + '</div></div>';
+    }
+    return '<div class="tray">' + headHTML + inner + '</div>';
+  }
+  function singleAction(label, kind) {
+    return '<div class="tray-actions"><div class="btn ' + (kind || 'outline') + '">' + label + '</div></div>';
   }
   var REC_IDLE = '<div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>';
   var REC_FIRST = '<div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Record today’s plan</div></div>';
   var REC_LIVE = '<div class="rec-btn" style="padding:22px 16px;gap:8px"><div class="rec-ring"></div><div class="rec-title">Stop recording</div><div class="rec-timer">0:18 / 5:00</div><div class="rec-support">Listening… Tap when you’re done</div></div>';
   var REC_PERM = '<div class="rec-btn"><div class="rec-title">Microphone access is off</div><div class="rec-support">Turn it on in Settings to record. Your notes are unaffected.</div><div class="btn rec-chip">Open Settings</div></div>';
+  var REC_STORAGE = '<div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Not enough space to record</div><div class="rec-support">Free up storage on this phone, then try again. Your notes are unaffected.</div></div>';
   function recorder(inner, lined) { return '<div class="recorder' + (lined ? ' lined' : '') + '">' + inner + '</div>'; }
-  var DISCARD = '<div class="scrim"></div><div class="sheet"><div class="sheet-group"><div class="sheet-title">Discard this capture?</div>'
-    + '<div class="sheet-msg">The audio will be deleted from your phone. It was never saved to your account.</div>'
-    + '<div class="sheet-btn destructive">Discard capture</div></div><div class="sheet-btn cancel">Cancel</div></div>';
+  function sheet(title, msg, action) {
+    return '<div class="scrim"></div><div class="sheet"><div class="sheet-group"><div class="sheet-title">' + title + '</div>'
+      + '<div class="sheet-msg">' + msg + '</div>'
+      + '<div class="sheet-btn destructive">' + action + '</div></div><div class="sheet-btn cancel">Cancel</div></div>';
+  }
+  // Known local-only: no request for this capture has left the phone, or the account has confirmed it holds nothing for it.
+  var DISCARD = sheet('Discard this capture?',
+    'The audio will be deleted from this phone. It hasn’t been saved to your account.', 'Discard from phone');
+  // Unconfirmed: a request left the phone and no validated receipt came back.
+  var DISCARD_UNCONFIRMED = sheet('Discard this capture?',
+    'This deletes the audio from this phone only. If it already reached your account, the note will still appear in your list.', 'Discard from phone');
 
   var FAILED_ROW = row('warn', '0:42', 'Couldn’t save.', 'Still on your phone.');
+  var UNCONFIRMED_ROW = row('warn', '0:42', 'Couldn’t confirm the save.', 'Still on your phone.');
+  var SIGNIN_ROWS = row('hold', '1:12', 'On your phone.', 'Waiting for sign-in.') + row('hold', '0:42', 'On your phone.', 'Waiting for sign-in.');
 
   var STATES = [
     { id: 'kept', title: '1 · Stopped: kept on the phone, saving',
@@ -207,8 +234,8 @@
     { id: 'playing', title: '7 · Replaying the capture',
       note: 'Play becomes Stop while the audio plays.',
       body: PLAN, tray: tray(FAILED_ROW + actions('■ Stop')), rec: REC_IDLE },
-    { id: 'discard', title: '8 · Discard confirmation',
-      note: 'Native confirmation. Wording differs from deleting a saved note.',
+    { id: 'discard', title: '8 · Discard confirmation, never sent',
+      note: 'Native confirmation. Used only when no request for this capture has left the phone. Discard deletes the phone’s copy; it is not account deletion.',
       body: PLAN, tray: tray(FAILED_ROW + actions('▶ Play')), rec: REC_IDLE, overlay: DISCARD },
     { id: 'many', title: '9 · More than three captures', air: true,
       note: 'The last row is a button that shows every capture.',
@@ -223,7 +250,34 @@
       body: PLAN, tray: '', rec: REC_PERM, lined: true },
     { id: 'ax', title: '12 · Accessibility text size', ax: true,
       note: 'Text wraps, actions stack, nothing truncates.',
-      body: DATE, tray: tray(row('warn', '4:58', 'Couldn’t save.', 'Still on your phone.') + actions('▶ Play')), rec: REC_IDLE }
+      body: DATE, tray: tray(row('warn', '4:58', 'Couldn’t save.', 'Still on your phone.') + actions('▶ Play')), rec: REC_IDLE },
+    { id: 'checking', title: '13 · Sent, answer lost: checking',
+      note: 'A request left the phone and no receipt came back. The app asks again with the same capture before claiming anything.',
+      body: PLAN, tray: tray(row('live', '0:42', 'On your phone.', 'Checking with your account…')), rec: REC_IDLE },
+    { id: 'unconfirmed', title: '14 · Couldn’t confirm the save',
+      note: 'The account may already hold it. Save again is safe: it can only return the same note.',
+      body: PLAN, tray: tray(UNCONFIRMED_ROW + actions('▶ Play')), rec: REC_IDLE },
+    { id: 'discard-unconfirmed', title: '15 · Discard confirmation, unconfirmed',
+      note: 'Says only what is known. Discard never deletes anything from the account.',
+      body: PLAN, tray: tray(UNCONFIRMED_ROW + actions('▶ Play')), rec: REC_IDLE, overlay: DISCARD_UNCONFIRMED },
+    { id: 'signin', title: '16 · Sign in to save',
+      note: 'The account rejected this phone’s sign-in. The audio stays here and saves only to the same account.',
+      body: PLAN, tray: tray(SIGNIN_ROWS, '2 captures waiting to save', 'Sign in'), rec: REC_IDLE },
+    { id: 'other', title: '17 · Captures from another account',
+      note: 'Never played, listed or saved under the account now signed in. Recommended default; Mike confirms.',
+      body: PLAN, tray: tray(row('hold', '', '2 captures from another account.', 'Sign in to that account to save them.') + singleAction('Discard from phone', 'quiet')), rec: REC_IDLE },
+    { id: 'early', title: '18 · Stopped early, kept',
+      note: 'A call, leaving the app, or full storage ended the recording. What was recorded is kept and saved.',
+      body: PLAN, tray: tray(row('live', '0:42', 'On your phone.', 'Stopped early. Saving to your account…')), rec: REC_IDLE },
+    { id: 'interrupted', title: '19 · Interrupted, nothing recoverable',
+      note: 'Told once, plainly. The duration is blank when it is not known. The row stays until dismissed.',
+      body: PLAN, tray: tray(row('warn', '', 'Recording interrupted.', 'The audio couldn’t be recovered.') + singleAction('Dismiss')), rec: REC_IDLE },
+    { id: 'storage', title: '20 · Not enough space to record',
+      note: 'Recording does not start until the phone can hold it. Tapping again re-checks.',
+      body: PLAN, tray: '', rec: REC_STORAGE, lined: true },
+    { id: 'ax-signin', title: '21 · Sign in at accessibility text size', ax: true,
+      note: 'The header action drops below its label. Nothing truncates.',
+      body: DATE, tray: tray(SIGNIN_ROWS, '2 captures waiting to save', 'Sign in'), rec: REC_IDLE }
   ];
 
   function phone(s) {
@@ -245,7 +299,7 @@
   app.innerHTML = '<button class="theme-toggle" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme===\'dark\'?\'\':\'dark\'">Light / Dark</button>'
     + '<header class="masthead"><div class="eyebrow blue">TL-CAP-001 · selected design · frozen 2026-09-28 · design-only · synthetic content</div>'
     + '<h1>Capture recovery: the recorder holds it</h1>'
-    + '<p>Nothing leaves the recorder until it is safe. Each capture docks in a one-line tray above the record button and moves into Today’s plan only as a finished note. These twelve states are the target for the first slice.</p></header>'
+    + '<p>Nothing leaves the recorder until it is safe. Each capture docks in a one-line tray above the record button and moves into Today’s plan only as a finished note. These twenty-one states are the target for the first slice. Revision 2 adds states 13–21 and corrects the discard wording in state 8.</p></header>'
     + '<div class="frames">' + STATES.map(function (s) {
       return '<div class="frame" id="' + s.id + '">' + phone(s) + '<div class="anno"><h3>' + s.title + '</h3><p>' + s.note + '</p></div></div>';
     }).join('') + '</div>';
