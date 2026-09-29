@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-09-28",
+  "updated_at": "2026-09-29",
   "ordering": "Mike selected capture recovery (TL-CAP-001) before the running list (TL-TASK-001) on 2026-09-28; other portfolio positions are preserved. Dependencies name enabling relationships but do not automatically require a dependency to be closed. Array position never authorizes work or waives a selection, design, policy, provider, pricing, limit, onboarding, or release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
@@ -9,18 +9,18 @@
     "next_action_rule": "Each item names one bounded next action or decision and the authority required for it."
   },
   "next_portfolio_decision": {
-    "as_of": "2026-09-28",
+    "as_of": "2026-09-29",
     "owner": "Mike",
     "status": "selected",
-    "question": "Capture recovery first, then running list; Candidate B is selected and D1/D2 defaults are accepted. Claude resolves the revision-2 re-review findings before handoff_ready; Mike decides later build entry.",
+    "question": "Capture recovery first, then running list. Candidate B revision 3 has passed exact-file feasibility review and Claude has set handoff_ready; Mike decides build entry.",
     "selected_order": [
       "TL-CAP-001",
       "TL-TASK-001"
     ],
     "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
-    "handoff_sha256": "75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9",
-    "next_gate": "Claude resolves C1–C6 from the Codex re-review and returns a new exact handoff revision; R8/R9 safeguards are approved for bounded implementation and review; the exact main merge remains separately gated.",
-    "review": "docs/evidence/2026-09-28-codex-capture-rereview.md"
+    "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
+    "next_gate": "Mike approves the bounded capture-recovery implementation slice against the committed ready handoff. Codex then owns implementation and verification; Claude reviews the result. Main merge and release remain separately gated.",
+    "review": "docs/evidence/2026-09-29-capture-handoff-ready.md"
   },
   "states": [
     "collecting_evidence",
@@ -52,7 +52,7 @@
       "approval_required": false,
       "authority": "Mike selected cleanup before acceleration; agents may complete reversible documentation and validation work. Product/design changes and all named approval-bound classes remain Mike-gated.",
       "dependencies": [],
-      "next_action": "Closure remains complete. Keep foundation verification at baseline and closeout; Claude resolves the exact revision-2 capture re-review findings before readiness. Verify the approved R8/R9 safeguards before a separately approved main merge."
+      "next_action": "Closure remains complete. Keep foundation verification at baseline and closeout. Capture revision 3 is handoff_ready per the September 29 receipt; Mike retains build entry and exact main merge authority."
     },
     {
       "id": "TL-DISC-001",
@@ -262,27 +262,28 @@
       "state": "awaiting_mock_approval",
       "problem": "Recordings are created in temporary storage and the current app has no durable outbox or retry control after an upload failure.",
       "evidence": {
-        "as_of": "2026-09-28",
-        "source": "Exact-source revision-2 Codex re-review at base 372178b; source inspection and synthetic references, not device/runtime proof.",
+        "as_of": "2026-09-29",
+        "source": "Exact-file revision-3 Codex review against base 3faf0f2, resolved C1–C6 and follow-up F1–F6, and Claude readiness confirmation. Source inspection and synthetic references, not implementation/device/runtime proof.",
         "implementation_observation": "A failed upload surfaces an error, but the user cannot replay or retry the captured file from the UI.",
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
-        "handoff_sha256": "75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9",
-        "tandem_stage": "selected_changes_requested",
-        "verification": "docs/evidence/2026-09-28-codex-capture-rereview.md",
+        "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
+        "tandem_stage": "handoff_ready",
+        "verification": "docs/evidence/2026-09-29-capture-handoff-ready.md",
         "product_decisions": "D1 neutral other-account row and local-only discard; D2 stop/keep on call, lock or leaving: accepted by Mike on 2026-09-28.",
-        "capture_dependencies": "R7 before capture events ship; R10 isolated migration replay and relevant pgTAP before capture migration verification; R11 guarded processing finalization under contract item 4."
+        "capture_dependencies": "R7 before capture events ship; R10 isolated migration replay and relevant pgTAP before capture migration verification; R11 guarded processing finalization under contract item 4.",
+        "handoff_commit": "4c7cea1060f55438a0fd0c8deee97019376d1d9b"
       },
       "funnel_step": "recording_started -> recording_uploaded",
       "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
       "primary_metric": "recording_started sessions that reach recording_uploaded",
       "guardrail": "local storage growth and duplicate upload rate",
       "approval_required": true,
-      "authority": "Mike selected Candidate B and D1/D2. This review/integration authorizes no feature build, migration, deployment or release. Claude owns handoff edits and readiness after exact re-review; Mike owns build entry.",
+      "authority": "Mike selected Candidate B and D1/D2 and authorized handoff completion. Claude set readiness after exact Codex review. This handoff integration authorizes no feature build, migration execution, deployment or release; Mike retains build entry.",
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Claude resolves C1–C6 in the Codex receipt and reflects accepted D1/D2 in a new exact handoff revision for re-review; do not build the tray yet.",
+      "next_action": "Mike approves the bounded capture-recovery implementation slice against revision 3. Codex then writes the implementation plan and builds, including R7/R10/R11 dependencies; Claude reviews the implemented design before delivery.",
       "slice_phase": "selected"
     },
     {

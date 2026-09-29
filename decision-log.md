@@ -684,3 +684,13 @@ Each decision should explain the call that was made, the alternatives considered
 **Latest direction:** Mike asked to leave privacy-policy work aside. The already approved policy files stay byte-identical; this follow-up does not revise them or require another policy discussion.
 
 **Evidence:** [Consent and Pages follow-up](docs/evidence/2026-09-28-consent-pages-follow-up.md) records exact source, checks, review and remaining release boundaries.
+
+## 2026-09-29 — Finish the selected capture-tray handoff
+
+**Decision:** Mike directed, “Finish the capture tray handoff.” Claude is authorized to revise the selected Candidate B handoff and its reference assets to resolve C1–C6; Codex reviews the exact revised contract, integrates the reviewed files and updates canonical state. D1 and D2 remain accepted. This is handoff completion, not capture-tray or running-list implementation.
+
+**Focus:** Mike stopped further AI-permission and privacy-policy work. The interrupted permission screenshot review and the pending onboarding-exit question are not part of this task. Existing product behavior is not changed by this direction. Capture recovery stays first, running list second, and Private Evaluation stays deferred.
+
+**Authority:** The existing PR #3 branch-only publication authorization remains the integration boundary. No main merge, feature implementation, migration execution, deployment, behavior flag, automation, provider/model/data-use/pricing/limit/onboarding or Apple action follows. A completed handoff records design and feasibility readiness; Mike retains build entry.
+
+**Completion evidence:** [Revision-3 handoff readiness](docs/evidence/2026-09-29-capture-handoff-ready.md) records the exact contract, mutual review, resolved findings and verification limits.

@@ -22,7 +22,7 @@ At each session end, leave one short handoff in the existing slice/evidence: **w
 
 As of September 28, the working tree, remote main, and [Claude PR #2](https://github.com/mpolner88/throughline/pull/2) are different states. The local guides were absent from both that PR's base and head. Neither the current dirty branch nor PR #2 is an agreed consolidated source. Before new implementation, inventory and preserve local work, compare overlapping changes, and establish one reviewed base with the guides available to both tools. Do not merge the PR or run its new deployment workflows merely because its checks are green. Do not clean the dirty tree to make integration easier.
 
-The historical split gate above was followed by preservation, reconciliation, approved nonsynced migration and Claude’s exact-base review. The [Codex disposition](evidence/2026-09-28-codex-capture-rereview.md) now owns the remaining review gates: capture contract changes and deferred evaluation defects. Mike subsequently approved the bounded [R8/R9 consent and Pages follow-up](evidence/2026-09-28-consent-pages-follow-up.md); the exact main merge remains unapproved. Do not restart the preservation process or infer a main merge.
+The historical split gate above was followed by preservation, reconciliation, approved nonsynced migration and Claude’s exact-base review. The [Codex disposition](evidence/2026-09-28-codex-capture-rereview.md) records the review history and deferred evaluation defects. The [September 29 readiness receipt](evidence/2026-09-29-capture-handoff-ready.md) closes the capture contract findings for revision 3; Mike retains build entry. Earlier, Mike approved the bounded [R8/R9 consent and Pages follow-up](evidence/2026-09-28-consent-pages-follow-up.md); the exact main merge remains unapproved. Do not restart the preservation process or infer a main merge.
 
 ## Current capability
 
@@ -39,7 +39,7 @@ Capability inventory refreshed by source/review inspection on 2026-09-28. The gu
 | Automatic feedback classification and dispatch | Not implemented | The routing policy below is canonical, but no background router currently invokes Claude Code or Codex. |
 | App Store metadata and submission automation | Deliberately gated | Agents may prepare an exact packet. Mike must explicitly approve the exact metadata/build and separately authorize submission under [the slice workflow](WORKFLOW.md). |
 
-Committed on PR #3 does not mean merged or approved for build. Capture revision 2 is preserved as a reviewed candidate with changes requested; Claude resolves the findings before readiness. A handoff becomes durable after its bounded files are reviewed and committed, and each later edit needs an exact-revision receipt. Raw feedback, credentials, signed archives, and temporary Apple receipts intentionally stay out of Git.
+Committed on PR #3 does not mean merged or approved for build. Capture revision 3 is `handoff_ready`, verified on 2026-09-29 after Claude’s authored corrections and Codex’s exact-file re-review; see the [readiness receipt](evidence/2026-09-29-capture-handoff-ready.md). This completes the design contract, not the implementation or build-entry decision. A handoff becomes durable after its bounded files are reviewed and committed, and each later edit needs an exact-revision receipt. Raw feedback, credentials, signed archives, and temporary Apple receipts intentionally stay out of Git.
 
 ## Roles
 
