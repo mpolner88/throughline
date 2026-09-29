@@ -39,3 +39,11 @@ Measurement remains counts-only: milestone identities are stable and private, bu
 ## Safety choices
 
 The unbound legacy note cache is preserved and never attributed to an inferred owner. Confirmed account deletion removes only the known owner's bound cache. Automatic approval review rejected an automatic destructive retry after ambiguous deletion status; the implementation instead preserves the hold, checks status on foreground, and repeats DELETE only after the person explicitly chooses Try again. No rejected automatic-retry change was applied.
+
+## Final local candidate follow-up
+
+App source `c9d2d5c93de44880efbbdff2162535114d797874` fixes row wrapping at accessibility sizes and makes synthetic offline/microphone previews deterministic. All 15 final synthetic images were captured after content rendered; the small-screen action view verifies scrolling reaches Save again, Play and Discard. This supersedes the earlier blank startup captures, which are not evidence. Source preview paths are DEBUG-only except the inert preview guard.
+
+The final isolated signed archive and internal-only export succeeded and signatures passed. Version/build is 1.0.5 (2026092901). Exact provenance and retained artifact hashes: [candidate manifest](../releases/2026-09-29-ios-1.0.5-2026092901-candidate.md). The queue/refresh harness rerun passed. Hosted-canary script `23ac943` passed 13 mocked tests; no hosted calls. Its incomplete/unknown-reservation outcome retains a private recovery journal and reports cleanup pending rather than broadening deletion. It does not prove physical Storage cleanup or processing-claim counts.
+
+Final Claude visual re-review of the settled matrix is in progress. Backend approval, hosted verification, Apple upload/processing and group availability remain pending. Simulator tap automation failed at the native-control boundary, so actual sign-in-sheet interaction and VoiceOver behavior remain explicit device checks.

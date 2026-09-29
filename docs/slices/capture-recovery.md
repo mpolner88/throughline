@@ -4,9 +4,9 @@
 
 **Backlog state:** `approved_for_build`
 **Slice phase:** `building`
-**Current:** implementation not yet verified or delivered.
+**Current:** local implementation, focused tests, signed archive and internal-only export passed. Final Claude visual review and backend/delivery gates remain pending; not delivered.
 **Evidence:** the [selected revision-3 handoff](../handoffs/2026-09-28-home-capture-recovery.md) is the exact design contract. Its SHA-256 is `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`.
-**Next gate:** implement and verify the whole local/server recovery contract, then Claude reviews the exact implementation and synthetic simulator references.
+**Next gate:** resolve final Claude visual review and Mike’s exact backend deployment approval; verify hosted capture behavior before internal upload.
 **Authority:** Mike approved build and internal TestFlight delivery on 2026-09-29 in [decision-log.md](../../decision-log.md). Internal QA only; no main merge, public release, new testers, running list or evaluation activation.
 
 ## Problem and outcome
@@ -37,4 +37,4 @@ Keep additive acceptance/tombstone endpoints while capture-capable builds exist.
 
 ## Evidence manifest
 
-Current evidence: [implementation verification](../evidence/2026-09-29-capture-implementation.md) and [backend candidate](../evidence/2026-09-29-capture-backend-candidate.md). Final visual signoff, signed archive, deployment and Apple delivery remain pending in that receipt.
+Current evidence: [implementation verification](../evidence/2026-09-29-capture-implementation.md) and [backend candidate](../evidence/2026-09-29-capture-backend-candidate.md). The [signed candidate manifest](../releases/2026-09-29-ios-1.0.5-2026092901-candidate.md) records local archive/export success. Final visual signoff, deployment and Apple delivery remain pending.
