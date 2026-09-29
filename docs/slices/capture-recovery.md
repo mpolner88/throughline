@@ -3,10 +3,10 @@
 **Verified baseline:** 2026-09-29, clean nonsynced `throughline-local` at `ee2e7914410fe3ad32635878ce698db5a6b71b18`; local implementation branch `codex/capture-tray`. Evidence: [ready handoff review](../evidence/2026-09-29-capture-handoff-ready.md).
 
 **Backlog state:** `approved_for_build`
-**Slice phase:** `building`
-**Current:** local implementation, focused tests, signed archive and internal-only export passed. Claude’s final design review passed with no P1/P2 blockers. Backend approval and delivery verification remain pending; not delivered.
-**Evidence:** the [selected revision-3 handoff](../handoffs/2026-09-28-home-capture-recovery.md) is the exact design contract. Its SHA-256 is `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`.
-**Next gate:** obtain Mike’s exact backend deployment approval; verify hosted capture behavior before internal upload.
+**Slice phase:** `canary`
+**Current:** 1.0.5 (2026092901) is VALID / IN_BETA_TESTING in existing Internal QA. Backend v31 and the synthetic capture/replay/deletion check passed. Physical iPhone acceptance remains pending.
+**Evidence:** [internal delivery](../releases/2026-09-29-ios-1.0.5-2026092901-delivery.md), [backend rollout](../evidence/2026-09-29-capture-production-rollout.md), and [Claude design review](../evidence/2026-09-29-claude-capture-implementation-review.md). The selected revision-3 handoff remains SHA-256 `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`.
+**Next gate:** Mike installs build 2026092901 and tests capture/recovery on his iPhone before owner acceptance and the following running-list slice.
 **Authority:** Mike approved build and internal TestFlight delivery on 2026-09-29 in [decision-log.md](../../decision-log.md). Internal QA only; no main merge, public release, new testers, running list or evaluation activation.
 
 ## Problem and outcome
@@ -37,4 +37,4 @@ Keep additive acceptance/tombstone endpoints while capture-capable builds exist.
 
 ## Evidence manifest
 
-Current evidence: [implementation verification](../evidence/2026-09-29-capture-implementation.md) and [backend candidate](../evidence/2026-09-29-capture-backend-candidate.md). The [signed candidate manifest](../releases/2026-09-29-ios-1.0.5-2026092901-candidate.md) records local archive/export success. [Final Claude design review](../evidence/2026-09-29-claude-capture-implementation-review.md) passed; backend approval, deployment verification and Apple delivery remain pending.
+Current evidence: [implementation verification](../evidence/2026-09-29-capture-implementation.md) and [backend candidate](../evidence/2026-09-29-capture-backend-candidate.md). The [signed candidate manifest](../releases/2026-09-29-ios-1.0.5-2026092901-candidate.md) records local archive/export success. [Final Claude design review](../evidence/2026-09-29-claude-capture-implementation-review.md) passed. [Internal delivery](../releases/2026-09-29-ios-1.0.5-2026092901-delivery.md) supersedes the candidate’s pending gates; owner acceptance remains pending.

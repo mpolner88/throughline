@@ -1,13 +1,14 @@
 # Throughline current state
 
-## September 29 capture-tray implementation candidate
+## September 29 capture-tray internal delivery
 
-**Verified:** 2026-09-29. **Scope:** local implementation, independent engineering and Claude source reviews, isolated tests/build, read-only Apple and backend inventory. Evidence: [implementation verification](evidence/2026-09-29-capture-implementation.md) and [backend candidate](evidence/2026-09-29-capture-backend-candidate.md).
+**Verified:** 2026-09-29. **Scope:** approved backend deployment, synthetic hosted capture, exact signed app upload, Apple processing and existing Internal QA availability. Evidence: [internal delivery](releases/2026-09-29-ios-1.0.5-2026092901-delivery.md), [production rollout](evidence/2026-09-29-capture-production-rollout.md), and [Claude design review](evidence/2026-09-29-claude-capture-implementation-review.md).
 
-- Mike approved building the ready tray and internal TestFlight delivery. Active local branch is `codex/capture-tray` in nonsynced `throughline-local`; reconciliation PR #3 remains separate and unmerged.
-- The local/server recovery contract is implemented. Engineering findings and Claude's P1/P2 source findings were corrected. The final signed archive and internal-only export passed at app source `c9d2d5c`; [Final Claude design review](evidence/2026-09-29-claude-capture-implementation-review.md) passed without P1/P2 blockers; backend approval and delivery verification remain pending. Build `1.0.5 (2026092901)` is a local candidate, not yet available. See the [candidate manifest](releases/2026-09-29-ios-1.0.5-2026092901-candidate.md).
-- Read-only current delivery baseline: newest Apple build is `1.0.5 (2026082801)`, VALID/nonexpired; existing Internal QA is internal. Production API remains v30 with ten migrations. The exact new backend deployment needs Mike's separately requested approval before this app can be delivered with working capture recovery.
-- Product order remains capture recovery, then running list. Private Evaluation remains deferred. The following handoff/reconciliation sections preserve their dated evidence; their former build-entry next action is superseded here.
+- **Internal:** Throughline **1.0.5 (2026092901)** is VALID, not expired, IN_BETA_TESTING and assigned to existing **Internal QA**. The package is internal-testing-only. Exact app source is `c9d2d5c93de44880efbbdff2162535114d797874`; no public submission or main merge occurred.
+- **Backend:** API **v31**, all 13 deployed files matched to the reviewed source, and eleven migrations through `20260929192508_capture_recovery`. Four concurrent synthetic uploads, immutable replay, completed processing, exact deletion and physical audio cleanup passed. Test fixture cleanup is complete; evaluation/provider/model settings are unchanged.
+- **Review:** independent engineering findings and Claude’s blocking source findings were resolved; final Claude design review passed with no P1/P2 blockers. Device and interaction evidence limits remain recorded. No actual-iPhone acceptance or product-metric lift is claimed.
+- **Next owner/action:** Mike installs build 2026092901 and tests capture/recovery on his phone. Product order stays capture recovery, then running list. Private Evaluation stays deferred.
+- **Source location:** active nonsynced `throughline-local`, local branch `codex/capture-tray`. PR #3 remains separate and unmerged. The migration filename was aligned to the hosted-assigned timestamp with approved SQL bytes unchanged. The dated sections below preserve earlier evidence; their old build-entry/delivery gates are superseded here.
 
 ## September 29 capture-tray handoff ready
 

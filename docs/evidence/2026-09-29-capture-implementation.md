@@ -53,3 +53,7 @@ Final Claude visual re-review of the settled matrix is in progress. Backend appr
 The [completed exact-source Claude receipt](2026-09-29-claude-capture-implementation-review.md) passes design review for internal delivery with no P1/P2 blockers. It supersedes the pending visual-review statements above. Four nonblocking P3 findings and explicit missing device/interaction evidence remain recorded. Duplicate account-refusal text is still present; it is not claimed fixed. All reviewed app-file hashes match the archived app source.
 
 The remaining executable gate is Mike's exact backend deployment approval, followed by hosted verification and internal Apple delivery. No production, upload or availability claim follows from this local review.
+
+## Approved deployment and internal delivery
+
+Mike approved the exact backend action. [Production rollout](2026-09-29-capture-production-rollout.md) records API v31, the unchanged approved SQL deployed as migration 20260929192508, source/privilege/health checks and the passing synthetic hosted capture. [Internal delivery](../releases/2026-09-29-ios-1.0.5-2026092901-delivery.md) records successful upload and fresh VALID / IN_BETA_TESTING state for existing Internal QA. These receipts supersede the pending approval/delivery statements above. Mike’s physical iPhone acceptance is the next action; no learning-loop or running-list work was added.

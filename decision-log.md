@@ -702,3 +702,11 @@ Each decision should explain the call that was made, the alternatives considered
 **Scope:** Durable local capture and tray, duplicate-safe acceptance and deletion, account isolation, recovery events and their R7/R10/R11 dependencies. The agent will prepare and verify the compatible additive backend required by this app build, then deliver the verified signed internal build. Public App Store submission, external testers, main merge, running list, Private Evaluation, providers/models, pricing/limits/onboarding and policy work remain outside this slice. The implementation uses local branch `codex/capture-tray` from `ee2e791`; PR #3 is preserved.
 
 **Execution record:** [Capture recovery slice](docs/slices/capture-recovery.md). Runtime results and exact delivery identity will be recorded after verification, not inferred from this approval.
+
+## 2026-09-29 — Deploy capture backend and complete internal delivery
+
+**Decision:** In response to the exact candidate packet and approval question, Mike said “Go for it.” This approves the reviewed capture-recovery migration, API update, daily expired-confirmation cleanup and synthetic save/retry/delete verification, followed by the previously approved internal-only TestFlight delivery.
+
+**Execution boundary:** Only the capture SQL/API candidate and existing Internal QA group. The synthetic check uses a disposable, internally classified Auth fixture and generated tone, then removes its exact recording/audio, synthetic events and fixture. No real user note or account is used. No main merge, feature-branch push, new tester population, public submission, provider/model change or evaluation enablement.
+
+**Evidence:** [Capture backend rollout](docs/evidence/2026-09-29-capture-production-rollout.md). The hosted migration service assigned version `20260929192508`; the local migration filename is aligned to that version with approved SQL bytes unchanged.
