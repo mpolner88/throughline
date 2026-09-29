@@ -18,6 +18,14 @@ export const PRODUCT_EVENT_NAMES = [
   "auth_failed",
   "home_viewed",
   "settings_opened",
+  "capture_upload_attempt_failed",
+  "capture_upload_retried",
+  "capture_upload_unconfirmed",
+  "capture_kept",
+  "capture_interrupted",
+  "capture_storage_unavailable",
+  "capture_discarded",
+  "capture_account_cleanup",
   "recording_started",
   "recording_uploaded",
   "recording_processed",
@@ -53,6 +61,22 @@ export type NormalizedProductEventContract = {
 const PRODUCT_EVENT_NAME_SET = new Set<string>(PRODUCT_EVENT_NAMES);
 
 const ALLOWED_PROPERTIES_BY_EVENT: Record<string, ReadonlySet<string>> = {
+  capture_upload_attempt_failed: new Set([
+    "surface",
+    "reason",
+    "attempt_bucket",
+  ]),
+  capture_upload_retried: new Set(["surface", "retry_kind"]),
+  capture_upload_unconfirmed: new Set(["surface"]),
+  capture_kept: new Set(["surface", "completion"]),
+  capture_interrupted: new Set(["surface"]),
+  capture_storage_unavailable: new Set(["surface", "storage_reason"]),
+  capture_discarded: new Set(["surface", "send_history"]),
+  capture_account_cleanup: new Set([
+    "surface",
+    "cleanup_reason",
+    "count_bucket",
+  ]),
   first_opened: new Set(["route"]),
   app_opened: new Set(["route"]),
   onboarding_step_viewed: new Set(["step"]),
@@ -89,6 +113,13 @@ const ALLOWED_PROPERTIES_BY_EVENT: Record<string, ReadonlySet<string>> = {
 };
 
 const ENUM_PROPERTY_VALUES: Record<string, ReadonlySet<string>> = {
+  attempt_bucket: new Set(["first", "2_to_3", "4_or_more"]),
+  retry_kind: new Set(["auto", "manual", "resume"]),
+  completion: new Set(["complete", "stopped_early"]),
+  storage_reason: new Set(["insufficient_space", "other"]),
+  send_history: new Set(["never_sent", "result_unknown"]),
+  cleanup_reason: new Set(["sign_out", "account_deleted", "other_account"]),
+  count_bucket: new Set(["one", "2_to_5", "6_or_more"]),
   route: new Set(["home", "onboarding"]),
   processing_status: new Set([
     "uploaded",
@@ -114,6 +145,12 @@ const ENUM_PROPERTY_VALUES: Record<string, ReadonlySet<string>> = {
   account_state: new Set(["new", "existing", "unknown"]),
   onboarding_path: new Set(["direct", "demo"]),
   reason: new Set([
+    "offline",
+    "timeout",
+    "server",
+    "rejected",
+    "sign_in_required",
+    "not_allowed",
     "confirmation_required",
     "invalid_credentials",
     "rate_limited",

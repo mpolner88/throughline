@@ -491,6 +491,12 @@ Deno.test("flagged processing commits immutable lineage before exposing the note
     if (target.includes("/rest/v1/throughline_recordings?on_conflict=id")) {
       return Response.json(Array.isArray(body) ? body : []);
     }
+    if (
+      target.includes("/rest/v1/throughline_recordings?id=eq.") &&
+      init?.method === "PATCH"
+    ) {
+      return new Response(null, { status: 204 });
+    }
     if (target.endsWith("/chat/completions")) {
       return Response.json({
         choices: [{ message: { content: JSON.stringify(extraction) } }],
@@ -519,6 +525,11 @@ Deno.test("flagged processing commits immutable lineage before exposing the note
           }),
         },
       ),
+    );
+    assert(
+      requests.filter((request) => request.url.includes("?on_conflict=id"))
+        .length === 1,
+      "Only initial creation may upsert; completion must PATCH",
     );
     assert(response.status === 201, "Expected compatible processed response");
     const responseBody = await response.json();
