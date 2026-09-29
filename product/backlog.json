@@ -12,14 +12,15 @@
     "as_of": "2026-09-28",
     "owner": "Mike",
     "status": "selected",
-    "question": "Capture recovery first, then the running list; Candidate B, The recorder holds it, is selected. After the separate Codex feasibility review of the committed handoff, Mike decides build entry for the bounded capture slice.",
+    "question": "Capture recovery first, then running list; Candidate B is selected and D1/D2 defaults are accepted. Claude resolves the revision-2 re-review findings before handoff_ready; Mike decides later build entry.",
     "selected_order": [
       "TL-CAP-001",
       "TL-TASK-001"
     ],
     "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
-    "handoff_sha256": "0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c",
-    "next_gate": "Separate Codex feasibility review against the committed reconciliation revision; handoff remains selected_pending_codex_feasibility_review."
+    "handoff_sha256": "75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9",
+    "next_gate": "Claude resolves C1–C6 from the Codex re-review and returns a new exact handoff revision; R8/R9 remain separate undecided main-merge gates.",
+    "review": "docs/evidence/2026-09-28-codex-capture-rereview.md"
   },
   "states": [
     "collecting_evidence",
@@ -51,7 +52,7 @@
       "approval_required": false,
       "authority": "Mike selected cleanup before acceleration; agents may complete reversible documentation and validation work. Product/design changes and all named approval-bound classes remain Mike-gated.",
       "dependencies": [],
-      "next_action": "Closure remains complete. Keep the foundation verifier at baseline and closeout; the next product gate is the separate Codex feasibility review of the selected capture handoff against the committed reconciliation revision."
+      "next_action": "Closure remains complete. Keep foundation verification at baseline and closeout; Claude resolves the exact revision-2 capture re-review findings before readiness. R8/R9 remain separate main-merge decisions."
     },
     {
       "id": "TL-DISC-001",
@@ -114,7 +115,7 @@
       "approval_required": false,
       "authority": "Agents may establish measurement and documentation within the approved slice; no provider, pricing, limit, onboarding, or App Store change is authorized.",
       "dependencies": [],
-      "next_action": "Continue collecting real schema-v2 processing outcomes under the five isolated cohorts and report reconciliation readiness without reclassifying historical rows. TL-EVAL-001 may begin."
+      "next_action": "Continue collecting real schema-v2 processing outcomes under the five isolated cohorts and report reconciliation readiness without reclassifying historical rows. Private Evaluation remains deferred under the September decision; no flag-on rollout follows from measurement readiness."
     },
     {
       "id": "TL-EVAL-001",
@@ -130,16 +131,21 @@
         "dependency_status": "TL-DATA-001, the TL-EVAL flags-off production foundation, the bounded lineage behavior canary, the local owner iOS/privacy control source, the deterministic source-bound owner-canary package, the API v30 hosted preflight, and valid internal-only TestFlight build 2026082801 visible to the one-tester Internal QA group are complete. Installation and owner evaluation/retention execution remain pending. Policy publication, App Store answers, submission, and public release remain separately gated. Real private-audio materialization and independent provider execution remain separately gated. No quality or user-outcome claim exists.",
         "verification": "docs/evidence/2026-08-28-home-ui-rollback.md",
         "lineage_verification": "docs/evidence/2026-08-23-evaluation-lineage-behavior-canary.md",
-        "ios_verification": "docs/evidence/2026-08-23-evaluation-ios-privacy-controls.md"
+        "ios_verification": "docs/evidence/2026-08-23-evaluation-ios-privacy-controls.md",
+        "reentry_as_of": "2026-09-28",
+        "reentry_status": "Private Evaluation remains deferred by Mike. R1–R6 and R16 need resolution before enablement/quality claims; old owner-canary package bindings cannot be presumed valid after approved policy changes. Historical approved_for_build records foundation work, not current rollout authority.",
+        "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Independent predictions and immutable lineage will make quality, reliability, latency, cost, canary, and rollback gates auditable.",
       "primary_metric": "share of evaluation results with independent predictions and complete immutable lineage",
       "guardrail": "no raw audio, transcripts, prompts, note text, feedback text, or identifiers in tracked evaluation artifacts",
-      "approval_required": false,
-      "authority": "Agents may implement evaluation and lineage evidence within an approved reversible slice; provider or base-model changes remain Mike-approved.",
-      "dependencies": ["TL-DATA-001"],
-      "next_action": "Install internal build 2026082801 and verify the restored Home presentation plus the corrected rating/privacy-link journey. Then execute the owner canary against byte-verified API v30 in its fixed order: lineage, retention, evaluation writes, owner-only diagnostic grade, owner-only reviewed-fields correction, owner-only exact-preview readiness, withdrawal, and aggregate postflight. The recording user must personally provide every judgment; keep policy publication, App Store submission/public release, real private-audio corpus materialization, and independent provider execution disabled until their separate gates are satisfied."
+      "approval_required": true,
+      "authority": "Historical foundation build selection remains recorded. Private Evaluation and the learning loop are deferred; no lineage/evaluation flag, canary execution, materialization, provider/data-use change or release is authorized now.",
+      "dependencies": [
+        "TL-DATA-001"
+      ],
+      "next_action": "Keep Private Evaluation deferred. When Mike separately returns to the learning loop after capture/list work, prepare a bounded R1–R6/R16 remediation and current-source canary/disclosure review before requesting any enablement action; do not execute the August owner-canary sequence."
     },
     {
       "id": "TL-TRNS-001",
@@ -257,22 +263,27 @@
       "problem": "Recordings are created in temporary storage and the current app has no durable outbox or retry control after an upload failure.",
       "evidence": {
         "as_of": "2026-09-28",
-        "source": "Earlier AudioRecorder/upload inspection plus Mike’s September 28 product-order and Candidate B selection; no new runtime feasibility verdict.",
+        "source": "Exact-source revision-2 Codex re-review at base 372178b; source inspection and synthetic references, not device/runtime proof.",
         "implementation_observation": "A failed upload surfaces an error, but the user cannot replay or retry the captured file from the UI.",
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
-        "handoff_sha256": "0aab1100c7e5070d951142eeef5880498ef7760882650a53beff77ba412ad60c",
-        "tandem_stage": "selected_pending_codex_feasibility_review",
-        "verification": "docs/evidence/2026-09-28-reconciliation-plan.md"
+        "handoff_sha256": "75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9",
+        "tandem_stage": "selected_changes_requested",
+        "verification": "docs/evidence/2026-09-28-codex-capture-rereview.md",
+        "product_decisions": "D1 neutral other-account row and local-only discard; D2 stop/keep on call, lock or leaving: accepted by Mike on 2026-09-28.",
+        "capture_dependencies": "R7 before capture events ship; R10 isolated migration replay and relevant pgTAP before capture migration verification; R11 guarded processing finalization under contract item 4."
       },
       "funnel_step": "recording_started -> recording_uploaded",
       "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
       "primary_metric": "recording_started sessions that reach recording_uploaded",
       "guardrail": "local storage growth and duplicate upload rate",
       "approval_required": true,
-      "authority": "Mike selected the capture tray and capture-first priority. The draft handoff is not ready and is not approved for build; Codex feasibility is a separate task after Phase 2, and Claude owns any handoff edit.",
-      "dependencies": ["TL-DATA-001"],
-      "next_action": "Codex reviews the immutable selected handoff for feasibility against the committed reconciliation revision in a separate task; record findings without editing Claude’s handoff or implementing a feature."
+      "authority": "Mike selected Candidate B and D1/D2. This review/integration authorizes no feature build, migration, deployment or release. Claude owns handoff edits and readiness after exact re-review; Mike owns build entry.",
+      "dependencies": [
+        "TL-DATA-001"
+      ],
+      "next_action": "Claude resolves C1–C6 in the Codex receipt and reflects accepted D1/D2 in a new exact handoff revision for re-review; do not build the tray yet.",
+      "slice_phase": "selected"
     },
     {
       "id": "TL-TASK-001",
@@ -291,7 +302,8 @@
         "reconciliation_as_of": "2026-09-28",
         "product_order": "Mike selected the running list after capture recovery; PR #2 is a deferred implementation source, not a compatible replacement for the August foundation.",
         "reconciliation_verification": "docs/evidence/2026-09-28-reconciliation-plan.md",
-        "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73"
+        "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
+        "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -299,7 +311,10 @@
       "guardrail": "task extraction correction rate and reminder opt-out rate",
       "approval_required": true,
       "authority": "Mike selected running-list priority after capture recovery. That order does not approve importing PR #2 wholesale or its design for build. Posting its GitHub review and contacting Claude for a design review each require separate approval.",
-      "dependencies": ["TL-EXTRACT-001", "TL-CAP-001"],
+      "dependencies": [
+        "TL-EXTRACT-001",
+        "TL-CAP-001"
+      ],
       "next_action": "After capture recovery, prepare a bounded running-list rework from the reviewed base that preserves lineage, consent, retention, API compatibility and occurrence-level task identity; obtain the separately authorized reviews before build entry."
     },
     {

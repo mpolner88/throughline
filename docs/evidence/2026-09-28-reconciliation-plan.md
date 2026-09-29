@@ -187,6 +187,8 @@ Phase 1 itself ran docs verification (**19 backlog items, 47 checked Markdown fi
 
 ## iCloud checkout risk and recommended location
 
+Historical Phase 1 recommendation; the approved migration is now complete as recorded in the [review integration follow-up](#review-integration-follow-up). The following risk assessment is retained as history.
+
 **Recommend moving the active checkout out of iCloud before sustained multi-agent engineering.** The current convenient code-folder entry resolves to the same Documents checkout; changing the visible path alone does not solve this.
 
 Apple documents that Desktop/Documents files sync between devices, that deletion propagates, and that local downloads can be removed ([Apple guidance](https://support.apple.com/en-ie/109344)). Git stores coordinated objects, refs, index and other repository state in multiple files ([Git repository layout](https://git-scm.com/docs/gitrepository-layout)). **Engineering inference:** ordinary per-file cloud sync is not a Git transaction protocol; hydration delays, concurrent devices and conflict copies can interrupt tools or expose inconsistent repository state. A direct source `git fsck --full --no-reflogs` during this phase exited 128 with `fatal: mmap failed: Operation timed out`; it could not complete the source integrity check. This is observed filesystem-access failure, not proof of corruption and not proof that iCloud alone caused it. The independently restored copy's integrity result is recorded above; a successful restore check does not erase this source-location failure.
@@ -241,3 +243,34 @@ All five approved sanitizations were applied before preservation commits. The pe
 Backend checks initially encountered sandbox loopback/dependency access restrictions; the same tests passed with the required local socket/public dependency access, without loading production credentials. The iOS build needed local Simulator service access; its retry passed, with only the AppIntents metadata warning that no AppIntents dependency was present. No assertion was waived. The iOS source manifest hash is `8d9903c53b3d934f246497847448544725a82c6c065e8e64db98706f5c875f2c`; the pinned resolved-package file is `eae239dd13431df4df93d751ec78cdc5f17bb1146adb7f36945f604cf0d4e04e`. Private logs retain the detailed receipts.
 
 **What remains:** publish only the approved branch/new draft PR after final checks; obtain the separately authorized peer-review receipts; perform capture feasibility as a separate task against the committed revision. No PR #1 closure, PR #2 comment/review, Claude contact, feature implementation, deployment, release, automation, flag or active-checkout migration is included. After PR creation, give Mike a concrete separate migration plan including both tools' project paths.
+
+
+## Review integration follow-up
+
+Verified 2026-09-28. This follow-up supersedes the earlier future publication/migration/peer-review stopping points without rewriting the historical execution record.
+
+- Phase 2 was published as draft [PR #3](https://github.com/mpolner88/throughline/pull/3), reconciliation commit `bda1058947397b7bf1b908a0a682eb3966868a54`. The approved current-operation policy and its decision record advanced the branch to `372178b2b68d81691e8228443dacfebeec989e00`.
+- Mike subsequently approved and completed the nonsynced active-checkout migration at `bda1058`; the active checkout is `throughline-local`, with a real independent Git directory. Saved Codex folder selection completed; Claude's actual review names this checkout and `372178b`. The old checkout, shortcut, separate reconciliation reference checkout and private recovery stay preserved. Private filesystem paths remain in the local migration receipt, outside Git. No active automation was resumed or repointed.
+- Ignored `.throughline/`, `.superpowers/`, `supabase/.temp` and `supabase/.branches` were left in the old checkout. No recreation is needed now. Preserve private feedback and historical reports; regenerate new reporting/task state as needed; re-establish CLI linkage only in a later authorized operation.
+- Claude's exact-base [review](2026-09-28-claude-reconciliation-capture-review.md) is complete. Codex's [R1–R17 disposition and revision-2 re-review](2026-09-28-codex-capture-rereview.md) records remaining defects and source-only verification limits. The candidate is reviewed with named gates; main merge is not approved.
+- The frozen revision-2 handoff/assets/Claude receipt are preserved byte-identically. D1/D2 are accepted in the decision log. The capture handoff still needs C1–C6 resolution; Claude sets readiness only after exact re-review. Private Evaluation remains deferred. [R8/R9](2026-09-28-main-merge-decisions.md) await Mike's decisions, with no consent or site-config changes in this task.
+
+Preservation commit: `602b75d33746ad11c5fcdb4b4f1f81d181d772b3` contains exactly the 20 reviewed Claude files, byte-identical to the supplied review target. The separate canonical-review commit contains exactly seven files: `decision-log.md`, `docs/CURRENT_STATE.md`, `docs/AGENT_TANDEM.md`, `product/backlog.json`, this reconciliation plan, `docs/evidence/2026-09-28-codex-capture-rereview.md` and `docs/evidence/2026-09-28-main-merge-decisions.md`. Its exact revision is the commit containing this receipt; final push identity is checked against PR #3 before closeout.
+
+| Integration check | Result |
+| --- | --- |
+| Path, branch and starting HEAD | PASS: expected active physical checkout, named PR #3 branch, exact `372178b2b68d81691e8228443dacfebeec989e00` before changes. |
+| Four supplied review/design hashes | PASS before review and after integration; no Claude-file edits by Codex. |
+| Approved policy hashes | PASS: both unchanged; no policy edit. |
+| Full asset manifest | PASS: 38/38 (mock plus 37 PNGs). |
+| Prior image preservation | PASS: 21 prior PNGs byte-identical to `372178b`; two authorized discard PNGs revised and 14 new PNGs integrated. |
+| Foundation docs verifier | PASS: 19 backlog items, 47 checked Markdown files; additional evidence links checked separately. |
+| Privacy parity | PASS; parity alone is not a secret scanner. |
+| Relative file/heading links | PASS: 232 links across changed Markdown at the final review pass. |
+| Publication screen | PASS on changed text for credential/token/email/raw-identity/personal-path patterns, with synthetic mock-text review and three representative PNGs visually inspected. Existing neutral example-home fixture references were inspected and allowed. No raw user content introduced; this is not a claim of exhaustive image OCR or a new entire-history secret audit. |
+| Named-path scope and whitespace | PASS: 20 Claude files plus seven Codex documentation files; no executable app/backend diff; new tracked/staged whitespace checks pass. |
+| Runtime/build/database/device checks | NOT RUN in this documentation/design review; earlier checks retain their original source identity. Full evaluation replay and capture/device behavior remain unverified. |
+
+The C1–C6 findings, complete disposition-file paths, exact preservation commit and accepted D1/D2 decisions were returned to the existing Claude Code design session on 2026-09-28. Delivery was visibly confirmed in the app and Claude acknowledged receipt-only, read-only review. No writing pass or readiness change was requested during integration. Any subsequent revision must receive its own hashes and re-review.
+
+No feature implementation, policy edit, PR comment, PR #1/#2 change, main merge, deployment, migration execution or Apple action is included.

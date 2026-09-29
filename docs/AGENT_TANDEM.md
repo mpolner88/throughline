@@ -22,22 +22,24 @@ At each session end, leave one short handoff in the existing slice/evidence: **w
 
 As of September 28, the working tree, remote main, and [Claude PR #2](https://github.com/mpolner88/throughline/pull/2) are different states. The local guides were absent from both that PR's base and head. Neither the current dirty branch nor PR #2 is an agreed consolidated source. Before new implementation, inventory and preserve local work, compare overlapping changes, and establish one reviewed base with the guides available to both tools. Do not merge the PR or run its new deployment workflows merely because its checks are green. Do not clean the dirty tree to make integration easier.
 
+The historical split gate above was followed by preservation, reconciliation, approved nonsynced migration and Claude’s exact-base review. The [Codex disposition](evidence/2026-09-28-codex-capture-rereview.md) now owns the remaining review gates: capture contract changes, R8/R9 main-merge decisions and deferred evaluation defects. Do not restart the preservation process or infer a main merge.
+
 ## Current capability
 
-Historical capability inventory verified from the repository on 2026-08-30. The [September 28 audit](evidence/2026-09-28-return-audit.md) supersedes its release-installation and remote-work boundaries; no automatic cross-tool router is established:
+Capability inventory refreshed by source/review inspection on 2026-09-28. The guides and design references below are committed on PR #3, reviewed by Claude at `372178b`; they are not merged to main. The active nonsynced checkout is `throughline-local`. Evidence: [integration receipt](evidence/2026-09-28-reconciliation-plan.md#review-integration-follow-up) and [Codex review](evidence/2026-09-28-codex-capture-rereview.md). No automatic cross-tool router is established:
 
 | Capability | Current state | Evidence or boundary |
 | --- | --- | --- |
-| Product direction, visual language, backlog, and authority | Available in the repository working tree | [Product charter](PRODUCT.md), [brand decisions](../throughline-brand-decisions.md), [workflow](WORKFLOW.md), and [backlog](../product/backlog.json). |
-| Fresh design audit and inspected screenshots | Available in the repository working tree | [2026-08-29 design audit](evidence/2026-08-29-design-direction-portfolio-audit.md) and its linked assets. |
-| Claude Code project entry and repeatable UI procedure | Available in this working tree | Root [Claude guide](../CLAUDE.md), [UI prompt](prompts/claude-code-ui-design.md), and project `/ui-handoff` skill. |
-| Claude-to-Codex handoff format | Available in this working tree | [Handoff template](templates/UI_DESIGN_HANDOFF.md) and [handoff directory rules](handoffs/README.md). |
+| Product direction, visual language, backlog, and authority | Committed on the PR #3 branch | [Product charter](PRODUCT.md), [brand decisions](../throughline-brand-decisions.md), [workflow](WORKFLOW.md), and [backlog](../product/backlog.json). |
+| Fresh design audit and inspected screenshots | Committed on the PR #3 branch | [2026-08-29 design audit](evidence/2026-08-29-design-direction-portfolio-audit.md) and its linked assets. |
+| Claude Code project entry and repeatable UI procedure | Committed on the PR #3 branch | Root [Claude guide](../CLAUDE.md), [UI prompt](prompts/claude-code-ui-design.md), and project `/ui-handoff` skill. |
+| Claude-to-Codex handoff format | Committed on the PR #3 branch | [Handoff template](templates/UI_DESIGN_HANDOFF.md) and [handoff directory rules](handoffs/README.md). |
 | Private TestFlight feedback intake | Implemented locally, not a routing service | `scripts/private-testflight-feedback.mjs` stores raw material only under ignored `.throughline/feedback-intake/`; the dated [feedback intake evidence](evidence/2026-08-25-home-feedback-specification-intake.md) records the boundary. |
-| Internal TestFlight delivery | Proven manually; not yet a reusable one-command pipeline | [Build 2026082801 evidence](evidence/2026-08-28-home-ui-rollback.md) and [release manifest](releases/2026-08-28-ios-1.0.5-2026082801.md). Installation and the restored owner journey remain unverified in [current state](CURRENT_STATE.md). |
+| Internal TestFlight delivery | Proven manually; not yet a reusable one-command pipeline | [Build 2026082801 evidence](evidence/2026-08-28-home-ui-rollback.md) and [release manifest](releases/2026-08-28-ios-1.0.5-2026082801.md). September aggregate evidence shows one install; the restored owner journey remains unverified in [current state](CURRENT_STATE.md). |
 | Automatic feedback classification and dispatch | Not implemented | The routing policy below is canonical, but no background router currently invokes Claude Code or Codex. |
 | App Store metadata and submission automation | Deliberately gated | Agents may prepare an exact packet. Mike must explicitly approve the exact metadata/build and separately authorize submission under [the slice workflow](WORKFLOW.md). |
 
-“Present in the working tree” is not the same as committed, merged, or remotely recoverable. A handoff becomes durable only after the bounded files are reviewed and committed to the shared base. Raw feedback, credentials, signed archives, and temporary Apple receipts intentionally stay out of Git.
+Committed on PR #3 does not mean merged or approved for build. Capture revision 2 is preserved as a reviewed candidate with changes requested; Claude resolves the findings before readiness. A handoff becomes durable after its bounded files are reviewed and committed, and each later edit needs an exact-revision receipt. Raw feedback, credentials, signed archives, and temporary Apple receipts intentionally stay out of Git.
 
 ## Roles
 

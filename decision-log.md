@@ -656,3 +656,20 @@ Each decision should explain the call that was made, the alternatives considered
 **Product direction:** Mike reaffirmed capture recovery first, followed by the next running-list version. The selected capture tray still needs its committed-handoff feasibility findings resolved before build entry. Mike wants the learning loop enabled soon and asked to return to that separately; this records intent, not approval to enable production collection, benchmarking, training or automatic promotion.
 
 **Revisit when:** The approved policy bytes change, an exact main/publication action is approved, the capture handoff is ready for build, or Mike resumes the bounded learning-loop decision.
+
+
+## 2026-09-28 — Complete the approved nonsynced checkout migration
+
+**Decision and execution:** Mike approved moving the active checkout at exact starting revision `bda1058947397b7bf1b908a0a682eb3966868a54` to the real, user-restricted `throughline-local` directory outside iCloud. The filesystem migration and saved Codex project selection completed; Claude's subsequent review independently named the same active checkout and base `372178b`. The earlier September entry describing migration as future is superseded. Exact personal paths and private configuration receipts remain outside tracked files.
+
+**Preservation:** The old dirty checkout, original shortcut, separate `throughline-reconciliation` reference checkout and recovery copy remain intact. `.throughline/`, `.superpowers/`, `supabase/.temp` and `supabase/.branches` remain behind. No recreation is needed for immediate build work: regenerate reporting/task outputs only when needed, preserve historical reports/private feedback, and establish CLI linkage/branch context only during a later approved operation. Existing chats may retain their original directory context; verify the physical target for every task. Evidence: [integration follow-up](docs/evidence/2026-09-28-reconciliation-plan.md#review-integration-follow-up).
+
+## 2026-09-28 — Accept capture account and interruption defaults; authorize bounded re-review
+
+**D1:** Mike accepts one neutral tray row for other-account captures: “2 captures from another account. Sign in to that account to save them.” It offers Discard from phone after confirmation. Those captures are never uploaded, played, individually listed or counted under the signed-in account. This aggregate notice does not transfer ownership; discard is local only.
+
+**D2:** Mike accepts that a call, locking the phone or leaving the app ends recording and keeps playable audio as Stopped early. Background recording is outside this slice; unrecoverable audio follows the handoff's truthful interruption state.
+
+**Authority:** Review revision 2, disposition the base findings, integrate reviewed files and canonical corrections, and push only the existing `codex/reconcile-september-base` branch for PR #3. Return findings to Claude. Do not build capture or running list. Claude owns handoff/assets and sets `handoff_ready` only after findings are resolved. The immutable revision-2 review target is `75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9`; preserving it does not make it build-ready.
+
+**Still undecided:** R8 AI-consent removal and R9 Pages publication boundaries. Main merge and PR comments remain unapproved. Approved policy bytes stay unchanged; no migration, deployment, flag, secret, automation, App Store or TestFlight action follows. Private Evaluation remains deferred despite Mike's interest in returning to the learning loop soon. Product order remains capture recovery, then running list. Evidence: [Codex re-review](docs/evidence/2026-09-28-codex-capture-rereview.md) and [R8/R9 packet](docs/evidence/2026-09-28-main-merge-decisions.md).
