@@ -108,7 +108,7 @@ struct HomeView: View {
                 properties: ["state": isHomeEmpty ? "empty" : "populated"]
             )
         }
-                .onAppear {
+        .onAppear {
             isVisible = true
             microphoneDenied = AVAudioApplication.shared.recordPermission == .denied
             #if DEBUG
@@ -121,6 +121,9 @@ struct HomeView: View {
             Task {
                 if phase == .active {
                     microphoneDenied = AVAudioApplication.shared.recordPermission == .denied
+                    #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("--throughline-preview-mic-off") { microphoneDenied = true }
+                    #endif
                     await captureQueue.setForeground(true)
                     await refreshFromBackend()
                 } else {

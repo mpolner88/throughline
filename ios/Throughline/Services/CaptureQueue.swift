@@ -63,7 +63,7 @@ final class CaptureQueue: NSObject, ObservableObject, AVAudioPlayerDelegate {
         recorder.onLimitReached = { [weak self] in Task { await self?.stopRecording() } }
         monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, !self.preview else { return }
                 let wasOffline = self.isOffline
                 self.isOffline = path.status != .satisfied
                 if wasOffline && !self.isOffline { await self.resume() }

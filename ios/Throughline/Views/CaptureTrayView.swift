@@ -149,9 +149,9 @@ struct CaptureTrayView: View {
     @ViewBuilder private func glyph(_ capture: CaptureRecord) -> some View {
         Group {
             if capture.state == .confirmedUnreadable || (capture.state == .failed && !queue.deletionPending && !queue.signInRequired) {
-                Image(systemName: "exclamationmark.circle").foregroundStyle(.secondary)
+                Image(systemName: "exclamationmark.circle").resizable().scaledToFit().frame(width: 14, height: 14).foregroundStyle(.secondary)
             } else if capture.state == .saved {
-                if reduceMotion { Image(systemName: "circle.dotted").foregroundStyle(.secondary) }
+                if reduceMotion { Image(systemName: "circle.dotted").resizable().scaledToFit().frame(width: 14, height: 14).foregroundStyle(.secondary) }
                 else { ProgressView().controlSize(.mini) }
             } else if queue.deletionPending || queue.signInRequired || queue.isOffline || capture.state == .checkingAudio {
                 Circle().strokeBorder(Color.secondary, lineWidth: 1.5).frame(width: 12, height: 12)
@@ -162,15 +162,20 @@ struct CaptureTrayView: View {
     private func row(_ capture: CaptureRecord) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Divider()
-            HStack(alignment: .top, spacing: 10) {
-                glyph(capture)
-                if capture.duration > 0 || capture.state != .confirmedUnreadable {
-                    Text(duration(capture.duration)).font(.subheadline.monospacedDigit()).fixedSize()
-                        .accessibilityLabel(capture.duration < 60 ? "\(capture.duration) seconds" : "\(capture.duration / 60) minutes, \(capture.duration % 60) seconds")
+            Group {
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 10) { glyph(capture); durationLabel(capture) }
+                        rowMessage(capture)
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 10) {
+                        glyph(capture)
+                        durationLabel(capture)
+                        rowMessage(capture)
+                        Spacer(minLength: 0)
+                    }
                 }
-                (Text(fact(capture)).fontWeight(.medium) + Text(" " + activity(capture)).foregroundColor(.secondary))
-                    .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, 24).padding(.vertical, 14)
             .accessibilityElement(children: .combine)
@@ -185,6 +190,19 @@ struct CaptureTrayView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder private func durationLabel(_ capture: CaptureRecord) -> some View {
+        if capture.duration > 0 || capture.state != .confirmedUnreadable {
+            Text(duration(capture.duration)).font(.subheadline.monospacedDigit()).fixedSize()
+                .accessibilityLabel(capture.duration < 60 ? "\(capture.duration) seconds" : "\(capture.duration / 60) minutes, \(capture.duration % 60) seconds")
+        }
+    }
+
+    private func rowMessage(_ capture: CaptureRecord) -> some View {
+        (Text(fact(capture)).fontWeight(.medium) + Text(" " + activity(capture)).foregroundColor(.secondary))
+            .font(.subheadline).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private enum ActionStyle { case primary, outline, quiet }
