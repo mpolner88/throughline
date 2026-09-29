@@ -673,3 +673,14 @@ Each decision should explain the call that was made, the alternatives considered
 **Authority:** Review revision 2, disposition the base findings, integrate reviewed files and canonical corrections, and push only the existing `codex/reconcile-september-base` branch for PR #3. Return findings to Claude. Do not build capture or running list. Claude owns handoff/assets and sets `handoff_ready` only after findings are resolved. The immutable revision-2 review target is `75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9`; preserving it does not make it build-ready.
 
 **Still undecided:** R8 AI-consent removal and R9 Pages publication boundaries. Main merge and PR comments remain unapproved. Approved policy bytes stay unchanged; no migration, deployment, flag, secret, automation, App Store or TestFlight action follows. Private Evaluation remains deferred despite Mike's interest in returning to the learning loop soon. Product order remains capture recovery, then running list. Evidence: [Codex re-review](docs/evidence/2026-09-28-codex-capture-rereview.md) and [R8/R9 packet](docs/evidence/2026-09-28-main-merge-decisions.md).
+
+
+## 2026-09-28 — Restore AI permission and restrict the Pages publication surface
+
+**Decision:** Mike approved both recommendations in the [R8/R9 packet](docs/evidence/2026-09-28-main-merge-decisions.md): restore equivalent explicit AI-processing permission before inference, including demo transcript promotion, and limit GitHub Pages output to the intended public pages and assets. Adapt the prior permission gate to the reconciled source, verify persisted choice/refusal/withdrawal and request boundaries, and obtain independent engineering and Claude presentation review.
+
+**Scope:** Implementation and verification on `codex/reconcile-september-base`, followed by publication to existing draft PR #3. The exact main merge is not approved. Capture tray and running list are not implemented; Claude still resolves C1–C6 before capture readiness. Private Evaluation remains deferred. No provider, model, data-use, pricing, limits, backend migration/deployment, flags, secrets, automations, TestFlight or App Store action is included.
+
+**Latest direction:** Mike asked to leave privacy-policy work aside. The already approved policy files stay byte-identical; this follow-up does not revise them or require another policy discussion.
+
+**Evidence:** [Consent and Pages follow-up](docs/evidence/2026-09-28-consent-pages-follow-up.md) records exact source, checks, review and remaining release boundaries.

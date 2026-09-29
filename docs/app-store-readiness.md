@@ -1,6 +1,8 @@
 # Throughline App Store Readiness
 
-Last updated: August 28, 2026
+Last updated: September 28, 2026 (source safeguards only; no Apple action)
+
+**September 28 candidate:** Mike approved restoring explicit permission before ordinary AI submission, including demo audio, signed-in audio and demo transcript promotion, with a persisted choice and Settings withdrawal. See the [bounded implementation receipt](evidence/2026-09-28-consent-pages-follow-up.md) for checks and limits. This is candidate source, not an installed-build claim; the release history below is unchanged.
 
 ## Current Release State
 
@@ -50,7 +52,7 @@ The updated privacy policy source is in `docs/privacy-policy.md` and `docs/priva
 - Production evaluation behavior remains disabled until its separately gated rollout; this local iOS build does not prove the production feature is reachable.
 - Mike approved feedback iterations to advance automatically to the existing internal TestFlight group after verification. Rollback build `2026082801` most recently completed that path on August 28. Publishing the policy, changing App Store privacy answers, App Store submission, and public release remain separately gated.
 
-Ordinary third-party-AI inference permission remains an unresolved App Store readiness risk. The current app has no separate first-recording AI permission modal or AI-processing preference in Settings, and this slice does not invent one. Reconcile the App Store disclosure/consent requirement before any submission decision.
+The August release reconstruction had no separate ordinary AI-processing permission prompt or Settings control. The September 28 R8 follow-up restores them in candidate source; its local checks do not establish installed-app behavior or Apple review acceptance. Next-build release verification remains separate.
 
 
 ### Confirmation email — resolved and externally verified

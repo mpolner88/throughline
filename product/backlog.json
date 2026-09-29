@@ -19,7 +19,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
     "handoff_sha256": "75eda71e6606374145eb6f2b9fbdea807ad50f9cbd6fa2274f0908e27432c3b9",
-    "next_gate": "Claude resolves C1–C6 from the Codex re-review and returns a new exact handoff revision; R8/R9 remain separate undecided main-merge gates.",
+    "next_gate": "Claude resolves C1–C6 from the Codex re-review and returns a new exact handoff revision; R8/R9 safeguards are approved for bounded implementation and review; the exact main merge remains separately gated.",
     "review": "docs/evidence/2026-09-28-codex-capture-rereview.md"
   },
   "states": [
@@ -52,7 +52,7 @@
       "approval_required": false,
       "authority": "Mike selected cleanup before acceleration; agents may complete reversible documentation and validation work. Product/design changes and all named approval-bound classes remain Mike-gated.",
       "dependencies": [],
-      "next_action": "Closure remains complete. Keep foundation verification at baseline and closeout; Claude resolves the exact revision-2 capture re-review findings before readiness. R8/R9 remain separate main-merge decisions."
+      "next_action": "Closure remains complete. Keep foundation verification at baseline and closeout; Claude resolves the exact revision-2 capture re-review findings before readiness. Verify the approved R8/R9 safeguards before a separately approved main merge."
     },
     {
       "id": "TL-DISC-001",

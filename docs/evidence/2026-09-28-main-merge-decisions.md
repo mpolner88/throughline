@@ -1,6 +1,6 @@
 # PR #3: two decisions before a main merge
 
-Verified 2026-09-28 by Codex against source `372178b2b68d81691e8228443dacfebeec989e00`, main `fd85d0183719ac119d2c12a64435ef846faa3a0d`, live read-only GitHub Pages settings, and the primary sources below. Both decisions are **pending Mike**. This packet does not authorize implementation, publication, or a merge.
+Verified 2026-09-28 by Codex against source `372178b2b68d81691e8228443dacfebeec989e00`, main `fd85d0183719ac119d2c12a64435ef846faa3a0d`, live read-only GitHub Pages settings, and the primary sources below. Mike subsequently approved **both recommendations** on 2026-09-28. The bounded follow-up restores equivalent AI-processing permission and restricts Pages output, with review and publication only on the existing PR #3 branch. Main merge remains a separate action. Mike then asked to leave privacy-policy work aside; the approved policy bytes stay untouched. Implementation evidence: [R8/R9 follow-up](2026-09-28-consent-pages-follow-up.md). The sections below preserve the original decision packet and its evidence.
 
 ## R8 — AI-processing permission
 
@@ -28,4 +28,4 @@ Verified 2026-09-28 by Codex against source `372178b2b68d81691e8228443dacfebeec9
 
 ## Approval boundary
 
-Mike can decide R8 and R9 independently. Approving either recommendation authorizes only the explicitly named follow-up work; the exact main merge remains a separate action. Private Evaluation, provider/model/data-use changes, migrations, deployments, TestFlight and App Store actions remain outside this packet. The [Codex review](2026-09-28-codex-capture-rereview.md) dispositions the remaining base findings and capture dependencies.
+Mike approved the R8 and R9 recommendations together. That approval authorizes only the explicitly named follow-up work; the exact main merge remains a separate action. Private Evaluation, provider/model/data-use changes, migrations, deployments, TestFlight and App Store actions remain outside this packet. The [Codex review](2026-09-28-codex-capture-rereview.md) dispositions the remaining base findings and capture dependencies.

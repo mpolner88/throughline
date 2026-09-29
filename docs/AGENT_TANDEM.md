@@ -22,7 +22,7 @@ At each session end, leave one short handoff in the existing slice/evidence: **w
 
 As of September 28, the working tree, remote main, and [Claude PR #2](https://github.com/mpolner88/throughline/pull/2) are different states. The local guides were absent from both that PR's base and head. Neither the current dirty branch nor PR #2 is an agreed consolidated source. Before new implementation, inventory and preserve local work, compare overlapping changes, and establish one reviewed base with the guides available to both tools. Do not merge the PR or run its new deployment workflows merely because its checks are green. Do not clean the dirty tree to make integration easier.
 
-The historical split gate above was followed by preservation, reconciliation, approved nonsynced migration and Claude’s exact-base review. The [Codex disposition](evidence/2026-09-28-codex-capture-rereview.md) now owns the remaining review gates: capture contract changes, R8/R9 main-merge decisions and deferred evaluation defects. Do not restart the preservation process or infer a main merge.
+The historical split gate above was followed by preservation, reconciliation, approved nonsynced migration and Claude’s exact-base review. The [Codex disposition](evidence/2026-09-28-codex-capture-rereview.md) now owns the remaining review gates: capture contract changes and deferred evaluation defects. Mike subsequently approved the bounded [R8/R9 consent and Pages follow-up](evidence/2026-09-28-consent-pages-follow-up.md); the exact main merge remains unapproved. Do not restart the preservation process or infer a main merge.
 
 ## Current capability
 
