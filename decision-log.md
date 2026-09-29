@@ -710,3 +710,14 @@ Each decision should explain the call that was made, the alternatives considered
 **Execution boundary:** Only the capture SQL/API candidate and existing Internal QA group. The synthetic check uses a disposable, internally classified Auth fixture and generated tone, then removes its exact recording/audio, synthetic events and fixture. No real user note or account is used. No main merge, feature-branch push, new tester population, public submission, provider/model change or evaluation enablement.
 
 **Evidence:** [Capture backend rollout](docs/evidence/2026-09-29-capture-production-rollout.md). The hosted migration service assigned version `20260929192508`; the local migration filename is aligned to that version with approved SQL bytes unchanged.
+
+
+## 2026-09-29 — Capture device feedback, quiet AI controls and running list next
+
+**Decision owner:** Mike. **Evidence:** [owner feedback and follow-up](docs/evidence/2026-09-29-capture-owner-feedback.md).
+
+Mike reports the capture TestFlight looks good and requests a practical device test list; this is initial feedback, not completed recovery acceptance. He explicitly requests removal of the large ordinary-AI permission experience, a subtle acceptance only if necessary, AI remaining enabled during normal use, a simple Settings off switch, and deeper explanation available on demand. This request reopens only that bounded UI/control adjustment; approved policy text is not edited. Codex implements a brief affirmative first-use action because Apple requires permission before third-party AI sharing, preserves existing opt-out choices, and keeps normal capture free of repeat prompts once accepted. Claude presentation review remains required before another internal delivery.
+
+Mike also identifies persistent unfinished-from-last-night behavior and requests the running list next. Start the [running-list brief](docs/slices/running-list.md) from the prior Today/This week/Later design, preserving the capture tray, with date/completion truth and occurrence identity required. Do not import PR #2 wholesale. Claude owns the refreshed design; Codex owns feasibility, implementation and verification.
+
+The learning-loop question authorizes inspection, not activation. Read-only checks confirm stored legacy ratings without an operating improvement loop. Private Evaluation remains deferred pending repairs and a refreshed source-bound canary; no provider/model/data-use changes, flags, policies, main merge or public release are authorized by this entry.

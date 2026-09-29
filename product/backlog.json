@@ -12,15 +12,16 @@
     "as_of": "2026-09-29",
     "owner": "Mike",
     "status": "selected",
-    "question": "Capture recovery is approved for build and internal TestFlight delivery; running list follows.",
+    "question": "Capture recovery is in owner testing; Mike requests simpler AI controls and the running list next.",
     "selected_order": [
       "TL-CAP-001",
       "TL-TASK-001"
     ],
     "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
     "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-    "next_gate": "Mike installs and tests internal capture build 2026092901, then gives owner feedback before the running-list slice. Main merge/public release remain separate.",
-    "review": "docs/evidence/2026-09-29-capture-handoff-ready.md"
+    "next_gate": "Mike exercises capture recovery device checks; Claude reviews the small AI-control adjustment and refreshes the running-list handoff against the delivered capture base. Claude login needs restoration. Main merge/public release remain separate.",
+    "review": "docs/evidence/2026-09-29-capture-handoff-ready.md",
+    "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
   "states": [
     "collecting_evidence",
@@ -136,7 +137,10 @@
         "ios_verification": "docs/evidence/2026-08-23-evaluation-ios-privacy-controls.md",
         "reentry_as_of": "2026-09-28",
         "reentry_status": "Private Evaluation remains deferred by Mike. R1\u2013R6 and R16 need resolution before enablement/quality claims; old owner-canary package bindings cannot be presumed valid after approved policy changes. Historical approved_for_build records foundation work, not current rollout authority.",
-        "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md"
+        "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md",
+        "followup_as_of": "2026-09-29",
+        "followup_status": "14 legacy feedback rows; zero immutable operations, revisions, owner evaluations and corpus cases in fresh aggregate reads. Feedback is stored but no feedback-to-improvement loop is operating. R1\u2013R6/R16 remain enablement blockers; flags were not directly re-attested and were unchanged in the capture rollout.",
+        "followup_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Independent predictions and immutable lineage will make quality, reliability, latency, cost, canary, and rollback gates auditable.",
@@ -147,7 +151,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Keep Private Evaluation deferred. When Mike separately returns to the learning loop after capture/list work, prepare a bounded R1\u2013R6/R16 remediation and current-source canary/disclosure review before requesting any enablement action; do not execute the August owner-canary sequence."
+      "next_action": "When prioritized after the running-list work, repair and verify R1\u2013R6/R16 and regenerate the source-bound owner canary before requesting activation. No flag-on action follows from stored legacy ratings."
     },
     {
       "id": "TL-TRNS-001",
@@ -282,7 +286,7 @@
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
         "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-        "tandem_stage": "internal_testflight",
+        "tandem_stage": "owner_testing",
         "verification": "docs/evidence/2026-09-29-capture-handoff-ready.md",
         "product_decisions": "D1 neutral other-account row and local-only discard; D2 stop/keep on call, lock or leaving: accepted by Mike on 2026-09-28.",
         "capture_dependencies": "R7 before capture events ship; R10 isolated migration replay and relevant pgTAP before capture migration verification; R11 guarded processing finalization under contract item 4.",
@@ -292,7 +296,9 @@
         "release_candidate": "docs/releases/2026-09-29-ios-1.0.5-2026092901-candidate.md",
         "claude_implementation_review": "docs/evidence/2026-09-29-claude-capture-implementation-review.md",
         "internal_delivery": "docs/releases/2026-09-29-ios-1.0.5-2026092901-delivery.md",
-        "backend_rollout": "docs/evidence/2026-09-29-capture-production-rollout.md"
+        "backend_rollout": "docs/evidence/2026-09-29-capture-production-rollout.md",
+        "owner_feedback": "Initial positive TestFlight report on September 29; full device recovery checks remain open. Requested simplified ordinary-AI controls are local source only, pending Claude review.",
+        "owner_feedback_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md"
       },
       "funnel_step": "recording_started -> recording_uploaded",
       "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
@@ -303,7 +309,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Mike installs TestFlight build 2026092901 and tests recording, offline/reconnection recovery, retry/play/discard and stopping on lock/leaving; Codex addresses feedback before the running-list slice.",
+      "next_action": "Mike tests the capture device checklist; Claude reviews the requested brief AI first-use and Settings controls before a follow-up internal build.",
       "slice_phase": "canary"
     },
     {
@@ -313,7 +319,7 @@
       "state": "ready_for_mock",
       "problem": "Throughline extracts task dates, priorities, context and completion state, but the app does not yet present a task inbox, Today/Upcoming/Completed views, reminders, or clear source-note traceability.",
       "evidence": {
-        "as_of": "2026-08-28",
+        "as_of": "2026-09-29",
         "source": "outside-in product study, current iOS implementation, owner review, and fresh internal TestFlight rollback evidence",
         "market_pattern": "Successful task products organize work by time and status; voice-workflow users ask for dated tasks that route into daily systems.",
         "sample_size_warning": "The rejected implementation and its rollback were available to one internal tester; internal use is not a public-product outcome and does not establish lift.",
@@ -324,19 +330,25 @@
         "product_order": "Mike selected the running list after capture recovery; PR #2 is a deferred implementation source, not a compatible replacement for the August foundation.",
         "reconciliation_verification": "docs/evidence/2026-09-28-reconciliation-plan.md",
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
-        "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery."
+        "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
+        "current_request": "Mike requests running list next after initial capture TestFlight feedback. Today/This week/Later is the prior design starting point; refresh its handoff for the capture base and occurrence identity before implementation.",
+        "current_bug": "Unfinished-from-last-night still combines tomorrow_todos without date/completion filtering; text identity can collide. Include correction in this slice.",
+        "current_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
+        "slice": "docs/slices/running-list.md",
+        "tandem_stage": "design_brief"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
       "primary_metric": "new activated users who revisit or complete an extracted task within 7 days",
       "guardrail": "task extraction correction rate and reminder opt-out rate",
       "approval_required": true,
-      "authority": "Mike selected running-list priority after capture recovery. That order does not approve importing PR #2 wholesale or its design for build. Posting its GitHub review and contacting Claude for a design review each require separate approval.",
+      "authority": "Mike requested the running list next on September 29. Prepare the updated design and engineering contract in the established Claude-design/Codex-build workflow; preserve capture recovery. No wholesale PR #2 import, GitHub review/comment or main merge is authorized.",
       "dependencies": [
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "After capture recovery, prepare a bounded running-list rework from the reviewed base that preserves lineage, consent, retention, API compatibility and occurrence-level task identity; obtain the separately authorized reviews before build entry."
+      "next_action": "Claude refreshes the prior running-list design against the delivered capture tray using docs/slices/running-list.md; Codex reviews occurrence identity, date semantics and compatibility before build. Claude access needs restored login.",
+      "slice_phase": "candidate"
     },
     {
       "id": "TL-KNOW-001",

@@ -1,5 +1,14 @@
 # Throughline current state
 
+## September 29 owner feedback and next slice
+
+**Verified:** 2026-09-29. **Scope:** initial owner report, source inspection and read-only hosted aggregates. [Evidence and device checklist](evidence/2026-09-29-capture-owner-feedback.md).
+
+- **Current:** Mike reports the capture TestFlight looks good; recovery/device acceptance is still being exercised. Simplified first-use AI controls and Settings switch are local source only, pending Claude presentation review; no new TestFlight upload occurred.
+- **Evidence:** ratings are stored (14 legacy rows), while immutable processing operations, note revisions, owner evaluations and corpus cases are all zero in fresh aggregate reads. No operating feedback-to-improvement loop or automatic model training is established. Evaluation activation stays deferred pending its known repairs.
+- **Next gate:** Claude reviews the small AI-control adjustment and refreshes the [running-list handoff](slices/running-list.md) against the capture base. Its local CLI login expired and desktop automation timed out. Mike's device checks can proceed independently.
+- **Authority:** Mike requested the simpler AI experience and running list next. Preserve minimal affirmative first-use acceptance, existing opt-out choices, the delivered capture behavior and evaluation separation. No policy text, backend, flag, provider/model, main merge or public-release change in this follow-up.
+
 ## September 29 capture-tray internal delivery
 
 **Verified:** 2026-09-29. **Scope:** approved backend deployment, synthetic hosted capture, exact signed app upload, Apple processing and existing Internal QA availability. Evidence: [internal delivery](releases/2026-09-29-ios-1.0.5-2026092901-delivery.md), [production rollout](evidence/2026-09-29-capture-production-rollout.md), and [Claude design review](evidence/2026-09-29-claude-capture-implementation-review.md).
