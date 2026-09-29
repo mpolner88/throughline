@@ -16,6 +16,8 @@ struct RootView: View {
             #endif
         }
         .environmentObject(appState)
+        .environmentObject(appState.captureQueue)
+        .environmentObject(appState.captureQueue.recorder)
         .task {
             let route = appState.route == .home ? "home" : "onboarding"
             ProductAnalytics.trackFirstOpen(route: route)

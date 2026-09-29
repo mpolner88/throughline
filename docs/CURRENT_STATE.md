@@ -1,5 +1,14 @@
 # Throughline current state
 
+## September 29 capture-tray implementation candidate
+
+**Verified:** 2026-09-29. **Scope:** local implementation, independent engineering and Claude source reviews, isolated tests/build, read-only Apple and backend inventory. Evidence: [implementation verification](evidence/2026-09-29-capture-implementation.md) and [backend candidate](evidence/2026-09-29-capture-backend-candidate.md).
+
+- Mike approved building the ready tray and internal TestFlight delivery. Active local branch is `codex/capture-tray` in nonsynced `throughline-local`; reconciliation PR #3 remains separate and unmerged.
+- The local/server recovery contract is implemented. Engineering findings and Claude's P1/P2 source findings were corrected. Final visual review, signed archive and delivery checks are in progress; build `1.0.5 (2026092901)` is a candidate, not yet available.
+- Read-only current delivery baseline: newest Apple build is `1.0.5 (2026082801)`, VALID/nonexpired; existing Internal QA is internal. Production API remains v30 with ten migrations. The exact new backend deployment needs Mike's separately requested approval before this app can be delivered with working capture recovery.
+- Product order remains capture recovery, then running list. Private Evaluation remains deferred. The following handoff/reconciliation sections preserve their dated evidence; their former build-entry next action is superseded here.
+
 ## September 29 capture-tray handoff ready
 
 **Verified:** 2026-09-29. **Scope:** local source and design review, asset integrity, and the existing draft PR #3 identity; no production or release refresh. Evidence: [revision-3 readiness receipt](evidence/2026-09-29-capture-handoff-ready.md).

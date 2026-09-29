@@ -159,12 +159,16 @@ struct AIProcessingConsentView: View {
 struct AccountSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var captureQueue: CaptureQueue
     @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var showingAIProcessingConsent = false
     @State private var showingBackendSettings = false
     @State private var showingAgentConnection = false
     @State private var showingProductFeedback = false
     @State private var isConfirmingDelete = false
+    @State private var isConfirmingSignOut = false
+    @State private var deletionUncertain = false
+    @State private var deletionRefused = false
     @State private var isDeleting = false
     @State private var deleteError: String?
 
@@ -182,13 +186,19 @@ struct AccountSettingsView: View {
                     }
 
                     Button("sign out") {
-                        appState.signOut()
-                        dismiss()
+                        Task {
+                            await captureQueue.interruptRecording()
+                            if captureQueue.unsavedCount > 0 { isConfirmingSignOut = true }
+                            else { signOut() }
+                        }
                     }
                     .disabled(isDeleting)
 
                     Button(isDeleting ? "deleting" : "delete account", role: .destructive) {
-                        isConfirmingDelete = true
+                        Task {
+                            await captureQueue.interruptRecording()
+                            isConfirmingDelete = true
+                        }
                     }
                     .disabled(!appState.isSignedIn || isDeleting)
 
@@ -270,7 +280,25 @@ struct AccountSettingsView: View {
                 }
             }
         } message: {
-            Text("This removes your Throughline account, memories, recordings, and agent tokens.")
+            Text("This removes your Throughline account, memories, recordings, and agent tokens." +
+                 (captureQueue.unsavedCount > 0 ? " \(captureQueue.unsavedCount) \(captureQueue.unsavedCount == 1 ? "capture that hasn't" : "captures that haven't") been confirmed as saved will also be deleted from this phone." : ""))
+        }
+        .confirmationDialog("Sign out?", isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
+            Button("Sign out and delete", role: .destructive) { signOut() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("\(captureQueue.unsavedCount) \(captureQueue.unsavedCount == 1 ? "capture hasn't" : "captures haven't") been confirmed as saved to your account. Signing out deletes them from this phone.")
+        }
+        .alert("Account deletion not confirmed", isPresented: $deletionUncertain) {
+            Button("Try again") { Task { await deleteAccount() } }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Throughline couldn't confirm that your account was deleted. Captures on this phone are kept and won't be sent. Try again when you're connected.")
+        }
+        .alert("Couldn't delete your account", isPresented: $deletionRefused) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "Nothing was deleted. Try again in a moment.")
         }
         .sheet(isPresented: $showingAIProcessingConsent) {
             AIProcessingConsentView(context: .settings)
@@ -286,18 +314,24 @@ struct AccountSettingsView: View {
         }
     }
 
+    private func signOut() {
+        do { try appState.signOut(); dismiss() }
+        catch { deleteError = "Couldn't sign out. Captures on this phone are kept. Try again in a moment." }
+    }
+
     private func deleteAccount() async {
         guard appState.isSignedIn else { return }
-
+        guard !isDeleting else { return }
+        deleteError = nil
         isDeleting = true
         defer { isDeleting = false }
-
-        do {
-            try await UploadClient().deleteAccount()
-            appState.finishAccountDeletion()
-            dismiss()
-        } catch {
-            deleteError = error.localizedDescription
+        let result = await captureQueue.deleteAccount()
+        switch result {
+        case .deleted: dismiss()
+        case .refused:
+            deleteError = nil
+            deletionRefused = true
+        case .uncertain: deletionUncertain = true
         }
     }
 }

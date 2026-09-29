@@ -139,3 +139,18 @@ These thresholds are provisional until Throughline has a stable baseline:
 - Retention is interpretable at five mature activated users and decision-grade at 20.
 - A single explicit product problem is evidence, not a trend. Three independent reports of the same problem promote it for mock exploration.
 - Any credible data-loss, privacy, account-access, or recording-processing failure can bypass the frequency threshold.
+
+## Capture recovery
+
+Defined for TL-CAP-001 on 2026-09-29. The existing session funnel cannot measure a capture that is saved after relaunch in another session. The capture store maintains private stable random milestone identities; these are not capture IDs and never go to PostHog.
+
+- Population: durable, finalized Home captures whose audio passed validation. Demo recordings are excluded. Keep the five distribution cohorts separate.
+- Saved: an owner/capture/payload-bound accepted receipt was validated and durably stored on the phone, including receipt recovery after relaunch. Count each capture once.
+- Deliberately discarded: explicit confirmed local discard, sign-out or account deletion before accepted receipt. A result-unknown discard remains remote-save-unknown and must not imply the server stored nothing.
+- Confirmed unusable: finalized audio independently validated as empty/corrupt. Temporary file protection or I/O failure is pending, never loss.
+- Pending: usable audio retained without an accepted receipt or confirmed terminal action at the observation cutoff.
+- Unobserved: a locally tracked capture whose outcome cannot be reconciled within the observation window; uninstall/offline event loss cannot be presumed saved, discarded or lost.
+- Recovery observation window: seven days after durable capture finalization. Report mature captures separately from newer pending captures; list coverage and unreconciled totals.
+- Saved share: saved divided by all observed finalized usable captures in the mature population, with deliberate discard, remote-save-unknown, pending and unobserved counts shown alongside. Do not exclude inconvenient unresolved outcomes to improve the rate.
+- Upload/processing separation: transport/auth/retry failures are capture outcomes, not `recording_failed`. That event remains a terminal processing outcome linked to a durable recording; polling exhaustion has no terminal event.
+- Readiness: report counts only until the private lifecycle can be reconciled and coverage is established. No capture recovery rate is claimed from client events alone or a synthetic canary.

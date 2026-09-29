@@ -694,3 +694,11 @@ Each decision should explain the call that was made, the alternatives considered
 **Authority:** The existing PR #3 branch-only publication authorization remains the integration boundary. No main merge, feature implementation, migration execution, deployment, behavior flag, automation, provider/model/data-use/pricing/limit/onboarding or Apple action follows. A completed handoff records design and feasibility readiness; Mike retains build entry.
 
 **Completion evidence:** [Revision-3 handoff readiness](docs/evidence/2026-09-29-capture-handoff-ready.md) records the exact contract, mutual review, resolved findings and verification limits.
+
+## 2026-09-29 — Build capture recovery and deliver internally
+
+**Decision:** After the ready revision-3 handoff, Mike said, “Great, build - put it in the app testflight.” This selects TL-CAP-001 for implementation and internal TestFlight delivery to the existing Internal QA group. Claude’s selected Candidate B contract remains frozen at SHA-256 `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`. Codex owns implementation and engineering verification; Claude reviews the implemented design.
+
+**Scope:** Durable local capture and tray, duplicate-safe acceptance and deletion, account isolation, recovery events and their R7/R10/R11 dependencies. The agent will prepare and verify the compatible additive backend required by this app build, then deliver the verified signed internal build. Public App Store submission, external testers, main merge, running list, Private Evaluation, providers/models, pricing/limits/onboarding and policy work remain outside this slice. The implementation uses local branch `codex/capture-tray` from `ee2e791`; PR #3 is preserved.
+
+**Execution record:** [Capture recovery slice](docs/slices/capture-recovery.md). Runtime results and exact delivery identity will be recorded after verification, not inferred from this approval.

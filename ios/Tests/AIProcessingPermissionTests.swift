@@ -2,7 +2,9 @@
 // This executable deliberately substitutes AuthSessionRefresher to pause authentication.
 import Foundation
 
-struct AuthSession { let accessToken = "synthetic" }
+struct AuthUser { let id = "synthetic" }
+struct AuthSession { let accessToken = "synthetic"; let user = AuthUser() }
+enum AuthSessionStore { static var currentSession: AuthSession? { AuthSession() } }
 actor AuthSessionRefresher {
   static let shared = AuthSessionRefresher()
   var gate: CheckedContinuation<Void, Never>?

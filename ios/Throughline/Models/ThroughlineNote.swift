@@ -142,6 +142,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
     var type: RecordingType
     var processingStatus: String?
     var currentRevisionID: String?
+    var captureID: String?
     var title: String
     var summary: String
     var transcript: String
@@ -164,6 +165,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         case type
         case processingStatus
         case currentRevisionID
+        case captureID
         case title
         case summary
         case transcript
@@ -201,13 +203,15 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         tags: [String],
         people: [String],
         projects: [String],
-        centersOfBalance: [String]
+        centersOfBalance: [String],
+        captureID: String? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
         self.type = type
         self.processingStatus = processingStatus
         self.currentRevisionID = currentRevisionID
+        self.captureID = captureID
         self.title = title
         self.summary = summary
         self.transcript = transcript
@@ -232,6 +236,7 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         type = try container.decodeIfPresent(RecordingType.self, forKey: .type) ?? .freeform
         processingStatus = try container.decodeIfPresent(String.self, forKey: .processingStatus)
         currentRevisionID = try container.decodeIfPresent(String.self, forKey: .currentRevisionID)
+        captureID = try container.decodeIfPresent(String.self, forKey: .captureID)
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? "voice note"
         summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
         transcript = try container.decodeIfPresent(String.self, forKey: .transcript) ?? ""

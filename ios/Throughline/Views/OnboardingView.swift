@@ -4,6 +4,8 @@ import UIKit
 
 struct OnboardingView: View {
     @EnvironmentObject private var appState: AppState
+    private let signInOnly: Bool
+    private let onSignInComplete: (() -> Void)?
     @StateObject private var recorder = AudioRecorder()
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingAIProcessingConsent = false
@@ -26,30 +28,37 @@ struct OnboardingView: View {
     @State private var isResendingConfirmation = false
     @State private var showingEmailAuth = false
     @State private var appleRawNonce: String?
+    @State private var signInGeneration: UUID?
     @State private var googleAuthSession: ASWebAuthenticationSession?
     @State private var providerAvailability = AuthProviderAvailability()
     #if DEBUG
     private let debugStep: Int?
     #endif
 
-    init() {
+    init(signInOnly: Bool = false, onSignInComplete: (() -> Void)? = nil) {
+        self.signInOnly = signInOnly
+        self.onSignInComplete = onSignInComplete
         #if DEBUG
-        let debugStep = Self.debugInitialStep
+        let debugStep = signInOnly ? 3 : Self.debugInitialStep
         _step = State(initialValue: debugStep)
-        _capturedNote = State(initialValue: debugStep >= 2 ? .sample : nil)
-        _authMode = State(initialValue: Self.debugInitialAuthMode)
-        _showingEmailAuth = State(initialValue: Self.debugShowsEmailAuth)
+        _capturedNote = State(initialValue: !signInOnly && debugStep >= 2 ? .sample : nil)
+        _authMode = State(initialValue: signInOnly ? .signIn : Self.debugInitialAuthMode)
+        _showingEmailAuth = State(initialValue: !signInOnly && Self.debugShowsEmailAuth)
         self.debugStep = debugStep
         #else
-        _step = State(initialValue: 0)
+        _step = State(initialValue: signInOnly ? 3 : 0)
+        _authMode = State(initialValue: signInOnly ? .signIn : .createAccount)
         _capturedNote = State(initialValue: nil)
         #endif
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
+            if !signInOnly { topBar }
 
+            if signInOnly {
+                signInScreen
+            } else {
             TabView(selection: $step) {
                 heroScreen.tag(0)
                 recordScreen.tag(1)
@@ -57,6 +66,7 @@ struct OnboardingView: View {
                 signInScreen.tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            }
         }
         .task {
             #if DEBUG
@@ -64,12 +74,12 @@ struct OnboardingView: View {
                 step = debugStep
             }
             #endif
-            trackOnboardingStep(step)
+            if !signInOnly { trackOnboardingStep(step) }
         }
         .onChange(of: step) { _, newStep in
-            trackOnboardingStep(newStep)
+            if !signInOnly { trackOnboardingStep(newStep) }
         }
-        .onAppear { isVisible = true }
+        .onAppear { isVisible = true; signInGeneration = appState.accountGeneration }
         .onDisappear { isVisible = false }
         .sheet(isPresented: $showingAIProcessingConsent) {
             AIProcessingConsentView(context: appState.isSignedIn && capturedNote != nil ? .demoSave : .recording)
@@ -267,7 +277,7 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                if appState.isSignedIn {
+                if appState.isSignedIn && !signInOnly {
                     if let authNotice {
                         AuthMessage(text: authNotice, tone: .notice)
                     }
@@ -567,6 +577,10 @@ struct OnboardingView: View {
     }
 
     private func finishOnboarding() {
+        if signInOnly {
+            onSignInComplete?()
+            return
+        }
         guard !isSavingDemoNote else { return }
 
         Task {
@@ -781,6 +795,7 @@ struct OnboardingView: View {
     }
 
     private func completeSocialAuthentication(_ session: AuthSession, mode: String) {
+        guard !signInOnly || (isVisible && signInGeneration == appState.accountGeneration) else { return }
         appState.setSession(session)
         authError = nil
         authNotice = nil
@@ -829,6 +844,7 @@ struct OnboardingView: View {
                 } else {
                     session = try await client.signIn(email: email, password: authPassword)
                 }
+                guard !signInOnly || (isVisible && signInGeneration == appState.accountGeneration) else { return }
                 appState.setSession(session)
                 authError = nil
                 authNotice = nil
