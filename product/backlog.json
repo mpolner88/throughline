@@ -19,7 +19,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
     "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-    "next_gate": "Finish Claude visual review and obtain exact backend deployment approval, then verify hosted capture recovery before internal upload. Main merge/public release remain separate.",
+    "next_gate": "Obtain exact backend deployment approval, then verify hosted capture recovery before internal upload. Claude design review passed; main merge/public release remain separate.",
     "review": "docs/evidence/2026-09-29-capture-handoff-ready.md"
   },
   "states": [
@@ -278,18 +278,19 @@
       "evidence": {
         "as_of": "2026-09-29",
         "source": "Exact-file revision-3 Codex review against base 3faf0f2, resolved C1\u2013C6 and follow-up F1\u2013F6, and Claude readiness confirmation. Source inspection and synthetic references, not implementation/device/runtime proof.",
-        "implementation_observation": "Local tests, signed archive and internal-only export passed at c9d2d5c. Final Claude visual receipt, backend approval/hosted verification and Apple delivery remain pending.",
+        "implementation_observation": "Local tests, signed archive and internal-only export passed at c9d2d5c. Claude final design review passed without P1/P2 blockers. Backend approval/hosted verification and Apple delivery remain pending.",
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
         "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-        "tandem_stage": "building",
+        "tandem_stage": "local_verified",
         "verification": "docs/evidence/2026-09-29-capture-handoff-ready.md",
         "product_decisions": "D1 neutral other-account row and local-only discard; D2 stop/keep on call, lock or leaving: accepted by Mike on 2026-09-28.",
         "capture_dependencies": "R7 before capture events ship; R10 isolated migration replay and relevant pgTAP before capture migration verification; R11 guarded processing finalization under contract item 4.",
         "handoff_commit": "4c7cea1060f55438a0fd0c8deee97019376d1d9b",
         "slice": "docs/slices/capture-recovery.md",
         "implementation_verification": "docs/evidence/2026-09-29-capture-implementation.md",
-        "release_candidate": "docs/releases/2026-09-29-ios-1.0.5-2026092901-candidate.md"
+        "release_candidate": "docs/releases/2026-09-29-ios-1.0.5-2026092901-candidate.md",
+        "claude_implementation_review": "docs/evidence/2026-09-29-claude-capture-implementation-review.md"
       },
       "funnel_step": "recording_started -> recording_uploaded",
       "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
@@ -300,7 +301,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Resolve final Claude visual review and Mike\u2019s exact backend deployment approval, then Codex verifies hosted recovery and internal-only Apple delivery.",
+      "next_action": "Mike approves the exact backend deployment; Codex then verifies hosted capture recovery and internal-only Apple delivery.",
       "slice_phase": "building"
     },
     {

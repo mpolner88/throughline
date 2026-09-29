@@ -12,7 +12,7 @@ Codex's independent read-only reviewer found and writers resolved: pre-start orp
 
 ## Actual Claude review
 
-Claude reviewed the implementation in the existing Throughline design session on 2026-09-29. Initial P1: sign-in-only reuse incorrectly selected the already-signed-in branch. Initial P2s: tap targets, recorder error surfaces, truthful waiting counts, state glyphs, retry hierarchy, announcements, singular counts and held-account retry feedback. Codex corrected these; Claude's next source review confirmed those P1/P2 findings closed. Additional P3 corrections cover repeated note-ready announcements, one haptic per new failure state, spoken duration, recorder mark, sign-in chrome and duplicate refusal text. Final visual re-review remains pending until the settled normal/small-screen synthetic matrix is supplied.
+Claude reviewed the implementation in the existing Throughline design session on 2026-09-29. Initial P1: sign-in-only reuse incorrectly selected the already-signed-in branch. Initial P2s: tap targets, recorder error surfaces, truthful waiting counts, state glyphs, retry hierarchy, announcements, singular counts and held-account retry feedback. Codex corrected these; Claude's next source review confirmed those P1/P2 findings closed. Additional P3 corrections cover repeated note-ready announcements, one haptic per new failure state, spoken duration, recorder mark and sign-in chrome. Final visual re-review remains pending until the settled normal/small-screen synthetic matrix is supplied.
 
 Claude accepted these additional truthful error strings: “Couldn't sign out. Captures on this phone are kept. Try again in a moment.” and “Couldn't refresh your notes. Pull down to try again.”
 
@@ -47,3 +47,9 @@ App source `c9d2d5c93de44880efbbdff2162535114d797874` fixes row wrapping at acce
 The final isolated signed archive and internal-only export succeeded and signatures passed. Version/build is 1.0.5 (2026092901). Exact provenance and retained artifact hashes: [candidate manifest](../releases/2026-09-29-ios-1.0.5-2026092901-candidate.md). The queue/refresh harness rerun passed. Hosted-canary script `23ac943` passed 13 mocked tests; no hosted calls. Its incomplete/unknown-reservation outcome retains a private recovery journal and reports cleanup pending rather than broadening deletion. It does not prove physical Storage cleanup or processing-claim counts.
 
 Final Claude visual re-review of the settled matrix is in progress. Backend approval, hosted verification, Apple upload/processing and group availability remain pending. Simulator tap automation failed at the native-control boundary, so actual sign-in-sheet interaction and VoiceOver behavior remain explicit device checks.
+
+## Final Claude review disposition
+
+The [completed exact-source Claude receipt](2026-09-29-claude-capture-implementation-review.md) passes design review for internal delivery with no P1/P2 blockers. It supersedes the pending visual-review statements above. Four nonblocking P3 findings and explicit missing device/interaction evidence remain recorded. Duplicate account-refusal text is still present; it is not claimed fixed. All reviewed app-file hashes match the archived app source.
+
+The remaining executable gate is Mike's exact backend deployment approval, followed by hosted verification and internal Apple delivery. No production, upload or availability claim follows from this local review.
