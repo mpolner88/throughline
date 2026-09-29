@@ -17,6 +17,9 @@ private enum FeedbackStatus: Equatable {
 struct HomeView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var recorder = AudioRecorder()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var showingAIProcessingConsent = false
+    @State private var isVisible = false
     @State private var uploadError: String?
     @State private var feedbackStatus: [String: FeedbackStatus] = [:]
     @State private var showingSettings = false
@@ -105,6 +108,11 @@ struct HomeView: View {
                 "home_viewed",
                 properties: ["state": isHomeEmpty ? "empty" : "populated"]
             )
+        }
+        .onAppear { isVisible = true }
+        .onDisappear { isVisible = false }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView()
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= maxRecordingSeconds {
@@ -220,18 +228,25 @@ struct HomeView: View {
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
+            guard AIProcessingPermission.shared.isAllowed else {
+                showingAIProcessingConsent = true
+                return
+            }
             startRecording()
         }
     }
 
     private func startRecording() {
-        guard !isPreparingRecording, !recorder.isRecording else { return }
+        guard !isPreparingRecording, !recorder.isRecording, AIProcessingPermission.shared.isAllowed else { return }
+        let startingAccountID = appState.session?.user.id
 
         Task {
             isPreparingRecording = true
             defer { isPreparingRecording = false }
 
             await recorder.requestPermissionIfNeeded()
+            guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed,
+                  appState.session?.user.id == startingAccountID else { return }
             do {
                 didJustSave = false
                 try recorder.start(limitSeconds: nil)
@@ -439,6 +454,10 @@ struct HomeView: View {
                 isUploading = false
                 isProcessing = false
                 didJustSave = false
+                if error is AIProcessingPermissionError {
+                    uploadError = "AI processing is off, so this recording was not sent. It cannot be retried from this screen."
+                    return
+                }
                 ProductAnalytics.track(
                     "recording_failed",
                     properties: [

@@ -5,6 +5,9 @@ import UIKit
 struct OnboardingView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var recorder = AudioRecorder()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var showingAIProcessingConsent = false
+    @State private var isVisible = false
     @State private var step: Int
     @State private var capturedNote: ThroughlineNote?
     @State private var capturedRecordingDuration = 0
@@ -65,6 +68,11 @@ struct OnboardingView: View {
         }
         .onChange(of: step) { _, newStep in
             trackOnboardingStep(newStep)
+        }
+        .onAppear { isVisible = true }
+        .onDisappear { isVisible = false }
+        .sheet(isPresented: $showingAIProcessingConsent) {
+            AIProcessingConsentView(context: appState.isSignedIn && capturedNote != nil ? .demoSave : .recording)
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= 30 {
@@ -259,7 +267,29 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                if showingEmailAuth {
+                if appState.isSignedIn {
+                    if let authNotice {
+                        AuthMessage(text: authNotice, tone: .notice)
+                    }
+                    if let authError {
+                        AuthMessage(text: authError, tone: .error)
+                    }
+                    PrimaryButton(title: isSavingDemoNote ? "saving" : (capturedNote == nil ? "continue" : "save demo note")) {
+                        finishOnboarding()
+                    }
+                    .disabled(isSavingDemoNote)
+                    if capturedNote != nil {
+                        Button {
+                            appState.finishOnboarding(with: nil)
+                        } label: {
+                            Text("continue without saving demo")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSavingDemoNote)
+                    }
+                } else if showingEmailAuth {
                     VStack(spacing: 10) {
                         TextField("email address", text: $authEmail)
                             .textContentType(.emailAddress)
@@ -395,18 +425,25 @@ struct OnboardingView: View {
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
+            guard AIProcessingPermission.shared.isAllowed else {
+                showingAIProcessingConsent = true
+                return
+            }
             startRecording()
         }
     }
 
     private func startRecording() {
-        guard !isPreparingRecording, !recorder.isRecording else { return }
+        guard !isPreparingRecording, !recorder.isRecording, AIProcessingPermission.shared.isAllowed else { return }
+        let startingAccountID = appState.session?.user.id
 
         Task {
             isPreparingRecording = true
             defer { isPreparingRecording = false }
 
             await recorder.requestPermissionIfNeeded()
+            guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed,
+                  appState.session?.user.id == startingAccountID, step == 1 else { return }
             do {
                 try recorder.start(limitSeconds: nil)
                 ProductAnalytics.track("demo_recording_started")
@@ -512,6 +549,10 @@ struct OnboardingView: View {
             } catch {
                 isFinishingRecording = false
                 isUploading = false
+                if error is AIProcessingPermissionError {
+                    uploadError = "AI processing is off, so this recording was not sent. It cannot be retried from this screen."
+                    return
+                }
                 ProductAnalytics.track(
                     "recording_failed",
                     properties: [
@@ -530,14 +571,25 @@ struct OnboardingView: View {
 
         Task {
             isSavingDemoNote = true
+            authNotice = nil
+            authError = nil
             defer { isSavingDemoNote = false }
 
-            let noteToSave = await persistDemoNoteIfNeeded()
-            appState.finishOnboarding(with: noteToSave)
+            do {
+                let noteToSave = try await persistDemoNoteIfNeeded()
+                appState.finishOnboarding(with: noteToSave)
+            } catch is AIProcessingPermissionError {
+                // Keep the demo on this screen; never present it as an account save.
+                authError = nil
+                authNotice = "Your demo has not been saved to your account. Allow AI processing, then try saving again."
+                showingAIProcessingConsent = true
+            } catch {
+                authError = error.localizedDescription
+            }
         }
     }
 
-    private func persistDemoNoteIfNeeded() async -> ThroughlineNote? {
+    private func persistDemoNoteIfNeeded() async throws -> ThroughlineNote? {
         guard appState.isSignedIn, let capturedNote else { return capturedNote }
 
         var durableRecordingID: String?
@@ -569,6 +621,8 @@ struct OnboardingView: View {
                 recordingID: response.id
             )
             return savedNote
+        } catch let error as AIProcessingPermissionError {
+            throw error
         } catch {
             ProductAnalytics.track(
                 "recording_failed",

@@ -626,18 +626,24 @@ private actor ProductEventQueue {
 struct UploadClient {
     var baseURL = BackendConfiguration.currentBaseURL
     var apiToken = BackendConfiguration.currentAPIToken
+    private let session: URLSession
+    private let aiPermission: AIProcessingPermission
 
     init(
         baseURL: URL = BackendConfiguration.currentBaseURL,
-        apiToken: String? = BackendConfiguration.currentAPIToken
+        apiToken: String? = BackendConfiguration.currentAPIToken,
+        session: URLSession = .shared,
+        aiPermission: AIProcessingPermission = .shared
     ) {
         self.baseURL = baseURL
         self.apiToken = apiToken
+        self.session = session
+        self.aiPermission = aiPermission
     }
 
     func health() async throws -> HealthResponse {
         let request = try await authorizedRequest(url: baseURL.appendingPathComponent("health"))
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(HealthResponse.self, from: data)
     }
@@ -658,7 +664,7 @@ struct UploadClient {
         request.setValue(Self.localTimestamp(), forHTTPHeaderField: "X-Throughline-User-Local-Time")
         request.httpBody = try Data(contentsOf: fileURL)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
@@ -679,7 +685,7 @@ struct UploadClient {
         request.setValue(Self.localTimestamp(), forHTTPHeaderField: "X-Throughline-User-Local-Time")
         request.httpBody = try Data(contentsOf: fileURL)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
@@ -698,14 +704,14 @@ struct UploadClient {
             )
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
 
     func listNotes() async throws -> [ThroughlineNote] {
         let listRequest = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings"))
-        let (listData, listResponse) = try await URLSession.shared.data(for: listRequest)
+        let (listData, listResponse) = try await session.data(for: listRequest)
         try validate(response: listResponse, data: listData)
 
         let list = try JSONDecoder().decode(RecordingListResponse.self, from: listData)
@@ -723,7 +729,7 @@ struct UploadClient {
         let request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("recordings")
             .appendingPathComponent(id))
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
@@ -734,7 +740,7 @@ struct UploadClient {
             .appendingPathComponent(id))
         request.httpMethod = "DELETE"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -749,7 +755,7 @@ struct UploadClient {
             ActionItemUpdateRequest(text: text, completed: isCompleted)
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
@@ -762,7 +768,7 @@ struct UploadClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(RecordingEditRequest(draft: draft, expectedRevisionID: expectedRevisionID))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(RecordingDetailResponse.self, from: data).resolvedRecording
     }
@@ -772,7 +778,7 @@ struct UploadClient {
         components?.queryItems = [URLQueryItem(name: "revision_id", value: revisionID.lowercased())]
         guard let url = components?.url else { throw UploadClientError.invalidResponse }
         let request = try await authorizedRequest(url: url)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(EvaluationReadinessPreviewResponse.self, from: data).preview
     }
@@ -782,7 +788,7 @@ struct UploadClient {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(body)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(EvaluationContributionResponse.self, from: data)
     }
@@ -792,7 +798,7 @@ struct UploadClient {
         request.httpMethod = "DELETE"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: ["idempotency_key": idempotencyKey.uuidString.lowercased()])
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(EvaluationContributionRemovalResponse.self, from: data)
     }
@@ -801,7 +807,7 @@ struct UploadClient {
         var request = try await authorizedRequest(url: baseURL.appendingPathComponent("account"))
         request.httpMethod = "DELETE"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -809,7 +815,7 @@ struct UploadClient {
         let request = try await authorizedRequest(url: baseURL
             .appendingPathComponent("agent")
             .appendingPathComponent("tokens"))
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(AgentTokenListResponse.self, from: data).tokens
     }
@@ -822,7 +828,7 @@ struct UploadClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(CreateAgentTokenRequest(name: name))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(AgentTokenCreateResponse.self, from: data)
     }
@@ -834,7 +840,7 @@ struct UploadClient {
             .appendingPathComponent(id))
         request.httpMethod = "DELETE"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -860,7 +866,7 @@ struct UploadClient {
             )
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(FeedbackResponse.self, from: data)
     }
@@ -873,7 +879,7 @@ struct UploadClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(ProductEventBatchRequest(events: events))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
     }
 
@@ -896,7 +902,7 @@ struct UploadClient {
             )
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(ProductFeedbackResponse.self, from: data)
     }
