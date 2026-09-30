@@ -19,9 +19,9 @@
       "TL-EVAL-001"
     ],
     "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
-    "handoff_sha256": "57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881",
-    "next_gate": "Claude resolves the remaining handoff findings; Codex rechecks the selected design, then builds and verifies it for Claude implementation review and internal TestFlight. Mike has already approved build entry.",
-    "review": "docs/evidence/2026-09-30-running-list-feasibility.md",
+    "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
+    "next_gate": "Codex builds and tests the reviewed running list, then Claude reviews exact-source simulator evidence before internal TestFlight.",
+    "review": "docs/evidence/2026-09-30-running-list-ready.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
   "states": [
@@ -137,10 +137,10 @@
         "lineage_verification": "docs/evidence/2026-08-23-evaluation-lineage-behavior-canary.md",
         "ios_verification": "docs/evidence/2026-08-23-evaluation-ios-privacy-controls.md",
         "reentry_as_of": "2026-09-28",
-        "reentry_status": "Private Evaluation remains deferred by Mike. R1\u2013R6 and R16 need resolution before enablement/quality claims; old owner-canary package bindings cannot be presumed valid after approved policy changes. Historical approved_for_build records foundation work, not current rollout authority.",
+        "reentry_status": "Private Evaluation remains deferred by Mike. R1–R6 and R16 need resolution before enablement/quality claims; old owner-canary package bindings cannot be presumed valid after approved policy changes. Historical approved_for_build records foundation work, not current rollout authority.",
         "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md",
         "followup_as_of": "2026-09-29",
-        "followup_status": "14 legacy feedback rows; zero immutable operations, revisions, owner evaluations and corpus cases in fresh aggregate reads. Feedback is stored but no feedback-to-improvement loop is operating. R1\u2013R6/R16 remain enablement blockers; flags were not directly re-attested and were unchanged in the capture rollout.",
+        "followup_status": "14 legacy feedback rows; zero immutable operations, revisions, owner evaluations and corpus cases in fresh aggregate reads. Feedback is stored but no feedback-to-improvement loop is operating. R1–R6/R16 remain enablement blockers; flags were not directly re-attested and were unchanged in the capture rollout.",
         "followup_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
         "priority_as_of": "2026-09-30",
         "product_order": "Deferred until after running-list internal TestFlight and categories/search (TL-KNOW-001).",
@@ -155,7 +155,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "After running-list delivery and categories/search, return to the bounded Private Evaluation decision: repair and verify R1\u2013R6/R16 and regenerate the source-bound owner canary before requesting activation. No flag-on action follows from stored ratings or this priority decision."
+      "next_action": "After running-list delivery and categories/search, return to the bounded Private Evaluation decision: repair and verify R1–R6/R16 and regenerate the source-bound owner canary before requesting activation. No flag-on action follows from stored ratings or this priority decision."
     },
     {
       "id": "TL-TRNS-001",
@@ -285,7 +285,7 @@
       "problem": "Recordings are created in temporary storage and the current app has no durable outbox or retry control after an upload failure.",
       "evidence": {
         "as_of": "2026-09-29",
-        "source": "Exact-file revision-3 Codex review against base 3faf0f2, resolved C1\u2013C6 and follow-up F1\u2013F6, and Claude readiness confirmation. Source inspection and synthetic references, not implementation/device/runtime proof.",
+        "source": "Exact-file revision-3 Codex review against base 3faf0f2, resolved C1–C6 and follow-up F1–F6, and Claude readiness confirmation. Source inspection and synthetic references, not implementation/device/runtime proof.",
         "implementation_observation": "Internal follow-up 1.0.5 (2026092902), app source 7719237, verified VALID / IN_BETA_TESTING in existing Internal QA after exact-source Claude review. Prior backend v31 capture/replay/deletion evidence remains valid for its dated scope; no backend change in this UI follow-up. Physical iPhone acceptance remains pending.",
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
@@ -320,10 +320,10 @@
     },
     {
       "id": "TL-TASK-001",
-      "title": "Running List \u2014 Today, This Week, Later",
+      "title": "Running List — Today, This Week, Later",
       "type": "retention",
       "state": "approved_for_build",
-      "problem": "Throughline extracts task dates, priorities, context and completion state, but the app does not yet present a task inbox, Today/Upcoming/Completed views, reminders, or clear source-note traceability.",
+      "problem": "Tasks from several voice notes do not form one dependable list; repeated wording can collide and the old carry-over section uses inaccurate dates.",
       "evidence": {
         "as_of": "2026-09-30",
         "source": "outside-in product study, current iOS implementation, owner review, and fresh internal TestFlight rollback evidence",
@@ -339,14 +339,14 @@
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike selected Candidate A and approved implementation/internal delivery after feasibility and handoff readiness. D1: undated tasks go to Today.",
         "current_bug": "Unfinished-from-last-night still combines tomorrow_todos without date/completion filtering; text identity can collide. Include correction in this slice.",
-        "current_verification": "docs/evidence/2026-09-30-running-list-feasibility.md",
+        "current_verification": "docs/evidence/2026-09-30-running-list-ready.md",
         "slice": "docs/slices/running-list.md",
-        "tandem_stage": "selected_pending_codex_feasibility_resolution",
+        "tandem_stage": "building",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
-        "handoff_sha256": "57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881",
-        "handoff_asset_manifest_sha256": "bc7fdccaa2bbad07b92f7cb4da0421787e118b6ab79d9880c7ee606b273e43ce",
-        "feasibility_status": "Codex completed the design feasibility review. Mike directed continuation after the safe older-app recommendation; Claude is resolving the remaining handoff details. No running-list implementation or delivery yet.",
-        "display_progress": "Approved; finishing the design check before building",
+        "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
+        "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
+        "feasibility_status": "Claude revision 2 is handoff_ready; Codex re-review passed all RL1–RL7 and verified all 32 assets. Implementation starts from the committed contract; no running-list delivery yet.",
+        "display_progress": "Building",
         "review_pr_status": "Preparing a named draft PR; no merge is authorized."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
@@ -359,8 +359,8 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Claude finishes the selected design instructions; Codex checks the revised files, builds and tests the running list, returns it to Claude for review, then delivers internal TestFlight.",
-      "slice_phase": "selected"
+      "next_action": "Codex implements the reviewed task storage, offline changes and Today/This week/Later screens, then verifies them for Claude review and internal TestFlight.",
+      "slice_phase": "building"
     },
     {
       "id": "TL-KNOW-001",

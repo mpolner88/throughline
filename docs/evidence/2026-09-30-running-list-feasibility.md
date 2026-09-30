@@ -108,3 +108,8 @@ Mike asked for readable project/PR names and simpler updates, restored the Claud
 The actual Throughline Claude Code session was reached and received the request to resolve its handoff findings. The desktop showed Claude reading this review. Claude has the exclusive browser-rendering slot; Codex has not launched a simulator or headless renderer. The remaining design findings and exact revised handoff still require review; neither readiness nor an implementation release is claimed by this continuation.
 
 User-facing project name: **Running List — Today, This Week, Later**. A named draft PR is being prepared; it must identify its already-delivered capture/recording-control prerequisites and remain unmerged. Internal hash-based provenance remains in this technical record.
+
+
+## Revision 2 readiness follow-up
+
+Claude resolved RL1–RL7 and marked revision 2 `handoff_ready` after actual Codex text/image re-review. All 32 final asset entries, including the last corrected source-sheet reference, passed verification. The [readiness receipt](2026-09-30-running-list-ready.md) supersedes the pending findings/connection statements above and records exact source identities. Codex starts the approved build; implementation verification and internal delivery remain future work.

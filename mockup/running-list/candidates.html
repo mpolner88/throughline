@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running list — three candidates · Throughline TL-TASK-001</title>
+<!--
+  Design candidates for TL-TASK-001, the running list. Design-only. Synthetic content. No production code.
+  Gallery:          candidates.html
+  One frame, bare:  candidates.html?only=a-today        (fills the viewport; used for reference screenshots)
+  Dark appearance:  add &theme=dark
+  Frames are listed in FRAMES below. Nothing here is selected until Mike chooses.
+-->
+<style>
+  :root {
+    --blue: #2563EB; --blue-lifted: #3B82F6;
+    --pill-bg: #EFF6FF; --pill-text: #1E3A8C;
+    --bg: #FFFFFF; --ink: #111114; --sec: #6E6E73;
+    --border: rgba(17,17,20,0.14); --page: #F4F4F6; --danger: #C93A3A;
+    --muted-bg: #F2F2F4; --scrim: rgba(0,0,0,0.34);
+  }
+  [data-theme="dark"] {
+    --blue: #3B82F6;
+    --pill-bg: rgba(59,130,246,0.16); --pill-text: #A9C4FF;
+    --bg: #0E0E10; --ink: #F4F4F5; --sec: #9A9AA1;
+    --border: rgba(244,244,245,0.16); --page: #050506; --danger: #E06C6C;
+    --muted-bg: #1C1C1F; --scrim: rgba(0,0,0,0.5);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  body.gallery { padding: 44px 36px 96px; }
+  body.bare { background: var(--bg); overflow: hidden; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sec); }
+  .eyebrow.blue { color: var(--blue); }
+  .masthead { max-width: 900px; margin-bottom: 36px; display: flex; flex-direction: column; gap: 10px; }
+  .masthead h1 { font-size: 32px; font-weight: 500; letter-spacing: -0.01em; }
+  .masthead p { font-size: 15px; line-height: 1.55; color: var(--sec); }
+  .rules { max-width: 900px; margin: 0 0 40px; border: 0.7px solid var(--border); border-radius: 8px; background: var(--bg); padding: 18px 20px; display: grid; gap: 8px; }
+  .rules h2 { font-size: 15px; font-weight: 600; }
+  .rules li { font-size: 13px; line-height: 1.5; color: var(--sec); margin-left: 18px; }
+  .rules li strong { color: var(--ink); font-weight: 500; }
+  .theme-toggle { position: fixed; top: 18px; right: 22px; z-index: 50; font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .cand { margin-bottom: 56px; }
+  .cand-head { max-width: 900px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .cand-head h2 { font-size: 22px; font-weight: 500; }
+  .cand-head p { font-size: 14px; line-height: 1.55; color: var(--sec); }
+  .frames { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .frame { width: 390px; }
+  .anno { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .anno h3 { font-size: 14px; font-weight: 600; }
+  .anno p { font-size: 13px; line-height: 1.5; color: var(--sec); }
+
+  .phone { background: var(--bg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .gallery .phone { width: 390px; height: 844px; border: 1px solid var(--border); border-radius: 44px; }
+  .bare .phone { width: var(--w, 390px); height: var(--h, 844px); }
+  .statusbar { height: 52px; flex: none; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 34px 0; font-size: 15px; font-weight: 600; }
+  .statusbar .right { font-size: 12px; letter-spacing: 2px; }
+  .topbar { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 12px; }
+  .wordmark { font-size: 21px; font-weight: 500; letter-spacing: -0.01em; border-bottom: 3px solid var(--blue);
+    padding-bottom: 3px; line-height: 1.1; }
+  .top-actions { display: flex; align-items: center; gap: 18px; font-size: 15px; }
+  .top-actions .link { color: var(--blue); font-weight: 500; }
+  .gear { font-size: 18px; opacity: 0.85; }
+  .navbar { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 10px; }
+  .navbar .back { color: var(--blue); font-size: 16px; }
+  .navbar .title { font-size: 16px; font-weight: 600; }
+
+  .tabs { flex: none; display: flex; gap: 22px; padding: 4px 24px 0; border-bottom: 0.5px solid var(--border); }
+  .tab { font-size: 15px; padding: 10px 0 11px; color: var(--sec); display: flex; gap: 6px; align-items: baseline; }
+  .tab .n { font-size: 12px; color: var(--sec); font-variant-numeric: tabular-nums; }
+  .tab.on { color: var(--ink); font-weight: 500; box-shadow: inset 0 -2px 0 var(--blue); }
+  .tab .plus { color: var(--blue); font-size: 12px; font-weight: 600; }
+
+  .content { flex: 1; overflow: hidden; padding: 6px 24px 0; display: flex; flex-direction: column; gap: 18px; }
+  .dateblock { display: flex; flex-direction: column; gap: 6px; }
+  .datetext { font-size: 16px; font-weight: 500; }
+  .h-plan { font-size: 28px; font-weight: 500; letter-spacing: -0.01em; }
+  .lede { font-size: 14px; line-height: 1.5; color: var(--sec); }
+  .section { display: flex; flex-direction: column; }
+  .sec-head { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0 2px; }
+  .sec-head .n { font-size: 11px; color: var(--sec); font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
+  .row { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-bottom: 0.5px solid var(--border); }
+  .row:last-child { border-bottom: 0; }
+  .circle { width: 22px; height: 22px; border-radius: 50%; border: 1.8px solid var(--blue); flex: none; margin-top: 1px; }
+  .circle.done { background: var(--blue); border-color: var(--blue); position: relative; }
+  .circle.done::after { content: ""; position: absolute; left: 6.5px; top: 3px; width: 5px; height: 10px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .row .text { font-size: 16px; line-height: 1.35; }
+  .row.done .text { color: var(--sec); text-decoration: line-through; }
+  .row .meta { font-size: 12px; color: var(--sec); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .row .meta .src { text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; }
+  .row .undo { color: var(--blue); font-size: 14px; font-weight: 500; align-self: center; padding: 0 2px; }
+  .row .more { color: var(--sec); font-size: 18px; line-height: 1; align-self: center; letter-spacing: 1px; }
+  .row.new .text::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); margin: 0 7px 2px 0; }
+  .pill { font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 6px; background: var(--muted-bg); color: var(--sec); }
+  .pill.date { background: var(--pill-bg); color: var(--pill-text); }
+  .more-row { font-size: 14px; color: var(--blue); font-weight: 500; padding: 12px 0; display: flex; justify-content: space-between; }
+  .coming { border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); padding: 14px 0; display: flex; justify-content: space-between; align-items: center; }
+  .coming .l { display: flex; flex-direction: column; gap: 4px; }
+  .coming .t { font-size: 15px; font-weight: 500; }
+  .coming .s { font-size: 13px; color: var(--sec); }
+  .coming .chev { color: var(--sec); font-size: 18px; }
+  .note-card { border: 0.7px solid var(--border); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .note-card .title { font-size: 16px; font-weight: 500; }
+  .note-card .s { font-size: 13px; color: var(--sec); line-height: 1.45; }
+  .empty { display: flex; flex-direction: column; gap: 10px; padding-top: 6px; }
+  .empty .t { font-size: 17px; font-weight: 500; }
+  .empty .s { font-size: 14px; color: var(--sec); line-height: 1.5; }
+  .preview-rows .row .text { color: var(--sec); }
+  .preview-rows .circle { border-color: var(--border); }
+  .duration { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .bug { border: 0.7px solid var(--border); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; background: var(--muted-bg); }
+  .bug .line { font-size: 14px; color: var(--sec); }
+  .flag { font-size: 11px; color: var(--danger); font-weight: 600; letter-spacing: 0.04em; }
+  .task-card { display: flex; align-items: flex-start; gap: 10px; border: 0.7px solid var(--border); border-radius: 8px; padding: 12px 11px; }
+  .task-card .circle { width: 20px; height: 20px; border-color: var(--sec); }
+  .task-card .text { font-size: 15px; font-weight: 500; }
+  .task-card .meta { font-size: 12px; color: var(--sec); margin-top: 3px; }
+
+  .tray { flex: none; border-top: 0.5px solid var(--border); background: var(--bg); }
+  .tray-row { display: flex; align-items: center; gap: 10px; padding: 12px 24px; min-height: 48px; }
+  .tray-row .state { flex: 1; font-size: 13px; font-weight: 500; color: var(--sec); line-height: 1.4; }
+  .tray-row .state strong { color: var(--ink); font-weight: 500; }
+  .tray-row .duration { font-size: 13px; color: var(--ink); flex: none; }
+  .spinner { width: 14px; height: 14px; border-radius: 50%; flex: none;
+    border: 2px solid color-mix(in srgb, var(--sec) 30%, transparent); border-top-color: var(--sec); }
+  .recorder { flex: none; padding: 12px 24px 22px; display: flex; flex-direction: column; gap: 9px; background: var(--bg); }
+  .recorder.lined { border-top: 0.5px solid var(--border); }
+  .rec-btn { border-radius: 8px; color: #fff; text-align: center;
+    background: linear-gradient(150deg, var(--blue-lifted), #2563EB 62%);
+    box-shadow: 0 6px 14px rgba(37,99,235,0.16); border: 1px solid rgba(255,255,255,0.22);
+    padding: 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    min-height: 84px; justify-content: center; }
+  .rec-mark { display: flex; gap: 18px; align-items: center; height: 22px; }
+  .rec-mark span { width: 34px; height: 5px; border-radius: 3px; background: #fff; display: block; }
+  .rec-title { font-size: 16px; font-weight: 500; }
+  .foot { font-size: 12px; color: var(--sec); text-align: center; }
+  .offline { font-size: 13px; color: var(--sec); display: flex; gap: 8px; align-items: center; }
+  .offline .ring { width: 10px; height: 10px; border-radius: 50%; border: 1.6px solid var(--sec); flex: none; }
+
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .sheet { position: absolute; left: 10px; right: 10px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .sheet-group { border-radius: 14px; overflow: hidden; background: var(--bg); }
+  .sheet-title { padding: 14px 16px 4px; text-align: center; font-size: 13px; font-weight: 600; color: var(--sec); }
+  .sheet-msg { padding: 0 16px 12px; text-align: center; font-size: 13px; color: var(--sec); border-bottom: 0.5px solid var(--border); line-height: 1.4; }
+  .sheet-btn { padding: 16px; text-align: center; font-size: 17px; color: var(--blue); border-bottom: 0.5px solid var(--border); }
+  .sheet-btn:last-child { border-bottom: 0; }
+  .sheet-btn.cancel { background: var(--bg); border-radius: 14px; font-weight: 600; }
+
+  .ax .row .text { font-size: 24px; }
+  .ax .row .meta { font-size: 17px; }
+  .ax .eyebrow { font-size: 15px; }
+  .ax .datetext { font-size: 22px; }
+  .ax .h-plan { font-size: 34px; }
+  .ax .tab { font-size: 21px; }
+  .ax .tabs { gap: 18px; overflow: hidden; }
+  .ax .circle { width: 30px; height: 30px; }
+  .ax .rec-title { font-size: 22px; }
+  .ax .coming .t { font-size: 22px; }
+  .ax .coming .s { font-size: 18px; }
+  .ax .pill { font-size: 15px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  var Q = new URLSearchParams(location.search);
+  if (Q.get('theme') === 'dark') document.documentElement.dataset.theme = 'dark';
+
+  // ---------- shared pieces ----------
+  function statusbar(air) { return '<div class="statusbar"><span>9:41</span><span class="right">' + (air ? '✈' : '▲▲▲ ᯤ ▮') + '</span></div>'; }
+  function topbar(notesLink) {
+    return '<div class="topbar"><div class="wordmark">throughline</div><div class="top-actions">'
+      + (notesLink ? '<span class="link">notes</span>' : '') + '<span class="gear">⚙</span></div></div>';
+  }
+  var DATE = '<div class="dateblock"><div class="eyebrow">today</div><div class="datetext">Tuesday, September 29</div></div>';
+  function row(t) {
+    var cls = 'row' + (t.done ? ' done' : '') + (t.fresh ? ' new' : '');
+    var meta = (t.marker ? '<span class="pill' + (t.dated ? ' date' : '') + '">' + t.marker + '</span>' : '')
+      + '<span class="src">' + t.src + '</span>';
+    return '<div class="' + cls + '"><div class="circle' + (t.done ? ' done' : '') + '"></div>'
+      + '<div class="body"><div class="text">' + t.text + '</div><div class="meta">' + meta + '</div></div>'
+      + (t.done ? '<div class="undo">Undo</div>' : (t.menu ? '<div class="more">•••</div>' : '')) + '</div>';
+  }
+  function rows(list) { return list.map(row).join(''); }
+  function section(label, count, inner, extra) {
+    return '<div class="section"><div class="sec-head"><div class="eyebrow">' + label + '</div>'
+      + (count != null ? '<div class="n">' + count + '</div>' : '') + '</div>' + inner + (extra || '') + '</div>';
+  }
+  var REC = '<div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Start recording</div></div>';
+  var REC_FIRST = '<div class="rec-btn"><div class="rec-mark"><span></span><span></span></div><div class="rec-title">Record today’s plan</div></div>';
+  function recorder(inner, lined, foot) { return '<div class="recorder' + (lined ? ' lined' : '') + '">' + inner + (foot ? '<div class="foot">' + foot + '</div>' : '') + '</div>'; }
+  var TRAY_STRUCT = '<div class="tray"><div class="tray-row"><span class="spinner"></span><span class="duration">0:36</span>'
+    + '<span class="state"><strong>Saved to your account.</strong> Structuring your note…</span></div></div>';
+
+  // ---------- synthetic tasks ----------
+  var T = {
+    carried:   { text: 'Reply to the tester about the build', src: 'drive home · Mon 6:10 PM', marker: 'from Mon' },
+    bank:      { text: 'Call the bank about the new card', src: 'morning walk · 7:42 AM' },
+    deck:      { text: 'Send Sam the revised deck', src: 'morning walk · 7:42 AM', marker: 'today', dated: true },
+    package:   { text: 'Pick up the package on the way home', src: 'drive in · 8:15 AM' },
+    filters:   { text: 'Buy coffee filters', src: 'drive in · 8:15 AM' },
+    bank2:     { text: 'Call the bank about the new card', src: 'drive in · 8:15 AM' },
+    dentist:   { text: 'Book the dentist', src: 'morning walk · 7:42 AM', marker: 'Thu', dated: true },
+    review:    { text: 'Draft the Sunday review outline', src: 'drive in · 8:15 AM', marker: 'Sun', dated: true },
+    tomorrow:  { text: 'Renew the car registration', src: 'morning walk · 7:42 AM', marker: 'tomorrow', dated: true },
+    garage:    { text: 'Clear out the garage shelves', src: 'Sat walk · 10:05 AM', marker: 'someday' },
+    course:    { text: 'Look into the pottery course', src: 'Sat walk · 10:05 AM' },
+    gift:      { text: 'Think about a gift for Dana', src: 'drive home · Mon 6:10 PM' },
+    trip:      { text: 'Plan the October trip', src: 'drive home · Mon 6:10 PM', marker: 'next week', dated: true },
+    legacy:    { text: 'Email the landlord about the lease', src: 'Aug 21 note', marker: 'earlier note' }
+  };
+  function done(t) { var c = Object.assign({}, t); c.done = true; c.marker = null; return c; }
+  function fresh(t) { var c = Object.assign({}, t); c.fresh = true; return c; }
+  function menu(t) { var c = Object.assign({}, t); c.menu = true; return c; }
+
+  var TODAY_ROWS = [T.carried, T.deck, T.bank, T.package, T.filters];
+  var WEEK_ROWS = [T.tomorrow, T.dentist, T.review];
+  var LATER_ROWS = [T.trip, T.garage, T.course, T.gift];
+  var MOVE_SHEET = '<div class="scrim"></div><div class="sheet"><div class="sheet-group"><div class="sheet-title">Reply to the tester about the build</div>'
+    + '<div class="sheet-msg">From your drive home note, Monday 6:10 PM.</div>'
+    + '<div class="sheet-btn">Move to this week</div><div class="sheet-btn">Move to later</div><div class="sheet-btn">Open the note</div></div>'
+    + '<div class="sheet-btn cancel">Cancel</div></div>';
+
+  // ---------- Candidate A: three tabs ----------
+  function tabsA(active, counts, plus) {
+    var names = ['today', 'this week', 'later'];
+    return '<div class="tabs">' + names.map(function (n, i) {
+      return '<div class="tab' + (i === active ? ' on' : '') + '">' + n + ' <span class="n">' + counts[i] + '</span>'
+        + (plus && plus[i] ? ' <span class="plus">+' + plus[i] + '</span>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  function phoneA(o) {
+    return statusbar(o.air) + topbar(true) + tabsA(o.tab, o.counts || [5, 3, 4], o.plus) + '<div class="content">' + o.body + '</div>'
+      + (o.tray || '') + recorder(o.rec || REC, !o.tray, o.foot);
+  }
+
+  // ---------- Candidate B: one rolling list ----------
+  function phoneB(o) {
+    return statusbar(o.air) + topbar(false) + '<div class="content">' + o.body + '</div>' + (o.tray || '') + recorder(o.rec || REC, !o.tray, o.foot);
+  }
+
+  // ---------- Candidate C: today, then everything ----------
+  function phoneC(o) {
+    var top = o.pushed ? '<div class="navbar"><span class="back">‹ Today</span><span class="title">All tasks</span><span class="gear">⚙</span></div>' : topbar(false);
+    return statusbar(o.air) + top + '<div class="content">' + o.body + '</div>' + (o.tray || '') + recorder(o.rec || REC, !o.tray, o.foot);
+  }
+  var COMING = '<div class="coming"><div class="l"><div class="t">Coming up</div><div class="s">3 this week · 4 later</div></div><div class="chev">›</div></div>';
+
+  // ---------- frames ----------
+  var FRAMES = [
+    // Current, for comparison
+    { cand: 'now', id: 'now-home', title: 'Now · Home as built', note: 'A "most important" list on top of note cards. The block below it flattens every note’s tomorrow_todos with no date or completion check, so it can say “last night” about this morning and never clears.',
+      html: statusbar() + topbar(false) + '<div class="content">' + DATE + '<div class="h-plan">Today’s plan</div>'
+        + '<div class="bug"><div class="eyebrow">unfinished from last night</div><div class="line">Renew the car registration</div><div class="line">Send Sam the revised deck</div><div class="flag">SAID THIS MORNING · NEVER CLEARS</div></div>'
+        + '<div class="section" style="gap:8px"><div class="eyebrow">most important</div>'
+        + '<div class="task-card"><div class="circle"></div><div><div class="text">Send Sam the revised deck</div><div class="meta">morning walk · 7:42 AM</div></div></div>'
+        + '<div class="task-card"><div class="circle"></div><div><div class="text">Call the bank about the new card</div><div class="meta">morning walk · 7:42 AM</div></div></div></div>'
+        + '<div class="note-card"><div class="eyebrow">freeform · 8:15 AM</div><div class="title">drive in</div><div class="s">Pick up the package, buy coffee filters, call the bank…</div></div>'
+        + '</div>' + recorder(REC, true) },
+
+    // A
+    { cand: 'a', id: 'a-today', title: 'A1 · Today tab, a second note arriving', note: 'Tabs carry counts; “+2” marks where the note’s tasks landed. “from Mon” means it was on Monday’s list and is still open. Notes live behind “notes” in the top bar.',
+      html: phoneA({ tab: 0, plus: [2, 0, 0], body: DATE + section('open', null, rows([T.carried, T.deck, T.bank, fresh(T.package), fresh(T.filters)])), tray: TRAY_STRUCT }) },
+    { cand: 'a', id: 'a-week', title: 'A2 · This week tab', note: 'Dated tasks sort by day. “tomorrow” stays here until tomorrow, then moves to today by itself.',
+      html: phoneA({ tab: 1, body: '<div class="dateblock"><div class="eyebrow">through sunday</div><div class="datetext">Wednesday to Sunday</div></div>' + section('open', null, rows(WEEK_ROWS)) }) },
+    { cand: 'a', id: 'a-done', title: 'A3 · Clearing, with undo', note: 'Tap the circle: the row strikes through and drops into “done today” with Undo. Done rows leave at midnight and stay in their note.',
+      html: phoneA({ tab: 0, counts: [3, 3, 4], body: DATE + section('open', null, rows([T.deck, T.package, T.filters])) + section('done today', 2, rows([done(T.carried), done(T.bank)])) }) },
+    { cand: 'a', id: 'a-empty', title: 'A4 · Empty today', note: 'Each tab has its own plain empty line. No illustration.',
+      html: phoneA({ tab: 0, counts: [0, 3, 4], body: DATE + '<div class="empty"><div class="t">Nothing for today yet.</div><div class="s">Say what’s on your mind. Tasks you mention land here, in this week, or later.</div></div>', rec: REC_FIRST }) },
+    { cand: 'a', id: 'a-ax', title: 'A5 · Largest text', note: 'Tab labels shorten to their counts’ width and scroll horizontally; rows wrap; meta stays on its own line.', ax: true,
+      html: phoneA({ tab: 0, body: DATE + section('open', null, rows([T.carried, T.deck])) }) },
+
+    // B
+    { cand: 'b', id: 'b-top', title: 'B1 · One rolling list, a second note arriving', note: 'No tabs. Today, This week and Later are sections of one scroll, in that order. New rows from the note just saved carry a blue dot until the list is next opened.',
+      html: phoneB({ body: DATE + section('today', 5, rows([T.carried, T.deck, T.bank, fresh(T.package), fresh(T.filters)])) + section('this week', 3, rows([T.tomorrow])), tray: TRAY_STRUCT }) },
+    { cand: 'b', id: 'b-scrolled', title: 'B2 · Scrolled: later, done, and notes', note: 'Later shows three and folds the rest. Done today collects at the foot. The note cards follow, as they do on Home today.',
+      html: phoneB({ body: section('this week', 3, rows(WEEK_ROWS)) + section('later', 4, rows(LATER_ROWS.slice(0, 2)), '<div class="more-row"><span>2 more</span><span>Show all</span></div>') + section('done today', 1, rows([done(T.bank)])) }) },
+    { cand: 'b', id: 'b-move', title: 'B3 · Row actions without a gesture', note: 'Every row has a visible ••• button: move to another section or open the source note. The same menu opens on long press.',
+      html: phoneB({ body: DATE + section('today', 5, rows([menu(T.carried), T.deck, T.bank])) }) + MOVE_SHEET },
+    { cand: 'b', id: 'b-empty', title: 'B4 · First use', note: 'The accepted empty Home stays as it is today until the first tasks arrive.',
+      html: phoneB({ body: DATE + '<div class="h-plan">Say today’s to-dos.</div><div class="lede">Speak naturally. Throughline turns your voice note into a clear, organized task list.</div>'
+        + '<div class="section preview-rows"><div class="sec-head"><div class="eyebrow">what you’ll get</div></div>' + rows([{ text: 'Ship the small thing first', src: 'from your voice' }, { text: 'Walk again tonight', src: 'from your voice' }]) + '</div>', rec: REC_FIRST }) },
+    { cand: 'b', id: 'b-ax', title: 'B5 · Largest text', note: 'One scroll means nothing to reflow but the rows themselves.', ax: true,
+      html: phoneB({ body: DATE + section('today', 5, rows([T.carried, T.deck])) }) },
+
+    // C
+    { cand: 'c', id: 'c-home', title: 'C1 · Today on Home, the rest one level down', note: 'Home answers “what matters now” with today’s list only. A single “Coming up” row counts the rest and opens it. Recent notes stay below, as today.',
+      html: phoneC({ body: DATE + section('today', 5, rows([T.carried, T.deck, T.bank, fresh(T.package), fresh(T.filters)])) + COMING, tray: TRAY_STRUCT }) },
+    { cand: 'c', id: 'c-all', title: 'C2 · All tasks', note: 'The whole list, grouped by day for this week, then later, then earlier notes that were never sorted. Back returns to Home.',
+      html: phoneC({ pushed: true, body: section('this week', 3, rows(WEEK_ROWS)) + section('later', 4, rows(LATER_ROWS)) + section('earlier notes', 1, rows([T.legacy])) }) },
+    { cand: 'c', id: 'c-done', title: 'C3 · Clearing, with undo', note: 'Same done group and Undo as the other candidates.',
+      html: phoneC({ body: DATE + section('today', 3, rows([T.deck, T.package, T.filters])) + section('done today', 2, rows([done(T.carried), done(T.bank)])) + COMING }) },
+    { cand: 'c', id: 'c-empty', title: 'C4 · Nothing today, work later in the week', note: 'An empty today is not an empty list: the line says so and points to what is coming.',
+      html: phoneC({ body: DATE + '<div class="empty"><div class="t">Nothing for today.</div><div class="s">3 tasks are coming up this week.</div></div>' + COMING }) },
+    { cand: 'c', id: 'c-ax', title: 'C5 · Largest text', note: 'Coming up wraps to two lines and keeps its chevron.', ax: true,
+      html: phoneC({ body: DATE + section('today', 5, rows([T.carried])) + COMING }) },
+
+    // Shared
+    { cand: 'shared', id: 's-repeat', title: 'Same words, two notes', note: 'Saying a task twice keeps two rows, each tied to its own note. Completing one leaves the other open. Nothing merges by wording.',
+      html: phoneB({ body: DATE + section('today', 2, rows([T.bank, T.bank2])) }) },
+    { cand: 'shared', id: 's-offline', title: 'Offline', note: 'The list shows what is stored on the phone. Checking a task off works and saves when the connection returns. No alarm colour.', air: true,
+      html: phoneB({ air: true, body: '<div class="offline"><span class="ring"></span>Offline. Changes save when you’re connected.</div>' + DATE + section('today', 5, rows([T.carried, done(T.deck), T.bank])) }) }
+  ];
+
+  function frame(f) { return '<div class="phone' + (f.ax ? ' ax' : '') + '">' + f.html + '</div>'; }
+
+  var app = document.getElementById('app');
+  var only = Q.get('only');
+  if (only) {
+    document.body.className = 'bare';
+    document.documentElement.style.setProperty('--w', (parseInt(Q.get('w'), 10) || 390) + 'px');
+    document.documentElement.style.setProperty('--h', (parseInt(Q.get('h'), 10) || 844) + 'px');
+    var f = FRAMES.filter(function (x) { return x.id === only; })[0];
+    app.innerHTML = f ? frame(f) : '<p style="padding:24px">Unknown frame: ' + only + '</p>';
+    return;
+  }
+  var HEADS = {
+    now: ['Now', 'What Home does today, drawn with synthetic content.'],
+    a: ['Candidate A · Three tabs', 'Refreshes the September 9 direction. Home becomes today, this week and later tabs; the app opens on today; notes move behind a top-bar link. Strongest sorting, one extra tap to see the week.'],
+    b: ['Candidate B · One rolling list', 'The same three time groups as sections of one scroll, followed by the note cards. Nothing hides behind a tab; the list simply rolls forward. Closest to the Home hierarchy that exists now.'],
+    c: ['Candidate C · Today, then everything', 'Home shows only today’s tasks and a one-line summary of what is coming. The full list is one tap deeper. Calmest Home; the week is least visible.'],
+    shared: ['Shared by all three', 'Behavior that does not change between candidates.']
+  };
+  document.body.className = 'gallery';
+  var html = '<button class="theme-toggle" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme===\'dark\'?\'\':\'dark\'">Light / Dark</button>'
+    + '<header class="masthead"><div class="eyebrow blue">TL-TASK-001 · running list · three candidates · historical: Mike selected A on 2026-09-29 · design-only · synthetic content</div>'
+    + '<p style="font-size:13px;color:var(--sec);max-width:900px;margin-bottom:8px">Kept as the comparison record. The rules below were superseded by the selected handoff (docs/handoffs/2026-09-29-home-running-list.md): tasks with no date go to today, nothing infers “someday”, and moves persist.</p>'
+    + '<h1>Running list: every task you say, in one place</h1>'
+    + '<p>Three ways to show one list of tasks gathered from all your voice notes. Each keeps the capture tray and the full-width recorder exactly as they ship now, removes the “unfinished from last night” block, and links every task back to the note it came from.</p></header>'
+    + '<section class="rules"><h2>List rules shared by every candidate</h2><ul>'
+    + '<li><strong>A new note adds tasks; it never replaces the list.</strong> Completed stays completed.</li>'
+    + '<li><strong>Where a task goes:</strong> a date you said puts it on that day; “today” or “tonight” puts it in today; “this week” or a weekday puts it in this week; “someday”, “next week” or a later date puts it in later.</li>'
+    + '<li><strong>Tasks with no time said</strong> go to today on the day you said them. Open question for Mike: or to later, as the September 9 design did.</li>'
+    + '<li><strong>Open tasks stay put.</strong> A task still open tomorrow stays in today with “from Mon”-style age. Nothing moves to later just because it is old; you move it.</li>'
+    + '<li><strong>Repeated words are separate tasks.</strong> Each occurrence keeps its own note and its own checkbox.</li>'
+    + '<li><strong>Done:</strong> tap the circle, see it in “done today” with Undo; it leaves at midnight and stays in its note.</li>'
+    + '<li><strong>Notes from before this update</strong> never show as “unfinished”. Their open to-dos appear once under “earlier notes”.</li>'
+    + '</ul></section>';
+  ['now', 'a', 'b', 'c', 'shared'].forEach(function (k) {
+    html += '<section class="cand"><div class="cand-head"><h2>' + HEADS[k][0] + '</h2><p>' + HEADS[k][1] + '</p></div><div class="frames">'
+      + FRAMES.filter(function (f) { return f.cand === k; }).map(function (f) {
+        return '<div class="frame" id="' + f.id + '">' + frame(f) + '<div class="anno"><h3>' + f.title + '</h3><p>' + f.note + '</p></div></div>';
+      }).join('') + '</div></section>';
+  });
+  app.innerHTML = html;
+})();
+</script>
+</body>
+</html>

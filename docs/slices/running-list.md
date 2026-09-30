@@ -1,19 +1,19 @@
 # Running List — Today, This Week, Later
 
-**Progress:** Approved; finishing the design check before building.
-**What you will get:** One reliable task list with Today, This week and Later; separate tasks stay separate, and each links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Claude resolves the remaining design details; Codex builds and tests; Claude reviews the implementation; Codex delivers internal TestFlight.
-**Review PR:** Being prepared under this project name. It will include the already-delivered capture and recording-control changes needed by the list, and will stay unmerged.
+**Progress:** Building.
+**What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
+**Next:** Codex builds and tests; Claude reviews the app; Codex delivers internal TestFlight.
+**Review PR:** Being prepared under this project name. It includes the already-delivered capture and recording-control prerequisites and stays unmerged.
 
 ## Technical record
 
-**Verified baseline:** 2026-09-30; local source `3d5c3acebb9f447b3bf5086283ed11715ff5ac6b`, last verified internal delivery 1.0.5 (2026092902), app source `77192374e5f1de339047904c7ee0825e9863b96f`. [Feasibility and exact hashes](../evidence/2026-09-30-running-list-feasibility.md); [last delivery receipt](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md). No fresh Apple/backend check is claimed.
+**Verified baseline:** 2026-09-30, local source `f6983ed01cd41355cc950dd9bd1226cb9da85294`; last verified internal delivery 1.0.5 (2026092902). [Exact readiness receipt](../evidence/2026-09-30-running-list-ready.md); [last delivery](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md).
 **Backlog state:** `approved_for_build`
-**Slice phase:** `selected`
-**Tandem stage:** `selected_pending_codex_feasibility_resolution`
-**Current:** Mike selected Candidate A, decided undated tasks go to Today, and approved build entry/internal TestFlight before subsequent product work. Codex completed initial feasibility; no feature implementation has started.
-**Evidence:** [selected handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881`; all 23 asset entries verified; [findings and F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** Resolve the remaining handoff findings with Claude. Mike directed continuation after the recommended safe older-app behavior was explained. Claude marks its revised handoff ready; Codex rechecks the bytes and builds under the already-granted approval. Actual Claude implementation review precedes internal delivery.
+**Slice phase:** `building`
+**Tandem stage:** `building`
+**Current:** Mike selected Candidate A, decided undated tasks go to Today, and approved internal delivery. Claude's revision 2 is `handoff_ready`; Codex begins implementation from the integrated design contract.
+**Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
+**Next gate:** Codex engineering checks and isolated simulator build; actual Claude implementation review before internal-only delivery.
 **Authority:** Approved running-list implementation and internal-only TestFlight to existing Internal QA. Preserve shipped capture, recorder and AI controls. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or public release. Categories/search follow delivery; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward
@@ -24,9 +24,7 @@ Reference files at PR snapshot: `docs/superpowers/specs/2026-09-09-throughline-r
 
 ## Claude feasibility resolution
 
-Candidate A is already selected and its supplied handoff/assets passed integrity checks. Resolve RL2–RL6 in the [Codex receipt](../evidence/2026-09-30-running-list-feasibility.md), incorporate the safe older-app behavior documented in the September 30 continuation, and explicitly defer first-use recorder copy to shipped AI state. Return revised hashes and mark the contract ready only after the affected findings are resolved. Preserve the three tabs, existing tokens, capture tray and selected scope; a new round of candidate selection is not requested.
-
-The unresolved issues are task identity through editing, manual move/Undo and earlier-group semantics, Sunday-to-Monday placement, truthful undated-timeframe copy, and consistent midnight/accessibility behavior. Preserve the existing note detail presentation; any necessary editor interaction change needs Claude's explicit design disposition. Only one party may use simulator or browser rendering at a time.
+Claude's revision 2 resolves the selected editor, Sunday placement, persistent moves, earlier-group Undo, truthful timeframe copy, midnight/accessibility and shipped recorder/Notes lifecycle behavior. Codex's [readiness receipt](../evidence/2026-09-30-running-list-ready.md) closes RL1–RL7 at exact hashes. Claude's rendering slot is released; Codex coordinates subsequent simulator work and returns the actual implementation for Claude review. The selected handoff is frozen; production implementation does not edit its bytes.
 
 ## Codex engineering sequence
 

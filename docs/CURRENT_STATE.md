@@ -2,21 +2,20 @@
 
 ## What is happening now
 
-**Verified September 30:** [Running List — Today, This Week, Later](slices/running-list.md) is approved. Codex has finished the initial design check, and the restored Claude session is resolving the remaining design details. Codex then builds and tests, Claude reviews the result, and Codex puts it in internal TestFlight. A named review PR is being prepared. [Review and continuation record](evidence/2026-09-30-running-list-feasibility.md#september-30-continuation).
+**Verified September 30:** [Running List — Today, This Week, Later](slices/running-list.md) is ready to build and Codex is beginning implementation. Claude resolved the design findings; Codex checked the final instructions and all reference assets. Claude reviews the working app before internal TestFlight. A named draft PR is being prepared. [Exact review and readiness evidence](evidence/2026-09-30-running-list-ready.md).
 
 **Next improvements:** Automatic categories and search across notes/tasks, then Private Evaluation. The recorder, capture tray and AI controls stay as shipped. No running-list build has been delivered yet; the last verified internal build is described below.
 
 The dated technical records below preserve the evidence behind this summary; earlier pending-decision and connection-failure statements are historical where the continuation above supersedes them.
 
-## September 30 running-list build selection and feasibility
+## September 30 running-list design ready; implementation beginning
 
-**Verified:** 2026-09-30. **Scope:** Mike's selection/priority decisions, local checkout/source and exact Claude handoff/assets; no new production or Apple verification. [Review, findings and next gate](evidence/2026-09-30-running-list-feasibility.md).
+**Verified:** 2026-09-30. **Scope:** local source/design review and asset integrity. [Codex readiness receipt](evidence/2026-09-30-running-list-ready.md), [Claude corrections](evidence/2026-09-30-claude-running-list-resolution.md).
 
-- **Selected:** Candidate A running list; D1 undated tasks go to Today. Mike approved build entry and internal TestFlight before subsequent product work. The exact reviewed handoff is `57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881`; its 23 asset entries pass checksums.
-- **Local:** `throughline-local`, `codex/capture-tray`, inspected source `3d5c3acebb9f447b3bf5086283ed11715ff5ac6b`. Claude's handoff/assets/prototypes remain uncommitted and unchanged by Codex. Initial feasibility found material old-client write and editor-identity conflicts plus bounded calendar/Undo/copy/accessibility clarifications. Implementation has not started; Claude has not marked this revision ready.
-- **Next:** Mike resolves RL1's legacy-write compatibility choice; Claude resolves the handoff findings, then Codex builds, verifies and returns exact-source simulator captures for Claude implementation review before internal delivery. Build approval itself is already granted. The desktop connection timed out and the Claude CLI was signed out; delivery of the review to the active Claude session is not yet confirmed.
-- **Order:** Running-list internal TestFlight → automatic categories and search across notes/tasks (`TL-KNOW-001`) → Private Evaluation (`TL-EVAL-001`). Evaluation remains deferred. The shipped capture tray, recorder and AI controls stay unchanged.
-- **Release baseline:** the September 29 delivery below remains the latest verified internal build; this review does not create a new build, deployment or product-outcome claim. Earlier statements that running-list build entry remains undecided are superseded by Mike's September 30 approval.
+- **Selected and reviewed:** Candidate A; undated tasks go to Today. Claude marked revision 2 `handoff_ready` after Codex resolved RL1–RL7 and checked the final 32 manifest entries. The receipt contains exact identities.
+- **Current work:** Codex begins occurrence-level task storage/API, durable offline changes and the three-tab Home. The selected editor keeps task identities; older apps keep safe recording/read and unambiguous completion, with unsafe writes rejected atomically.
+- **Next:** Focused engineering verification, isolated app build and simulator matrix, then actual Claude implementation review and internal-only delivery. Mike's build approval is already granted.
+- **Release boundary:** No running-list build or task backend is delivered yet. The September 29 delivery below remains the latest verified internal build. Categories/search follow this delivery, then Private Evaluation.
 
 ## September 29 one-tap AI controls internal delivery
 
