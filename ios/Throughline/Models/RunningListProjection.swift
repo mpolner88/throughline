@@ -38,6 +38,22 @@ enum TaskDates {
         let calendar = calendar(zone)
         return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))!
     }
+    /// This week excludes today; Saturday has only Sunday left in its range.
+    static func thisWeekHeader(now: Date, zone: TimeZone, locale: Locale = .current) -> String {
+        let calendar = calendar(zone)
+        switch calendar.component(.weekday, from: now) {
+        case 1: return "Sunday"
+        case 7: return "Sun"
+        default:
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: now)!
+            let formatter = DateFormatter()
+            formatter.calendar = calendar
+            formatter.timeZone = zone
+            formatter.locale = locale
+            formatter.setLocalizedDateFormatFromTemplate("EEE")
+            return "\(formatter.string(from: tomorrow)) to Sun"
+        }
+    }
     static func sunday(now: Date, zone: TimeZone) -> String {
         let calendar = calendar(zone)
         let days = (8 - calendar.component(.weekday, from: now)) % 7

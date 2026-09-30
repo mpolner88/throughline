@@ -191,7 +191,7 @@ export function taskResult(result: any) {
     version_conflict: [409, "The note changed. Refresh and try again."],
     snapshot_changed: [409, "Your task list changed. Refresh it again."],
     idempotency_conflict: [409, "This change could not be retried safely."],
-    update_required: [409, "Update Throughline to change these tasks safely."],
+    update_required: [409, "Update Throughline to change to-dos in this note. Nothing was saved."],
     task_deleted: [410, "This task was removed."],
     not_found: [404, "The note or task is no longer available."],
     account_deletion_pending: [423, "Account deletion is in progress."],

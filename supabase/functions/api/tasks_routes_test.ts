@@ -209,6 +209,12 @@ Deno.test("legacy completion is gated atomically with its original server snapsh
         }),
       );
       assert(response.status === 409, "Unsafe selector refused");
+      const body = await response.json();
+      assert(
+        body.error_code === "update_required" &&
+          body.error === "Update Throughline to change to-dos in this note. Nothing was saved.",
+        "Old apps receive the selected refusal copy and stable code",
+      );
       assert(
         calls[0].p_operation === "legacy" &&
           calls[0].p_payload.kind === "completion",

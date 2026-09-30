@@ -10,11 +10,11 @@ enum RunningListPreview {
     static var isActive: Bool { !scenario.isEmpty }
     static var currentDate: Date? {
         guard isActive else { return nil }
-        let day = scenario == "morning" ? "2026-09-30" : ["sunday", "sunday-week"].contains(scenario) ? "2026-10-04" : scenario == "moved" ? "2026-10-05" : "2026-09-29"
+        let day = scenario == "morning" ? "2026-09-30" : ["sunday", "sunday-week"].contains(scenario) ? "2026-10-04" : scenario == "moved" ? "2026-10-05" : scenario == "saturday-week" ? "2026-10-03" : "2026-09-29"
         return TaskDates.instant(day + "T13:00:00-07:00")!
     }
     static var selectedTab: RunningListTab {
-        if ["week", "sunday-week", "moved"].contains(scenario) { return .thisWeek }
+        if ["week", "sunday-week", "saturday-week", "moved"].contains(scenario) { return .thisWeek }
         if ["later", "earlier", "sunday", "empty-later"].contains(scenario) { return .later }
         return .today
     }

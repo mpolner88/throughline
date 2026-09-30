@@ -50,6 +50,18 @@ struct RunningListView: View {
             tabs
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if coordinator.signInRequired {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sign in again to save your changes.").font(.footnote).foregroundStyle(.secondary)
+                            Button("Sign in", action: onSignIn).font(.subheadline).frame(minHeight: 44)
+                        }
+                    } else if let message = localError ?? coordinator.errorMessage {
+                        Text(message).font(.footnote).foregroundStyle(.secondary)
+                            .accessibilityIdentifier("running-list-message")
+                    } else if coordinator.isOffline {
+                        Text("Offline. Changes save when you're connected.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                     header
                     if isFirstUse && selectedTab == .today && openRows.isEmpty {
                         emptyContent
@@ -67,18 +79,6 @@ struct RunningListView: View {
                         if selectedTab == .later && !earlierRows.isEmpty {
                             earlierSection
                         }
-                    }
-                    if coordinator.signInRequired {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Sign in again to save your changes.").font(.footnote).foregroundStyle(.secondary)
-                            Button("Sign in", action: onSignIn).font(.subheadline).frame(minHeight: 44)
-                        }
-                    } else if let message = localError ?? coordinator.errorMessage {
-                        Text(message).font(.footnote).foregroundStyle(.secondary)
-                            .accessibilityIdentifier("running-list-message")
-                    } else if coordinator.isOffline {
-                        Text("Offline. Changes save when you're connected.")
-                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -128,12 +128,13 @@ struct RunningListView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 20) {
                 ForEach(RunningListTab.allCases, id: \.self) { tab in
+                    let openCount = visible(snapshot[tab].open).count
                     Button {
                         selectedTab = tab
                     } label: {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text(tab.title).font(.subheadline.weight(selectedTab == tab ? .medium : .regular))
-                            Text(String(visible(snapshot[tab].open).count)).font(.caption).monospacedDigit()
+                            Text(String(openCount)).font(.caption).monospacedDigit()
                             if let count = additions[tab], count > 0 {
                                 Text("+\(count)").font(.caption.weight(.semibold)).foregroundStyle(Theme.blue)
                             }
@@ -147,7 +148,7 @@ struct RunningListView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(tab.title), \(visible(snapshot[tab].open).count) tasks" + ((additions[tab] ?? 0) > 0 ? ", \(additions[tab]!) new" : ""))
+                    .accessibilityLabel("\(tab.title.capitalized), \(openCount) open \(openCount == 1 ? "task" : "tasks")" + ((additions[tab] ?? 0) > 0 ? ", \(additions[tab]!) new" : ""))
                     .accessibilityAddTraits(selectedTab == tab ? [.isSelected] : [])
                     .accessibilityIdentifier("running-tab-\(tab.rawValue)")
                 }
@@ -166,8 +167,7 @@ struct RunningListView: View {
         switch selectedTab {
         case .today: return displayNow.formatted(.dateTime.weekday(.wide).month(.wide).day())
         case .thisWeek:
-            var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .current
-            return calendar.component(.weekday, from: displayNow) == 1 ? "Sunday" : "\(displayNow.formatted(.dateTime.weekday(.abbreviated))) to Sun"
+            return TaskDates.thisWeekHeader(now: displayNow, zone: .current)
         case .later: return "Later"
         }
     }

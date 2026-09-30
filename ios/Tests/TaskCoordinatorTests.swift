@@ -124,6 +124,20 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
     }
     @MainActor static func projection() throws {
         let la = TimeZone(identifier: "America/Los_Angeles")!
+        let english = Locale(identifier: "en_US_POSIX")
+        for (day, expected) in [("2026-09-28", "Tue to Sun"), ("2026-09-29", "Wed to Sun"),
+                                ("2026-09-30", "Thu to Sun"), ("2026-10-01", "Fri to Sun"),
+                                ("2026-10-02", "Sat to Sun"), ("2026-10-03", "Sun"),
+                                ("2026-10-04", "Sunday")] {
+            expect(TaskDates.thisWeekHeader(now: fixtureDate(day + "T19:00:00Z"), zone: la, locale: english) == expected,
+                   "Week header excludes today: \(day)")
+        }
+        let zoneBoundary = fixtureDate("2026-10-04T06:30:00Z")
+        expect(TaskDates.thisWeekHeader(now: zoneBoundary, zone: la, locale: english) == "Sun", "Header uses local Saturday")
+        expect(TaskDates.thisWeekHeader(now: zoneBoundary, zone: TimeZone(identifier: "Asia/Tokyo")!, locale: english) == "Sunday", "Header follows viewer's Sunday")
+        for instant in ["2026-03-08T07:30:00Z", "2026-11-01T06:30:00Z"] {
+            expect(TaskDates.thisWeekHeader(now: fixtureDate(instant), zone: la, locale: english) == "Sun", "Saturday range before DST boundary")
+        }
         let sunday = fixtureDate("2026-10-04T19:00:00Z")
         let mondayTask = fixtureTask(date: "2026-10-05")
         let sundayList = RunningListProjection.project(occurrences: [mondayTask], now: sunday, timeZone: la)
