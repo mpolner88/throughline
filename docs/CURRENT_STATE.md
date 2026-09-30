@@ -1,5 +1,13 @@
 # Throughline current state
 
+## What is happening now
+
+**Verified September 30:** [Running List — Today, This Week, Later](slices/running-list.md) is approved. Codex has finished the initial design check, and the restored Claude session is resolving the remaining design details. Codex then builds and tests, Claude reviews the result, and Codex puts it in internal TestFlight. A named review PR is being prepared. [Review and continuation record](evidence/2026-09-30-running-list-feasibility.md#september-30-continuation).
+
+**Next improvements:** Automatic categories and search across notes/tasks, then Private Evaluation. The recorder, capture tray and AI controls stay as shipped. No running-list build has been delivered yet; the last verified internal build is described below.
+
+The dated technical records below preserve the evidence behind this summary; earlier pending-decision and connection-failure statements are historical where the continuation above supersedes them.
+
 ## September 30 running-list build selection and feasibility
 
 **Verified:** 2026-09-30. **Scope:** Mike's selection/priority decisions, local checkout/source and exact Claude handoff/assets; no new production or Apple verification. [Review, findings and next gate](evidence/2026-09-30-running-list-feasibility.md).

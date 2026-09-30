@@ -2,6 +2,24 @@
 
 This workflow governs bounded product slices. It complements the canonical-source map in `AGENTS.md`; it does not create a second source of backlog or metrics truth.
 
+## How we describe work to Mike
+
+Use a readable project name and a linked pull request as the main reference, for example **Running List — Today, This Week, Later**. Keep one project in the existing backlog and feature brief; do not create another tracker just to call it an epic.
+
+Updates should say **what changed, what happens next, and whether Mike needs to decide anything**. Use these plain progress labels: **Design → Ready to build → Building → Review and testing → In TestFlight → Accepted**. Say exactly what is waiting when work cannot advance. Internal state fields below remain available for automation; they are not the language of routine updates.
+
+| Technical term | Plain meaning |
+| --- | --- |
+| Project / epic | The named improvement we are working toward. |
+| Feature brief / slice | The agreed scope for that improvement. |
+| Design handoff | Claude's selected design and behavior instructions for Codex. |
+| Pull request (PR) | The review page showing the proposed code and document changes. Opening it does not merge or release the app. |
+| Commit | A saved checkpoint of the files, with a readable title. Git also gives it a permanent technical ID. |
+| Branch | The line of work containing those checkpoints. |
+| Check before continuing / gate | A specific unresolved decision or verification step. Name it plainly. |
+
+Keep full Git hashes, file checksums, backlog IDs and review finding codes in technical evidence. Link that evidence when useful; do not lead user updates with long IDs. Do not rename or rewrite old commits to make their IDs readable. A PR needs a descriptive title, the intended user behavior, current progress and actual test/release results. Keep **prepared**, **reviewed**, **in TestFlight** and **publicly released** distinct.
+
 ## Required Slice Record
 
 Each slice records:

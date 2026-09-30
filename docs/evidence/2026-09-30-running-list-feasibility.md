@@ -99,3 +99,12 @@ The exact proposed measure and coverage requirements are now defined in [product
 - Not run: feature tests, migration replay, isolated app build, simulator rendering, device tests, hosted task canary or TestFlight upload. There is no implementation to verify yet.
 - Claude delivery is not yet confirmed: two desktop-control requests timed out, and the local Claude CLI reports signed out. No message or actual Claude response is claimed. This file is the repository-native return packet; handoff bytes remain unchanged until Claude resolves the findings. No rendering lock was acquired and Codex started no rendering.
 - Next action: Mike resolves RL1; the active Claude session reads this packet, resolves its findings and returns revised hashes/readiness. Build approval itself is already granted.
+
+
+## September 30 continuation
+
+Mike asked for readable project/PR names and simpler updates, restored the Claude session and directed continuation after the recommended safe older-app behavior. Codex is proceeding with that recommendation; the initial RL1-pending statements above describe the earlier review stage. Ordinary additions/renames from a versionless old app may require the update as well as ambiguous duplicate edits. No unsafe request is partially applied.
+
+The actual Throughline Claude Code session was reached and received the request to resolve its handoff findings. The desktop showed Claude reading this review. Claude has the exclusive browser-rendering slot; Codex has not launched a simulator or headless renderer. The remaining design findings and exact revised handoff still require review; neither readiness nor an implementation release is claimed by this continuation.
+
+User-facing project name: **Running List — Today, This Week, Later**. A named draft PR is being prepared; it must identify its already-delivered capture/recording-control prerequisites and remain unmerged. Internal hash-based provenance remains in this technical record.

@@ -20,7 +20,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
     "handoff_sha256": "57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881",
-    "next_gate": "Resolve Codex feasibility findings (including the Mike-owned legacy-write compatibility decision); Claude marks the revised handoff ready, then Codex builds and verifies it for Claude implementation review and internal-only TestFlight delivery.",
+    "next_gate": "Claude resolves the remaining handoff findings; Codex rechecks the selected design, then builds and verifies it for Claude implementation review and internal TestFlight. Mike has already approved build entry.",
     "review": "docs/evidence/2026-09-30-running-list-feasibility.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
@@ -320,7 +320,7 @@
     },
     {
       "id": "TL-TASK-001",
-      "title": "Turn extracted todos into a dependable task home",
+      "title": "Running List \u2014 Today, This Week, Later",
       "type": "retention",
       "state": "approved_for_build",
       "problem": "Throughline extracts task dates, priorities, context and completion state, but the app does not yet present a task inbox, Today/Upcoming/Completed views, reminders, or clear source-note traceability.",
@@ -345,7 +345,9 @@
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
         "handoff_sha256": "57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881",
         "handoff_asset_manifest_sha256": "bc7fdccaa2bbad07b92f7cb4da0421787e118b6ab79d9880c7ee606b273e43ce",
-        "feasibility_status": "Codex reviewed List rules 1\u201312 and F1\u2013F7; RL1 awaits Mike and RL2\u2013RL6 await Claude. No feature implementation or new delivery yet."
+        "feasibility_status": "Codex completed the design feasibility review. Mike directed continuation after the safe older-app recommendation; Claude is resolving the remaining handoff details. No running-list implementation or delivery yet.",
+        "display_progress": "Approved; finishing the design check before building",
+        "review_pr_status": "Preparing a named draft PR; no merge is authorized."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -357,7 +359,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Resolve RL1 legacy-write compatibility with Mike and RL2\u2013RL6 handoff findings with Claude, then reverify the revised handoff and build under the existing approval.",
+      "next_action": "Claude finishes the selected design instructions; Codex checks the revised files, builds and tests the running list, returns it to Claude for review, then delivers internal TestFlight.",
       "slice_phase": "selected"
     },
     {

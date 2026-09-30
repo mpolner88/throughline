@@ -2,6 +2,16 @@
 
 This is the canonical interoperability workflow for product-design work performed with Claude Code and implementation/release work performed with Codex. It uses repository artifacts as the shared contract; it does not create a second source of product, design, backlog, metric, or runtime truth.
 
+## The simple working loop
+
+1. **Mike picks the improvement and design.**
+2. **Claude designs it.** Codex checks that its behavior can be built reliably.
+3. **Codex builds and tests it.** Claude reviews the result against the design.
+4. **Codex puts the reviewed build in internal TestFlight.**
+5. **Mike tries it.** Feedback goes to Claude for design changes or Codex for implementation fixes.
+
+Use the project name and PR link in conversation. Keep hashes and internal codes in the linked review records. Each update needs a clear next action, not a new layer of process names. See [plain-language reporting](WORKFLOW.md#how-we-describe-work-to-mike). The detailed records below preserve technical checks and ownership without requiring Mike to navigate them for routine status.
+
 ## Daily working agreement
 
 Reaffirmed by Mike on **2026-09-28**: Claude owns front-end design; Codex owns production implementation, complex engineering, reliability, and voice-note quality; each reviews the other's work. This is a role and process decision, not selection of a new product feature. The [return audit](evidence/2026-09-28-return-audit.md) records the current adoption gaps.
