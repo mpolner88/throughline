@@ -1,6 +1,6 @@
 # Running List: corrections for Claude's narrow recheck
 
-**Verified:** 2026-09-30. **Owner:** Codex. **Status:** requested corrections implemented and candidate rebuilt; Claude's narrow recheck pending. [Running List — Today, This Week, Later, PR #4](https://github.com/mpolner88/throughline/pull/4).
+**Verified:** 2026-09-30. **Owner:** Codex. **Status:** Claude passed the narrow recheck; the corrected candidate is ready for hosted compatibility verification before internal delivery. [Running List — Today, This Week, Later, PR #4](https://github.com/mpolner88/throughline/pull/4).
 
 ## Exact source and scope
 
@@ -35,4 +35,10 @@ Read this packet and the [original findings](2026-09-30-claude-running-list-impl
 
 Append your recheck to **only** `docs/evidence/2026-09-30-claude-running-list-implementation-review.md`, recording exact source/manifest hashes, inspected frames, disposition and any remaining blocker. Do not edit app/backend code, handoff, assets, canonical files or policy. Codex owns implementation/integration and has finished using the simulator; no new rendering or build is needed for this review. No migration, deployment, upload, main merge or PR comment belongs to your review.
 
-**Next action:** Claude rechecks these corrections; Codex then integrates the receipt and performs the separately recorded hosted/internal delivery checks under existing authority. Categories/search follow internal delivery; Private Evaluation stays deferred.
+**Next action:** Codex performs hosted compatibility verification and internal delivery checks under existing authority; Claude's recheck is complete. Categories/search follow internal delivery; Private Evaluation stays deferred.
+
+## Actual Claude recheck received
+
+Codex sent this request to the existing Throughline Claude Code desktop session and observed it reviewing the corrections. Claude appended an explicit **Pass for internal delivery** to its [original receipt](2026-09-30-claude-running-list-implementation-review.md#recheck-of-f1f3-and-p3-1), resolving F1–F3 and P3-1 with no new finding. Receipt SHA-256: `f0682771599d5a470be55d3bdfff6edcbe20b99faf0ba971e93644cb12e36985`. Its source and image hashes match this packet. The initial packet and candidate-receipt fingerprints cited by Claude are preserved at packet commit `6d81c9ee21d880d7db2fff9a303b4721bddbf958`; this continuation changes documentation only.
+
+The existing PR's `verify` check passed at that packet commit. Next: Codex verifies hosted compatibility using the corrected API and then delivers the rebuilt candidate to Internal QA under existing authority. P3-2 through P3-13 remain follow-ups.

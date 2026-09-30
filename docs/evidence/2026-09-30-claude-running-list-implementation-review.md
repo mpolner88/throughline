@@ -215,3 +215,62 @@ Claude recommends fixing P3-1 in the same pass because it is one line. The rest 
 1. **Codex** fixes F1–F3 (and preferably P3-1), then re-captures `week-light-390x844`, `moved-light-390x844` and `offline-light-390x844`, plus a Saturday this-week frame if convenient. Codex then rebuilds the candidate from the corrected source.
 2. **Claude** checks those diffs and frames, then appends the result to this receipt. No other re-review is required.
 3. **Codex** then runs the hosted compatibility checks and internal-only delivery under its standing authority. The device checks above happen on that internal build. Categories and search follow; Private Evaluation remains deferred.
+
+## Recheck of F1–F3 and P3-1
+
+Verified **2026-09-30**. Reviewer: Claude Code (Claude Opus 5.5). This is the narrow recheck requested in [Codex's recheck packet](2026-09-30-running-list-recheck.md). It covers F1–F3 and P3-1 only. P3-2 through P3-13 remain follow-ups. Claude did not render, build, run tests or use the simulator, and edited nothing but this appended section.
+
+### Exact revisions
+
+| Item | Identity |
+| --- | --- |
+| Checkout | `throughline-local`, branch `codex/running-list`, HEAD `6d81c9ee21d880d7db2fff9a303b4721bddbf958` (packet commit), clean tree |
+| Corrected app and API source | `a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068`. `ios/` and `supabase/` at HEAD are identical to it. |
+| Diff inspected | `f86d04a..a59d68d -- ios supabase`, identical in app and API content to `7d41c6a..a59d68d`. Six files changed: `RunningListView.swift`, `RunningListProjection.swift`, `RunningListPreview.swift` (a DEBUG Saturday scenario only), `TaskCoordinatorTests.swift`, `api/tasks.ts` and `api/tasks_routes_test.ts`. Their SHA-256s match `source.json`. |
+| This receipt before this section | `4468fa525a32442e90e007aa674797e7544a4a8608af3e0c151c6afcbef645b4`, committed byte-identical in `a59d68d` |
+| Handoff and design assets | Unchanged: `df675d53…` and `237c804b…` |
+| Recheck image manifest | `b0ecfd10808ef784265b29335c5ddeece205fd1a21995c635edd03d576e68de4`; four of four entries verify in their own directory. EXIF holds only color space and pixel size. |
+| Recheck packet | `e216e6b696fdea352204757ff0892240984ca39217d4030b23e2ceafed51c062` |
+| Rebuilt candidate receipt | `b0149127271ff57600a68b85f214d0840e739ad24c1e1a8b21efbb64df6f59fd`. It reports IPA SHA-256 `feadf35259f1357c40c4b9993c3744e4f923051aa41a140f790d90ec0aab8a71` from the corrected source. Claude did not inspect the package. |
+
+### Frames inspected
+
+Each fresh frame was compared with its handoff reference and the original native frame, at 390 × 844 in light appearance.
+
+| Frame | Result |
+| --- | --- |
+| `week-light-390x844` | On Tuesday the range reads "Wed to Sun", matching the reference. Rows and markers are unchanged. |
+| `moved-light-390x844` | On Monday the range reads "Tue to Sun". "moved Tue" is unchanged. |
+| `saturday-week-light-390x844` | On Saturday the range reads "Sun". The Sunday-dated task shows "tomorrow", which is correct because Sunday is still this week on Saturday. |
+| `offline-light-390x844` | "Offline. Changes save when you're connected." is the first line under the tabs, above the date header, as in the reference. The tray keeps its own offline row. |
+
+### Dispositions
+
+- **F1: resolved.**
+  - `TaskDates.thisWeekHeader` (`RunningListProjection.swift`) returns "Sunday" on Sunday and "Sun" on Saturday. Every other day it returns tomorrow's short weekday followed by " to Sun", using calendar day-adding in the viewer's zone.
+  - The view calls it for the this-week header.
+  - The added Swift checks cover all seven weekdays, a zone boundary where Los Angeles is Saturday while Tokyo is Sunday, and Saturdays next to both daylight-saving changes.
+- **F2: resolved.** The sign-in, message and offline status block moved unchanged to the first position in the list's scroll content, keeping its priority order, copy and style. A refused-change note now appears in the same visible place.
+- **F3: resolved.**
+  - `update_required` now returns exactly "Update Throughline to change to-dos in this note. Nothing was saved." with HTTP 409 and the stable error code.
+  - The route test asserts the exact text.
+  - The new app still maps this code to its own copy, so only old apps see this text.
+- **P3-1: resolved.** Tab labels read, for example, "Today, 5 open tasks" or "This Week, 1 open task", with ", {n} new" appended while `+n` shows. The capital W in "This Week" changes nothing VoiceOver speaks.
+
+No new finding. Nothing outside F1–F3, P3-1, their tests and the DEBUG scenario changed.
+
+### Checks not rerun by Claude
+
+Codex reports these results; Claude did not run them:
+- the Swift running-list groups and the 111 Deno tests;
+- the Debug and Release builds, and the signed export.
+
+The original review's unverified device, time-zone, offline and hosted checks still apply.
+
+### Verdict after recheck
+
+**Pass for internal delivery.** Claude's design and interaction review has no remaining blocker at app and API source `a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068`. This pass covers internal delivery of a candidate built from that source, with an API bundle rebuilt from the same source.
+
+Before rollout, Codex runs the hosted preflight it recorded, including the content-free count of evaluation-linked recordings. The expected count is zero. A nonzero count reopens P3-8 before hosted compatibility counts as clear.
+
+This pass does not replace Mike's product acceptance, the device checks on the internal build, or any public release decision.
