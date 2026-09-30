@@ -42,6 +42,11 @@ final class AppState: ObservableObject {
         notes = []
 
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--throughline-preview-onboarding") {
+            session = nil
+            route = .onboarding
+            return
+        }
         if ProcessInfo.processInfo.arguments.contains("--throughline-preview-home") {
             if ProcessInfo.processInfo.arguments.contains("--throughline-preview-populated-home") {
                 notes = [.sample]

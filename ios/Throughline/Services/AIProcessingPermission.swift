@@ -69,26 +69,3 @@ private final class PendingAIRequest: @unchecked Sendable {
         }
     }
 }
-
-// A sheet may finish after an account switch or after the app leaves the foreground.
-// Consume a deliberate acceptance once, and only in the context that requested it.
-struct AIProcessingContinuation {
-    enum Action: Equatable { case recording, demoSave }
-    private(set) var action: Action?
-    private var generation: UUID?
-    private var accepted = false
-
-    mutating func begin(_ action: Action, generation: UUID) {
-        self.action = action
-        self.generation = generation
-        accepted = false
-    }
-
-    mutating func agree() { accepted = true }
-
-    mutating func consume(generation: UUID, isActive: Bool) -> Action? {
-        defer { self = Self() }
-        guard accepted, self.generation == generation, isActive else { return nil }
-        return action
-    }
-}

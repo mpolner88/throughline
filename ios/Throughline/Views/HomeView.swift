@@ -22,8 +22,7 @@ struct HomeView: View {
     @State private var showingCaptureSignIn = false
     @State private var microphoneDenied = false
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showingAIProcessingConsent = false
-    @State private var aiContinuation = AIProcessingContinuation()
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var isVisible = false
     @State private var uploadError: String?
     @State private var feedbackStatus: [String: FeedbackStatus] = [:]
@@ -141,14 +140,6 @@ struct HomeView: View {
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showingCaptureSignIn = false } } }
             }
         }
-        .sheet(isPresented: $showingAIProcessingConsent, onDismiss: {
-            if aiContinuation.consume(generation: appState.accountGeneration,
-                                      isActive: isVisible && scenePhase == .active) == .recording {
-                startRecording()
-            }
-        }) {
-            AIProcessingConsentView(onAgree: { aiContinuation.agree() })
-        }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= maxRecordingSeconds {
                 stopAndUploadRecording()
@@ -248,6 +239,9 @@ struct HomeView: View {
                 recorderNotice(title: captureQueue.insufficientSpace ? "Not enough space to record" : "Couldn't start recording",
                     support: captureQueue.insufficientSpace ? "Free up storage on this phone, then try again. Your notes are unaffected." : "Tap to try again. Your notes are unaffected.", actionTitle: nil) { startRecording() }
             } else {
+                if !hasAIProcessingPermission && !isShowingRecording {
+                    AIProcessingDisclosure().padding(.horizontal, 24)
+                }
                 RecordButton(
                     isRecording: isShowingRecording,
                     isBusy: captureQueue.isPreparing || captureQueue.isFinishing,
@@ -289,14 +283,12 @@ struct HomeView: View {
     }
 
     private func handleRecordTap() {
-        guard !captureQueue.isPreparing, !captureQueue.isFinishing else { return }
+        guard isVisible, scenePhase == .active,
+              !captureQueue.isPreparing, !captureQueue.isFinishing else { return }
         if recorder.isRecording { stopAndUploadRecording() }
         else {
-            guard AIProcessingPermission.shared.isAllowed else {
-                aiContinuation.begin(.recording, generation: appState.accountGeneration)
-                showingAIProcessingConsent = true
-                return
-            }
+            // The button explicitly reads Agree and record while permission is off.
+            if !hasAIProcessingPermission { AIProcessingPermission.shared.setAllowed(true) }
             startRecording()
         }
     }
@@ -319,6 +311,7 @@ struct HomeView: View {
         if captureQueue.isFinishing { return "Finishing recording…" }
         if captureQueue.isPreparing { return "Preparing microphone…" }
         if isShowingRecording { return "Stop recording" }
+        if !hasAIProcessingPermission { return "Agree and record" }
         return isHomeEmpty ? "Record today’s plan" : "Start recording"
     }
     private var recorderButtonDetail: String? {

@@ -70,64 +70,19 @@ struct SecondaryButton: View {
     }
 }
 
-struct AIProcessingConsentView: View {
-    enum Context { case recording, demoSave }
-    var context: Context = .recording
-    var onAgree: () -> Void = {}
-    @Environment(\.dismiss) private var dismiss
-
+// Shown beside the first recorder action, never as a separate acceptance screen.
+struct AIProcessingDisclosure: View {
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Your voice, made useful")
-                        .font(.throughlineHeading)
-                        .accessibilityAddTraits(.isHeader)
-                    Text("Throughline sends your recordings and text to Groq to create transcripts, notes and tasks. Supabase hosts and stores them.")
-                        .fixedSize(horizontal: false, vertical: true)
-                    DisclosureGroup("How it works") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("AI stays on for this device until you turn it off in Settings. Turning it off stops new submissions; it doesn’t recall anything already sent. Saving a demo note sends its transcript again.")
-                            Link("Privacy policy", destination: AIProcessingPermission.privacyURL)
-                                .frame(minHeight: 44)
-                        }
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 8)
-                    }
-                }
-                .padding(24)
-            }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    AIProcessingPermission.shared.setAllowed(true)
-                    onAgree()
-                    dismiss()
-                } label: {
-                    Text(context == .demoSave ? "Agree and save note" : "Agree and record")
-                        .font(.body.weight(.medium))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .foregroundStyle(.white)
-                        .background(Theme.blue, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-                .background(.background)
-            }
-            .navigationTitle("Voice notes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") { dismiss() }
-                }
-            }
+        VStack(spacing: 4) {
+            Text("Groq processes your audio and text into notes and tasks. Supabase hosts them.")
+                .fixedSize(horizontal: false, vertical: true)
+            Link("How it works", destination: AIProcessingPermission.privacyURL)
+                .frame(minHeight: 44)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -204,7 +159,7 @@ struct AccountSettingsView: View {
                 } footer: {
                     Text(hasAIProcessingPermission
                          ? "Groq processes your recordings and text. Supabase hosts your notes."
-                         : "AI is off. Turn it on to record and save new voice notes using Groq and Supabase. Saved notes stay available.")
+                         : "AI is off. New recording and processing are paused; saved notes stay readable.")
                 }
 
                 Section("agent") {

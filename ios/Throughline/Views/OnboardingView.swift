@@ -8,8 +8,7 @@ struct OnboardingView: View {
     private let onSignInComplete: (() -> Void)?
     @StateObject private var recorder = AudioRecorder()
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showingAIProcessingConsent = false
-    @State private var aiContinuation = AIProcessingContinuation()
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var isVisible = false
     @State private var step: Int
     @State private var capturedNote: ThroughlineNote?
@@ -82,15 +81,6 @@ struct OnboardingView: View {
         }
         .onAppear { isVisible = true; signInGeneration = appState.accountGeneration }
         .onDisappear { isVisible = false }
-        .sheet(isPresented: $showingAIProcessingConsent, onDismiss: {
-            let action = aiContinuation.consume(generation: appState.accountGeneration,
-                                                isActive: isVisible && scenePhase == .active)
-            if action == .recording { startRecording() }
-            else if action == .demoSave, appState.isSignedIn { finishOnboarding() }
-        }) {
-            AIProcessingConsentView(context: aiContinuation.action == .demoSave ? .demoSave : .recording,
-                                    onAgree: { aiContinuation.agree() })
-        }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= 30 {
                 stopAndUploadRecording()
@@ -148,45 +138,55 @@ struct OnboardingView: View {
     }
 
     private var recordScreen: some View {
-        VStack(spacing: 28) {
-            VStack(alignment: .leading, spacing: 12) {
-                Eyebrow(text: "30-second demo")
-                Text("Talk through today\nor the week.")
-                    .font(.throughlineHeading)
-                Text("Say your priorities, errands, and follow-ups naturally.")
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(4)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 28) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Eyebrow(text: "30-second demo")
+                        Text("Talk through today\nor the week.")
+                            .font(.throughlineHeading)
+                        Text("Say your priorities, errands, and follow-ups naturally.")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
+                    Spacer()
 
-            VStack(spacing: 14) {
-                OnboardingRecordButton(phase: recordButtonPhase) {
-                    handleRecordTap()
+                    VStack(spacing: 14) {
+                        if !hasAIProcessingPermission && !recorder.isRecording {
+                            AIProcessingDisclosure()
+                        }
+                        OnboardingRecordButton(phase: recordButtonPhase,
+                                               idleTitle: hasAIProcessingPermission ? "Start demo recording" : "Agree and record") {
+                            handleRecordTap()
+                        }
+                        .disabled(isUploading || isFinishingRecording || isPreparingRecording)
+
+                        Text("\(recorder.elapsedText) / 0:30")
+                            .font(.system(size: 36, weight: .regular, design: .monospaced))
+                            .monospacedDigit()
+
+                        Text(recordingStatusText)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+
+                        if let uploadError {
+                            Text(uploadError)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+
+                    Spacer()
                 }
-                .disabled(isUploading || isFinishingRecording || isPreparingRecording)
-
-                Text("\(recorder.elapsedText) / 0:30")
-                    .font(.system(size: 36, weight: .regular, design: .monospaced))
-                    .monospacedDigit()
-
-                Text(recordingStatusText)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-
-                if let uploadError {
-                    Text(uploadError)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                }
+                .padding(24)
+                .frame(minHeight: geometry.size.height)
             }
-
-            Spacer()
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .padding(24)
     }
 
     @ViewBuilder
@@ -291,7 +291,13 @@ struct OnboardingView: View {
                     if let authError {
                         AuthMessage(text: authError, tone: .error)
                     }
-                    PrimaryButton(title: isSavingDemoNote ? "saving" : (capturedNote == nil ? "continue" : "save demo note")) {
+                    if capturedNote != nil && !hasAIProcessingPermission {
+                        AIProcessingDisclosure()
+                    }
+                    PrimaryButton(title: isSavingDemoNote ? "saving" : (capturedNote == nil ? "continue" : hasAIProcessingPermission ? "save demo note" : "Agree and save note")) {
+                        if capturedNote != nil && !hasAIProcessingPermission {
+                            AIProcessingPermission.shared.setAllowed(true)
+                        }
                         finishOnboarding()
                     }
                     .disabled(isSavingDemoNote)
@@ -439,14 +445,13 @@ struct OnboardingView: View {
     }
 
     private func handleRecordTap() {
+        guard isVisible, scenePhase == .active, step == 1,
+              !isUploading, !isFinishingRecording, !isPreparingRecording else { return }
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
-            guard AIProcessingPermission.shared.isAllowed else {
-                aiContinuation.begin(.recording, generation: appState.accountGeneration)
-                showingAIProcessingConsent = true
-                return
-            }
+            // This affirmative action is the first recording tap itself.
+            if !hasAIProcessingPermission { AIProcessingPermission.shared.setAllowed(true) }
             startRecording()
         }
     }
@@ -609,8 +614,6 @@ struct OnboardingView: View {
                 // Keep the demo on this screen; never present it as an account save.
                 authError = nil
                 authNotice = "Your demo is still here. Turn on AI voice notes to save it to your account."
-                aiContinuation.begin(.demoSave, generation: appState.accountGeneration)
-                showingAIProcessingConsent = true
             } catch {
                 guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 authError = error.localizedDescription
@@ -1275,6 +1278,7 @@ private enum OnboardingRecordButtonPhase: Equatable {
 
 private struct OnboardingRecordButton: View {
     var phase: OnboardingRecordButtonPhase
+    var idleTitle: String = "Start demo recording"
     let action: () -> Void
 
     @State private var morphProgress: CGFloat = 0
@@ -1330,7 +1334,7 @@ private struct OnboardingRecordButton: View {
             return "stop recording"
         }
 
-        return "Start demo recording"
+        return idleTitle
     }
 
     private func syncAnimation(with phase: OnboardingRecordButtonPhase, animated: Bool) {
