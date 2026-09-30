@@ -732,3 +732,14 @@ Codex implements and verifies the bounded adjustment, then delivers the next bui
 **Candidate evidence:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-candidate.md).
 
 **Delivery evidence for the one-tap follow-up:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), exact app source `7719237`, verified in existing Internal QA after Claude resolved A1. Running-list implementation and evaluation activation remain separate.
+
+
+## 2026-09-30 — Build Candidate A running list, then categories/search, then Private Evaluation
+
+**Decision:** Mike selected Candidate A's Today / This week / Later running list and decided D1: tasks with no time said go to Today on the day they were said. Mike approved build entry and internal TestFlight delivery before any subsequent product work. Codex first reviews List rules 1–12 and F1–F7; Claude resolves the findings and marks its handoff ready. After implementation and engineering checks, Claude reviews exact-source simulator evidence before delivery to the existing Internal QA group. Build entry does not need another approval once those gates pass.
+
+**Next priority:** Categories and search (`TL-KNOW-001`) follow that internal delivery. Categories should be assigned automatically from what was said; search should find both notes and tasks. Private Evaluation (`TL-EVAL-001`) follows categories/search and remains deferred, with no activation or learning-loop work in this slice. This selects the subsequent direction and order, not an unreviewed design or provider/data-use change.
+
+**Boundaries:** Preserve the capture tray, recorder and shipped AI controls. Use occurrence identity, no merging by task text, no age-driven movement and no extraction prompt/schema change for undated someday/next-week language. Preserve older clients' compatibility subject to resolution of the explicitly documented missing-identity conflict. No main merge, PR comments, public App Store submission, policy edit, provider/model change or Private Evaluation work is authorized.
+
+**Evidence and open feasibility decisions:** [Codex feasibility review](docs/evidence/2026-09-30-running-list-feasibility.md) identifies exact source `3d5c3acebb9f447b3bf5086283ed11715ff5ac6b`, handoff SHA-256 `57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881`, and the verified asset manifest. RL1 (safe limits on old-client task writes) awaits Mike's explicit disposition; it is not decided by this entry. Claude owns resolution of the handoff's remaining identity/editor, calendar, move/Undo, copy and accessibility findings.

@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "updated_at": "2026-09-29",
-  "ordering": "Mike selected capture recovery (TL-CAP-001) before the running list (TL-TASK-001) on 2026-09-28; other portfolio positions are preserved. Dependencies name enabling relationships but do not automatically require a dependency to be closed. Array position never authorizes work or waives a selection, design, policy, provider, pricing, limit, onboarding, or release gate.",
+  "updated_at": "2026-09-30",
+  "ordering": "Mike's September 30 order: deliver Candidate A running list (TL-TASK-001) to internal TestFlight first; categories and search (TL-KNOW-001) next; Private Evaluation (TL-EVAL-001) after that. Delivered capture recovery is preserved. Other portfolio positions remain historical and array position never authorizes work or waives a design, provider, policy, pricing, limit, onboarding or public-release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
     "build_entry_owner": "Mike",
@@ -9,18 +9,19 @@
     "next_action_rule": "Each item names one bounded next action or decision and the authority required for it."
   },
   "next_portfolio_decision": {
-    "as_of": "2026-09-29",
+    "as_of": "2026-09-30",
     "owner": "Mike",
     "status": "selected",
-    "question": "Capture recovery is in owner testing; Mike requests simpler AI controls and the running list next.",
+    "question": "Candidate A and D1 are selected and running-list build entry is approved; categories/search follow internal delivery, then Private Evaluation.",
     "selected_order": [
-      "TL-CAP-001",
-      "TL-TASK-001"
+      "TL-TASK-001",
+      "TL-KNOW-001",
+      "TL-EVAL-001"
     ],
-    "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
-    "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-    "next_gate": "Mike tests build 2026092902 and the capture recovery checklist. Claude running-list prototype/handoff remains separate; Codex feasibility and Mike build entry precede implementation. Main merge/public release remain separate.",
-    "review": "docs/evidence/2026-09-29-capture-handoff-ready.md",
+    "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
+    "handoff_sha256": "57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881",
+    "next_gate": "Resolve Codex feasibility findings (including the Mike-owned legacy-write compatibility decision); Claude marks the revised handoff ready, then Codex builds and verifies it for Claude implementation review and internal-only TestFlight delivery.",
+    "review": "docs/evidence/2026-09-30-running-list-feasibility.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
   "states": [
@@ -140,7 +141,10 @@
         "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md",
         "followup_as_of": "2026-09-29",
         "followup_status": "14 legacy feedback rows; zero immutable operations, revisions, owner evaluations and corpus cases in fresh aggregate reads. Feedback is stored but no feedback-to-improvement loop is operating. R1\u2013R6/R16 remain enablement blockers; flags were not directly re-attested and were unchanged in the capture rollout.",
-        "followup_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md"
+        "followup_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
+        "priority_as_of": "2026-09-30",
+        "product_order": "Deferred until after running-list internal TestFlight and categories/search (TL-KNOW-001).",
+        "priority_verification": "docs/evidence/2026-09-30-running-list-feasibility.md"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Independent predictions and immutable lineage will make quality, reliability, latency, cost, canary, and rollback gates auditable.",
@@ -151,7 +155,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "When prioritized after the running-list work, repair and verify R1\u2013R6/R16 and regenerate the source-bound owner canary before requesting activation. No flag-on action follows from stored legacy ratings."
+      "next_action": "After running-list delivery and categories/search, return to the bounded Private Evaluation decision: repair and verify R1\u2013R6/R16 and regenerate the source-bound owner canary before requesting activation. No flag-on action follows from stored ratings or this priority decision."
     },
     {
       "id": "TL-TRNS-001",
@@ -318,61 +322,68 @@
       "id": "TL-TASK-001",
       "title": "Turn extracted todos into a dependable task home",
       "type": "retention",
-      "state": "ready_for_mock",
+      "state": "approved_for_build",
       "problem": "Throughline extracts task dates, priorities, context and completion state, but the app does not yet present a task inbox, Today/Upcoming/Completed views, reminders, or clear source-note traceability.",
       "evidence": {
-        "as_of": "2026-09-29",
+        "as_of": "2026-09-30",
         "source": "outside-in product study, current iOS implementation, owner review, and fresh internal TestFlight rollback evidence",
         "market_pattern": "Successful task products organize work by time and status; voice-workflow users ask for dated tasks that route into daily systems.",
         "sample_size_warning": "The rejected implementation and its rollback were available to one internal tester; internal use is not a public-product outcome and does not establish lift.",
-        "implementation_selection": "On 2026-08-26 Mike selected and design-approved the presentation-first Home slice. On 2026-08-28 owner review rejected that presentation and selected restoration of the preceding Home UI while preserving backend, evaluation, and privacy work. No later Home candidate is approved for build.",
+        "implementation_selection": "The August Home design was rolled back. On September 30 Mike selected the new Candidate A and approved its bounded running-list build; the old PR remains a reference only.",
         "implementation_delivery": "The selected slice reached internal build 2026082601. On 2026-08-28 the source and internal canary were rolled back through build 2026082801, which Apple processed to VALID and which was freshly verified in the one-tester Internal QA group.",
         "verification": "docs/evidence/2026-08-28-home-ui-rollback.md",
         "reconciliation_as_of": "2026-09-28",
-        "product_order": "Mike selected the running list after capture recovery; PR #2 is a deferred implementation source, not a compatible replacement for the August foundation.",
+        "product_order": "Running-list internal TestFlight first; categories/search next; Private Evaluation after.",
         "reconciliation_verification": "docs/evidence/2026-09-28-reconciliation-plan.md",
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
-        "current_request": "Mike requests running list next after initial capture TestFlight feedback. Today/This week/Later is the prior design starting point; refresh its handoff for the capture base and occurrence identity before implementation.",
+        "current_request": "Mike selected Candidate A and approved implementation/internal delivery after feasibility and handoff readiness. D1: undated tasks go to Today.",
         "current_bug": "Unfinished-from-last-night still combines tomorrow_todos without date/completion filtering; text identity can collide. Include correction in this slice.",
-        "current_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
+        "current_verification": "docs/evidence/2026-09-30-running-list-feasibility.md",
         "slice": "docs/slices/running-list.md",
-        "tandem_stage": "design_brief"
+        "tandem_stage": "selected_pending_codex_feasibility_resolution",
+        "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
+        "handoff_sha256": "57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881",
+        "handoff_asset_manifest_sha256": "bc7fdccaa2bbad07b92f7cb4da0421787e118b6ab79d9880c7ee606b273e43ce",
+        "feasibility_status": "Codex reviewed List rules 1\u201312 and F1\u2013F7; RL1 awaits Mike and RL2\u2013RL6 await Claude. No feature implementation or new delivery yet."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
-      "primary_metric": "new activated users who revisit or complete an extracted task within 7 days",
-      "guardrail": "task extraction correction rate and reminder opt-out rate",
+      "primary_metric": "seven-day extracted-task value as defined in product/metrics.md; unavailable until occurrence validation and coverage are verified",
+      "guardrail": "no capture loss, duplicated/lost task occurrences, cross-owner writes, stale resurrection, invented dates or text-based merging; track correction rate separately",
       "approval_required": true,
-      "authority": "Mike requested the running list next on September 29. Prepare the updated design and engineering contract in the established Claude-design/Codex-build workflow; preserve capture recovery. No wholesale PR #2 import, GitHub review/comment or main merge is authorized.",
+      "authority": "Mike selected Candidate A, decided undated tasks go to Today, and approved build entry/internal TestFlight on September 30. Feasibility resolution, Claude handoff readiness and exact-source implementation review precede delivery. Preserve capture and AI controls; no extraction change, wholesale PR #2 import, PR comment, main merge, policy/provider/model change, Private Evaluation or public App Store action.",
       "dependencies": [
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Claude refreshes the prior running-list design against the delivered capture tray using docs/slices/running-list.md; Codex reviews occurrence identity, date semantics and compatibility before build. Claude access needs restored login.",
-      "slice_phase": "candidate"
+      "next_action": "Resolve RL1 legacy-write compatibility with Mike and RL2\u2013RL6 handoff findings with Claude, then reverify the revised handoff and build under the existing approval.",
+      "slice_phase": "selected"
     },
     {
       "id": "TL-KNOW-001",
-      "title": "Expose the voice knowledge layer",
+      "title": "Categories and search across notes and tasks",
       "type": "retention",
       "state": "collecting_evidence",
-      "problem": "Throughline extracts tags, people and projects, but the iOS surface is chronological and does not expose library search, entity pages, related notes or backlinks.",
+      "problem": "People need automatic categories grounded in what they said and a search that finds both notes and tasks; the current chronological library does not provide that combined retrieval.",
       "evidence": {
-        "as_of": "2026-08-07",
+        "as_of": "2026-09-30",
         "source": "outside-in product study and current iOS implementation",
-        "market_pattern": "Obsidian and Reflect establish search, structured properties and links as the durable knowledge-system layer."
+        "market_pattern": "Obsidian and Reflect establish search, structured properties and links as the durable knowledge-system layer.",
+        "priority_decision": "Mike: categories assigned automatically from what was said; search finds both notes and tasks; after running-list internal TestFlight and before Private Evaluation.",
+        "decision": "decision-log.md",
+        "verification": "docs/evidence/2026-09-30-running-list-feasibility.md"
       },
       "funnel_step": "note saved -> note retrieved -> note reused",
       "hypothesis": "Search and entity-based retrieval will make old voice memories useful after the day they were captured.",
       "primary_metric": "activated users who retrieve and open a note older than 7 days",
       "guardrail": "search abandonment rate and manual metadata correction rate",
       "approval_required": true,
-      "authority": "Mike approval is required for product/design direction before implementation.",
+      "authority": "Mike selected this direction and priority after running-list internal TestFlight on September 30. Claude design and the bounded engineering contract precede build entry; no implementation or extraction/provider change is included in the current running-list slice.",
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Gather direct retrieval jobs from the first activated users, then mock Library search and one entity page before choosing backlinks or graph UI."
+      "next_action": "After running-list internal TestFlight delivery, Claude prepares categories and search designs: automatic categories from what was said, and search over both notes and tasks. Return the bounded contract for review before implementation."
     },
     {
       "id": "TL-AGENT-001",

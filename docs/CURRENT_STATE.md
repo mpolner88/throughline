@@ -1,5 +1,15 @@
 # Throughline current state
 
+## September 30 running-list build selection and feasibility
+
+**Verified:** 2026-09-30. **Scope:** Mike's selection/priority decisions, local checkout/source and exact Claude handoff/assets; no new production or Apple verification. [Review, findings and next gate](evidence/2026-09-30-running-list-feasibility.md).
+
+- **Selected:** Candidate A running list; D1 undated tasks go to Today. Mike approved build entry and internal TestFlight before subsequent product work. The exact reviewed handoff is `57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881`; its 23 asset entries pass checksums.
+- **Local:** `throughline-local`, `codex/capture-tray`, inspected source `3d5c3acebb9f447b3bf5086283ed11715ff5ac6b`. Claude's handoff/assets/prototypes remain uncommitted and unchanged by Codex. Initial feasibility found material old-client write and editor-identity conflicts plus bounded calendar/Undo/copy/accessibility clarifications. Implementation has not started; Claude has not marked this revision ready.
+- **Next:** Mike resolves RL1's legacy-write compatibility choice; Claude resolves the handoff findings, then Codex builds, verifies and returns exact-source simulator captures for Claude implementation review before internal delivery. Build approval itself is already granted. The desktop connection timed out and the Claude CLI was signed out; delivery of the review to the active Claude session is not yet confirmed.
+- **Order:** Running-list internal TestFlight → automatic categories and search across notes/tasks (`TL-KNOW-001`) → Private Evaluation (`TL-EVAL-001`). Evaluation remains deferred. The shipped capture tray, recorder and AI controls stay unchanged.
+- **Release baseline:** the September 29 delivery below remains the latest verified internal build; this review does not create a new build, deployment or product-outcome claim. Earlier statements that running-list build entry remains undecided are superseded by Mike's September 30 approval.
+
 ## September 29 one-tap AI controls internal delivery
 
 **Verified:** 2026-09-29. **Scope:** reviewed app source, isolated signed package, Apple processing and existing Internal QA availability. [Delivery receipt](releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), [candidate](releases/2026-09-29-ios-1.0.5-2026092902-candidate.md), [Claude review](evidence/2026-09-29-claude-ai-controls-review.md).
