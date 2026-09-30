@@ -346,10 +346,11 @@
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
         "feasibility_status": "Selected design and occurrence contract resolved; implementation and local engineering checks passed. Native visual verification and actual Claude implementation review precede delivery.",
-        "display_progress": "Built; finishing verification for Claude review",
+        "display_progress": "Built; awaiting Claude implementation review",
         "review_pr_status": "Draft PR #4 is open; no merge is authorized.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
-        "implementation_candidate": "docs/releases/2026-09-30-ios-1.0.5-2026093001-candidate.md"
+        "implementation_candidate": "docs/releases/2026-09-30-ios-1.0.5-2026093001-candidate.md",
+        "implementation_review_request": "docs/evidence/2026-09-30-running-list-review-request.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -361,7 +362,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Codex finishes native visual verification for Claude implementation review, resolves findings, then verifies the task backend and delivers the internal-only candidate to existing Internal QA.",
+      "next_action": "Claude reviews the prepared native images and exact app source; Codex resolves material findings, verifies the hosted task backend, then delivers to existing Internal QA. Direct Claude access awaits confirmation that the Throughline session is foregrounded.",
       "slice_phase": "building"
     },
     {

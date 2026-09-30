@@ -1,0 +1,202 @@
+{
+  "recorded_on": "2026-09-30",
+  "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+  "integration_source": "1311d02f0ddfc7fa3a60d8537cfc0413e21a6435",
+  "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
+  "runtime": "iOS 26.3.1 (23D8133)",
+  "fixture": "RunningListPreview; synthetic content only",
+  "frames": [
+    {
+      "file": "ax-light-375x667.png",
+      "sha256": "757e259d8a656b419080708a05792f51307c53c19f78782a48b81a2491afb8bf",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "ax-light-390x844.png",
+      "sha256": "81e768509f6b3883d41cdde04ed33bf68f3dc88b7c0a7c2365a01dc66d38385d",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "discard-light-390x844.png",
+      "sha256": "ab29ac80a437f5257ab6afd37d2a9c40e1db7043b93d4a9c60ba7d6d0b6a1aee",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "done-dark-390x844.png",
+      "sha256": "f89692fc8e16aa059ee43eb8a1e95926a23db96bdfbdb15dfbd41414153406e8",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "done-light-390x844.png",
+      "sha256": "d94db5252e2799eedb4f0bfe305aa2c0c780628b56113b8c8a1752c4d0c19a87",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "earlier-light-390x844.png",
+      "sha256": "0381e978027ac5646b1b1721b4b998d0b9cb142dc7aa27d53d0cc6f0dbf47261",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "editor-conflict-light-390x844.png",
+      "sha256": "9c51e15efe5f72e24e591843a5784d336490c5f5e16a098a87cb3247380a60bc",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "editor-dark-390x844.png",
+      "sha256": "4af92f9e4a9d99dd2f219f8e5025ac2b553eb0c2b33dbda6fece06b7cbe60848",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "editor-light-390x844.png",
+      "sha256": "839f15b020a8ce716f6de002891edd3f8b1c30289727945a95fe7cf5fe27aaed",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "editor-pending-light-390x844.png",
+      "sha256": "4a669b1c1c23d1a484fb74f24b90f0123e13395a4522b3c679288316a4d318bb",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "empty-later-light-390x844.png",
+      "sha256": "69bd479bca3fb83c03199b0454b6144f54f054bf25f423ccfc5a1c94cda43018",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "empty-light-390x844.png",
+      "sha256": "557699db3d82ef44f6e9d45c569a2d443666075699919aef1278f2334bfad3c4",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "landed-light-390x844.png",
+      "sha256": "a1ad8c77f9bb05549099224a346019aeb60f329fe942ef9a74b1e7dda23228b4",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "later-light-390x844.png",
+      "sha256": "d26476500c18e21526fed93aef1a316754a5533503e513e7509c8d38c302ecd2",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "menu-dark-390x844.png",
+      "sha256": "f7b695cedd1992071d18321a40a7f0e531f70256d901747e33a5e6db3e303c18",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "menu-light-390x844.png",
+      "sha256": "60ecd1a8088e52dcfbad6d37047d5251003566c873a0e712bfeb37b364e68115",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "morning-light-390x844.png",
+      "sha256": "c3eea32be91b37dc6b63af71802b7ca18e6ec6cc9b2b83f2d34af156f61305b9",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "moved-light-390x844.png",
+      "sha256": "a7c731b9eb90c2a806c41912b09110b20ff1f556f4db6c6ee82bae32d3781679",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "notes-dark-390x844.png",
+      "sha256": "0da28e4ebc615c54909de58b004f2b1d008c54ae178468af5856d606f6eaae10",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "notes-light-390x844.png",
+      "sha256": "70211af43b02a79ee26fbd5f92dcefc2e77ef8683614686ce3d91cf302ae8eef",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "offline-light-390x844.png",
+      "sha256": "3611f8b5c3d979b505a530dda18616eaa6eaf43d7c43765f38e6eb36e325b85f",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "recording-light-390x844.png",
+      "sha256": "79e5d0b7b56e2e5b2ea751fd8beb7a50f1f660f9d137b914f5b92885fc488aa7",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "repeat-light-390x844.png",
+      "sha256": "c92913fd67a7fbf27d32c7dbe65a21fffca6bd77d1eb2791521d5f45bb184104",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "source-light-390x844.png",
+      "sha256": "c39c999b535518a6c92dde19995059780a3c455bf8e816fb77e663f724c760d1",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "sunday-light-390x844.png",
+      "sha256": "b78b8548aa3cbddc48ba63b065377dc940ea6da197b124fe3829c2048d770514",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "sunday-week-light-390x844.png",
+      "sha256": "739db5946df4d830c2a5d8e149c8392e2784e41aaf59ef4215f9e41a3bdadf6b",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "swipe-light-390x844.png",
+      "sha256": "d5ecf7ae8da8c417843ccdd9d1b1d57cc5f88a11bb017f4aa5c5b2449d67d275",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "today-dark-390x844.png",
+      "sha256": "faddddeeba8340a3978c3e91d4de81f9b31dad9e134a80b2b045cbbfaa5c7d98",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "today-light-375x667.png",
+      "sha256": "946c4c502855ef5e07f48106c7ae0839c37b4b22c9fb3751ac45edac8c7cbbcb",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "today-light-390x844.png",
+      "sha256": "307336ad19c137f7cc3802e960c728110d61fce4c3576f26790283e489e80d11",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "today-light-430x932.png",
+      "sha256": "84b0d60e605baa819341810f1ba6ff86393548665222dbb2fddb8311a2c777f7",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "week-light-390x844.png",
+      "sha256": "122bfbd45fbeb0ae48b0efba08cddd10622215dc567b0c99b05b8d251c489a2a",
+      "app_source": "f86d04af6d46a784d3498d20e4b99cad80928804",
+      "evidence": "synthetic native scenario; static viewport"
+    }
+  ]
+}
