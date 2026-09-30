@@ -721,3 +721,12 @@ Mike reports the capture TestFlight looks good and requests a practical device t
 Mike also identifies persistent unfinished-from-last-night behavior and requests the running list next. Start the [running-list brief](docs/slices/running-list.md) from the prior Today/This week/Later design, preserving the capture tray, with date/completion truth and occurrence identity required. Do not import PR #2 wholesale. Claude owns the refreshed design; Codex owns feasibility, implementation and verification.
 
 The learning-loop question authorizes inspection, not activation. Read-only checks confirm stored legacy ratings without an operating improvement loop. Private Evaluation remains deferred pending repairs and a refreshed source-bound canary; no provider/model/data-use changes, flags, policies, main merge or public release are authorized by this entry.
+
+
+## 2026-09-29 — One-tap AI recording acceptance and internal follow-up
+
+**Decision owner:** Mike, confirmed through his direction with Claude. Place **Agree and record** once at onboarding's recording step before demo audio leaves the phone, and on the first Home recording for users who have never accepted. There is no large sheet or second recording action. Preserve explicit acceptance and existing off choices. Settings retains a native **AI voice notes** switch, concise off explanation and readable saved notes. Privacy-policy work stays aside.
+
+Codex implements and verifies the bounded adjustment, then delivers the next build to existing Internal QA after Claude reviews actual simulator images. Running-list implementation does not start: Claude's Candidate A prototype/design work stays separate. This continues the previously approved internal release lane; no public submission, main merge, provider/model change or evaluation activation follows.
+
+**Candidate evidence:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-candidate.md).
