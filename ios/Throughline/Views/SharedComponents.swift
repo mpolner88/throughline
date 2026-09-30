@@ -76,8 +76,12 @@ struct AIProcessingDisclosure: View {
         VStack(spacing: 4) {
             Text("Groq processes your audio and text into notes and tasks. Supabase hosts them.")
                 .fixedSize(horizontal: false, vertical: true)
-            Link("How it works", destination: AIProcessingPermission.privacyURL)
-                .frame(minHeight: 44)
+            Link(destination: AIProcessingPermission.privacyURL) {
+                Text("How it works")
+                    .foregroundStyle(Theme.blue)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+            }
         }
         .font(.footnote)
         .foregroundStyle(.secondary)
