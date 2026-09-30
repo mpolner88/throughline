@@ -217,22 +217,23 @@ Deno.test("legacy raw upload remains compatible without capture headers", async 
     const target = String(url);
     if (target.endsWith("/auth/v1/user")) return Response.json({ id: owner });
     assert(
-      !target.includes("/rpc/throughline_"),
+      !target.includes("/rpc/throughline_reserve_capture") &&
+        !target.includes("/rpc/throughline_accept_capture"),
       "Legacy needs no capture reservation",
     );
     if (target.includes("/storage/v1/object/")) {
       return Response.json({ stored: true });
     }
-    if (target.includes("/throughline_recordings?on_conflict=id")) {
-      initialRows++;
-      return Response.json(JSON.parse(String(init?.body)));
-    }
-    if (
-      target.includes("/throughline_recordings?id=eq.") &&
-      init?.method === "PATCH"
-    ) {
-      finalPatches++;
-      return new Response(null, { status: 204 });
+    if (target.endsWith("/rpc/throughline_tasks_v1")) {
+      const request = JSON.parse(String(init?.body));
+      assert(
+        request.p_owner === owner,
+        "Legacy persistence uses authenticated owner",
+      );
+      if (request.p_operation === "insert") initialRows++;
+      else if (request.p_operation === "processing") finalPatches++;
+      else throw new Error("Unexpected legacy persistence operation");
+      return Response.json({ recording: request.p_payload.recording });
     }
     throw new Error("Unexpected legacy synthetic request");
   }) as typeof fetch;

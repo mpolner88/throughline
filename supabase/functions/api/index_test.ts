@@ -411,30 +411,30 @@ Deno.test("owner recording detail exposes the current immutable revision", async
   setTestEnvironment();
   const revisionID = "00000000-0000-4000-8000-000000000401";
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async (url: string | URL | Request) => {
-    const target = String(url);
-    if (target.endsWith("/auth/v1/user")) {
-      return Response.json({ id: AUTH_USER_ID });
-    }
-    if (target.includes("/throughline_recordings?select=recording")) {
-      return Response.json([{
-        recording: {
-          id: RECORDING_ID,
-          auth_user_id: AUTH_USER_ID,
-          created_at: "2026-08-23T00:00:00.000Z",
-          processing_status: "processed",
-        },
-      }]);
-    }
-    if (
-      target.includes(
-        "/throughline_recordings?select=current_note_revision_id",
-      )
-    ) {
-      return Response.json([{ current_note_revision_id: revisionID }]);
-    }
-    throw new Error("Unexpected request: " + target);
-  }) as typeof fetch;
+  globalThis.fetch =
+    (async (url: string | URL | Request, init?: RequestInit) => {
+      const target = String(url);
+      if (target.endsWith("/auth/v1/user")) {
+        return Response.json({ id: AUTH_USER_ID });
+      }
+      if (target.endsWith("/rpc/throughline_tasks_v1")) {
+        const request = JSON.parse(String(init?.body));
+        assert(
+          request.p_owner === AUTH_USER_ID && request.p_operation === "detail",
+          "Owner-scoped consistent detail",
+        );
+        return Response.json({
+          recording: {
+            id: RECORDING_ID,
+            auth_user_id: AUTH_USER_ID,
+            created_at: "2026-08-23T00:00:00.000Z",
+            processing_status: "processed",
+          },
+          current_revision_id: revisionID,
+        });
+      }
+      throw new Error("Unexpected request: " + target);
+    }) as typeof fetch;
 
   try {
     const response = await handleRequestResponse(
@@ -488,14 +488,17 @@ Deno.test("flagged processing commits immutable lineage before exposing the note
     if (target.endsWith("/auth/v1/user")) {
       return Response.json({ id: AUTH_USER_ID });
     }
-    if (target.includes("/rest/v1/throughline_recordings?on_conflict=id")) {
-      return Response.json(Array.isArray(body) ? body : []);
-    }
-    if (
-      target.includes("/rest/v1/throughline_recordings?id=eq.") &&
-      init?.method === "PATCH"
-    ) {
-      return new Response(null, { status: 204 });
+    if (target.endsWith("/rpc/throughline_tasks_v1")) {
+      const taskRequest = body as Record<string, any>;
+      assert(
+        taskRequest.p_owner === AUTH_USER_ID,
+        "Persistence is owner-scoped",
+      );
+      assert(
+        ["insert", "processing"].includes(taskRequest.p_operation),
+        "Expected initial insert or existing-only processing",
+      );
+      return Response.json({ recording: taskRequest.p_payload.recording });
     }
     if (target.endsWith("/chat/completions")) {
       return Response.json({
@@ -527,9 +530,14 @@ Deno.test("flagged processing commits immutable lineage before exposing the note
       ),
     );
     assert(
-      requests.filter((request) => request.url.includes("?on_conflict=id"))
-        .length === 1,
-      "Only initial creation may upsert; completion must PATCH",
+      requests.filter((request) =>
+            (request.body as any)?.p_operation === "insert"
+          ).length === 1 &&
+        requests.filter((request) =>
+            (request.body as any)?.p_operation === "processing"
+          ).length === 1 &&
+        !requests.some((request) => request.url.includes("?on_conflict=id")),
+      "Only initial creation inserts; completion uses existing-only atomic processing",
     );
     assert(response.status === 201, "Expected compatible processed response");
     const responseBody = await response.json();
@@ -1215,12 +1223,15 @@ Deno.test("note deletion purges every registered evaluation artifact before data
       );
       return Response.json({ invalidated_case_count: 2 });
     }
-    if (
-      target.includes("/rest/v1/throughline_recordings?id=eq.") &&
-      init?.method === "DELETE"
-    ) {
+    if (target.endsWith("/rpc/throughline_tasks_v1")) {
+      const request = JSON.parse(String(init?.body));
+      assert(
+        request.p_operation === "delete" && request.p_owner === AUTH_USER_ID &&
+          request.p_recording_id === RECORDING_ID,
+        "Exact owner-locked deletion after privacy cleanup",
+      );
       calls.push("database.delete_recording");
-      return new Response(null, { status: 204 });
+      return Response.json({ deleted: true });
     }
     throw new Error("Unexpected request: " + target);
   }) as typeof fetch;

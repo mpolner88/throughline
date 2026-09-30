@@ -1,5 +1,13 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import {
+  encodeTaskPage,
+  parseTaskPage,
+  TaskContractError,
+  taskResult,
+  validateTaskEdit,
+  validateTaskMutation,
+} from "./tasks.ts";
+import {
   captureAnswer,
   captureUpload,
   isMissingStorageObject,
@@ -150,22 +158,28 @@ if (import.meta.main) {
 
 export function handleRequestResponse(req: Request) {
   return handleRequest(req).catch((error) => {
-    const status = error instanceof HttpError ? error.status : 500;
-    const message = error instanceof HttpError
-      ? error.message
-      : "Server request could not be completed";
+    const status =
+      error instanceof HttpError || error instanceof TaskContractError
+        ? error.status
+        : 500;
+    const message =
+      error instanceof HttpError || error instanceof TaskContractError
+        ? error.message
+        : "Server request could not be completed";
     console.error(JSON.stringify({
       event: "api_request_failed",
       method: req.method,
       path: safeApiLogPath(new URL(req.url).pathname),
       status,
-      error_type: error instanceof HttpError
-        ? "http_error"
-        : "unexpected_error",
+      error_type:
+        error instanceof HttpError || error instanceof TaskContractError
+          ? "http_error"
+          : "unexpected_error",
     }));
     return jsonResponse(status, {
       error: message,
-      ...(error instanceof HttpError && error.code
+      ...((error instanceof HttpError || error instanceof TaskContractError) &&
+          error.code
         ? { error_code: error.code }
         : {}),
     });
@@ -176,6 +190,7 @@ function safeApiLogPath(pathname: string) {
   return pathname
     .replace(/\/recordings\/[^/]+/gu, "/recordings/:recording_id")
     .replace(/\/captures\/[^/]+/gu, "/captures/:capture_id")
+    .replace(/\/tasks\/[^/]+/gu, "/tasks/:task_id")
     .replace(/\/feedback\/[^/]+/gu, "/feedback/:feedback_id")
     .replace(/\/agent\/tokens\/[^/]+/gu, "/agent/tokens/:token_id");
 }
@@ -238,6 +253,45 @@ export async function handleRequest(req: Request) {
     return jsonResponse(401, { error: "Unauthorized" });
   }
   await requireEvaluationCompatibilitySafety();
+
+  if (req.method === "GET" && pathname === "/tasks") {
+    if (lineageWritesEnabled() || evaluationWritesEnabled()) {
+      throw new TaskContractError(
+        409,
+        "evaluation_task_conflict",
+        "Task enrollment is unavailable for this processing mode.",
+      );
+    }
+    return jsonResponse(
+      200,
+      encodeTaskPage(
+        await ordinaryTaskRpc(
+          requireAuthUser(context),
+          "list",
+          null,
+          parseTaskPage(url),
+        ),
+      ),
+    );
+  }
+  const taskMatch = pathname.match(/^\/tasks\/([^/]+)$/);
+  if (req.method === "PATCH" && taskMatch) {
+    if (!validCaptureUUID(taskMatch[1])) {
+      throw new TaskContractError(
+        400,
+        "invalid_task_request",
+        "The task change is invalid.",
+      );
+    }
+    const body = validateTaskMutation(await parseJsonRequest(req));
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(requireAuthUser(context), "mutation", null, {
+        task_id: taskMatch[1],
+        body,
+      }),
+    );
+  }
 
   if (req.method === "POST" && pathname === "/maintenance/audio-retention") {
     requireServiceContext(context);
@@ -425,6 +479,12 @@ export async function handleRequest(req: Request) {
 
   if (req.method === "GET" && recordingMatch) {
     const id = decodeURIComponent(recordingMatch[1]);
+    if (context.authUserId) {
+      return jsonResponse(
+        200,
+        await ordinaryTaskRpc(context.authUserId, "detail", id),
+      );
+    }
     return jsonResponse(200, {
       recording: await readRecording(id, context),
       current_revision_id: await readCurrentRevisionID(id, context),
@@ -766,6 +826,9 @@ async function handleExtractRecording(
       "This saved capture has already claimed processing",
       "capture_processing_already_claimed",
     );
+  }
+  if (context.authUserId) {
+    await ordinaryTaskRpc(context.authUserId, "assert_reextract", id);
   }
   const body = await parseJsonRequest(req);
 
@@ -1147,6 +1210,7 @@ async function handlePatchActionItem(
     throw new HttpError(400, "Recording does not have an extracted note yet");
   }
 
+  const beforeTaskChange = structuredClone(recording);
   updateActionItemCompletion(recording.structured_note, text, completed);
   if (evaluationWritesEnabled()) {
     const authUserId = requireEvaluationOwner(context);
@@ -1217,8 +1281,18 @@ async function handlePatchActionItem(
       });
     }
   }
+  if (context.authUserId) {
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(context.authUserId, "legacy", recordingId, {
+        before: beforeTaskChange,
+        after: recording,
+        body,
+        kind: "completion",
+      }),
+    );
+  }
   await persistRecording(recording);
-
   return jsonResponse(200, { recording });
 }
 
@@ -1227,8 +1301,19 @@ async function handlePatchRecording(
   context: RequestContext,
   recordingId: string,
 ) {
-  const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
+  if (body.task_contract_version === 1) {
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(
+        requireAuthUser(context),
+        "edit",
+        recordingId,
+        validateTaskEdit(body),
+      ),
+    );
+  }
+  const recording = await readRecording(recordingId, context);
 
   if (isCurrentEvaluationMutation(body)) {
     const authUserId = requireEvaluationOwner(context);
@@ -1312,9 +1397,20 @@ async function handlePatchRecording(
     });
   }
 
+  const beforeTaskChange = structuredClone(recording);
   applyRecordingEdits(recording, body);
+  if (context.authUserId) {
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(context.authUserId, "legacy", recordingId, {
+        before: beforeTaskChange,
+        after: recording,
+        body,
+        kind: "edit",
+      }),
+    );
+  }
   await persistRecording(recording);
-
   return jsonResponse(200, { recording });
 }
 
@@ -2361,6 +2457,16 @@ async function storeAudio(
 }
 
 async function persistRecording(recording: any, existingOnly = true) {
+  if (recording.auth_user_id) {
+    const result = await ordinaryTaskRpc(
+      recording.auth_user_id,
+      existingOnly ? "processing" : "insert",
+      recording.id,
+      { recording },
+    );
+    if (result.recording) Object.assign(recording, result.recording);
+    return;
+  }
   const payload = {
     id: recording.id,
     user_id: recording.user_id || userId(),
@@ -2521,14 +2627,18 @@ async function deleteRecording(
     await purgeEvaluationArtifactsForRecording(id, authUserId, reason);
   }
 
-  await restRequest(
-    [
-      "/throughline_recordings",
-      `?id=eq.${encodeURIComponent(id)}`,
-      recordingScopeQuery(context),
-    ].join(""),
-    { method: "DELETE" },
-  );
+  if (recording.auth_user_id && reason !== "account_deleted") {
+    await ordinaryTaskRpc(recording.auth_user_id, "delete", id);
+  } else {
+    await restRequest(
+      [
+        "/throughline_recordings",
+        `?id=eq.${encodeURIComponent(id)}`,
+        recordingScopeQuery(context),
+      ].join(""),
+      { method: "DELETE" },
+    );
+  }
 }
 
 async function purgeEvaluationArtifactsForRecording(
@@ -2602,7 +2712,7 @@ async function expireStoredAudio() {
   const rows = await restRequest(
     [
       "/throughline_recordings",
-      "?select=id,created_at,audio,recording",
+      "?select=id,auth_user_id,created_at,audio,recording",
       `&created_at=lt.${encodeURIComponent(cutoff)}`,
       "&order=created_at.asc",
       `&limit=${batchLimit}`,
@@ -2982,6 +3092,14 @@ async function markRecordingAudioExpired(
     retention_days: retentionDays,
   };
 
+  const retentionOwner = row.auth_user_id ?? recording.auth_user_id;
+  if (retentionOwner) {
+    await ordinaryTaskRpc(retentionOwner, "audio", row.id, {
+      audio: expiredAudio,
+      audio_retention: recording.audio_retention,
+    });
+    return;
+  }
   await restRequest(
     `/throughline_recordings?id=eq.${encodeURIComponent(row.id)}`,
     {
@@ -3201,6 +3319,26 @@ async function captureStorageRequest(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
+}
+
+async function ordinaryTaskRpc(
+  owner: string,
+  operation: string,
+  recordingID: string | null = null,
+  payload: unknown = {},
+) {
+  return taskResult(
+    await restRequest("/rpc/throughline_tasks_v1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        p_owner: owner,
+        p_operation: operation,
+        p_recording_id: recordingID,
+        p_payload: payload,
+      }),
+    }),
+  );
 }
 
 async function restRequest(pathname: string, options: RequestInit = {}) {
