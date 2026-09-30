@@ -338,16 +338,18 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike selected Candidate A and approved implementation/internal delivery after feasibility and handoff readiness. D1: undated tasks go to Today.",
-        "current_bug": "Unfinished-from-last-night still combines tomorrow_todos without date/completion filtering; text identity can collide. Include correction in this slice.",
-        "current_verification": "docs/evidence/2026-09-30-running-list-ready.md",
+        "current_bug": "The former unfinished-from-last-night block is removed in the local Running List implementation; delivery and owner verification are pending.",
+        "current_verification": "docs/evidence/2026-09-30-running-list-implementation.md",
         "slice": "docs/slices/running-list.md",
         "tandem_stage": "building",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
-        "feasibility_status": "Claude revision 2 is handoff_ready; Codex re-review passed all RL1–RL7 and verified all 32 assets. Implementation starts from the committed contract; no running-list delivery yet.",
-        "display_progress": "Building",
-        "review_pr_status": "Preparing a named draft PR; no merge is authorized."
+        "feasibility_status": "Selected design and occurrence contract resolved; implementation and local engineering checks passed. Native visual verification and actual Claude implementation review precede delivery.",
+        "display_progress": "Built; finishing verification for Claude review",
+        "review_pr_status": "Draft PR #4 is open; no merge is authorized.",
+        "review_pr": "https://github.com/mpolner88/throughline/pull/4",
+        "implementation_candidate": "docs/releases/2026-09-30-ios-1.0.5-2026093001-candidate.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -359,7 +361,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Codex implements the reviewed task storage, offline changes and Today/This week/Later screens, then verifies them for Claude review and internal TestFlight.",
+      "next_action": "Codex finishes native visual verification for Claude implementation review, resolves findings, then verifies the task backend and delivers the internal-only candidate to existing Internal QA.",
       "slice_phase": "building"
     },
     {

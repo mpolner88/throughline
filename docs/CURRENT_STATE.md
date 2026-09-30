@@ -2,11 +2,11 @@
 
 ## What is happening now
 
-**Verified September 30:** [Running List — Today, This Week, Later](slices/running-list.md) is ready to build and Codex is beginning implementation. Claude resolved the design findings; Codex checked the final instructions and all reference assets. Claude reviews the working app before internal TestFlight. A named draft PR is being prepared. [Exact review and readiness evidence](evidence/2026-09-30-running-list-ready.md).
+**Verified September 30:** [Running List — Today, This Week, Later](slices/running-list.md) is implemented and has passed the engineering suites and an isolated signed build. Native visual verification is incomplete: dark-mode captures need rechecking and vertical touch input is inconclusive. The Mac locked before those checks and actual Claude review; resume with the Throughline session foregrounded. [Draft PR #4](https://github.com/mpolner88/throughline/pull/4) is open and unmerged. [Implementation evidence](evidence/2026-09-30-running-list-implementation.md), [local internal candidate](releases/2026-09-30-ios-1.0.5-2026093001-candidate.md).
 
-**Next improvements:** Automatic categories and search across notes/tasks, then Private Evaluation. The recorder, capture tray and AI controls stay as shipped. No running-list build has been delivered yet; the last verified internal build is described below.
+**Next:** Claude reviews the app; Codex resolves findings, verifies the task backend and delivers internal TestFlight. No Running List backend or build has been delivered yet. The last verified internal build remains **1.0.5 (2026092902)**. Automatic categories/search follow this delivery, then Private Evaluation. The recorder, capture tray and AI controls remain as shipped.
 
-The dated technical records below preserve the evidence behind this summary; earlier pending-decision and connection-failure statements are historical where the continuation above supersedes them.
+The dated records below preserve prior evidence. Their earlier design/build-entry statements are historical where the continuation above supersedes them.
 
 ## September 30 running-list design ready; implementation beginning
 
