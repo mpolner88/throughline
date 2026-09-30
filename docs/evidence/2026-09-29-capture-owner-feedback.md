@@ -60,3 +60,8 @@ Before activation, resolve the existing R1–R6/R16 findings: edit/evaluation co
 Capture store: six persistence groups passed. File-stream bytes/digest and denial/withdrawal checks passed. Capture queue: six source-derived control-flow groups passed; refresh offline/rejection/stale-callback checks passed. These mocked checks do not replace the physical-device matrix above. No backend code or migrations changed, so full API/database replay was not repeated for this client-only adjustment.
 
 Documentation foundation, privacy-policy parity and whitespace checks passed. The original capture handoff SHA-256 remains `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`; policy files have no diff. Source and documents are local only; no push, backend change or Apple mutation occurred.
+
+
+## Superseding internal follow-up
+
+Verified 2026-09-29: the earlier local-only and Claude-access limitations above are resolved for this slice. [Build 2026092902](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md) is available in existing Internal QA at exact app source `7719237`. [Claude presentation review](2026-09-29-claude-ai-controls-review.md) passed after the link correction. The device checklist and learning-loop limits above remain applicable.

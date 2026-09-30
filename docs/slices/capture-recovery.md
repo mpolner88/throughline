@@ -4,9 +4,9 @@
 
 **Backlog state:** `approved_for_build`
 **Slice phase:** `canary`
-**Current:** 1.0.5 (2026092901) is VALID / IN_BETA_TESTING in existing Internal QA. Backend v31 and the synthetic capture/replay/deletion check passed. Physical iPhone acceptance remains pending.
-**Evidence:** [internal delivery](../releases/2026-09-29-ios-1.0.5-2026092901-delivery.md), [backend rollout](../evidence/2026-09-29-capture-production-rollout.md), and [Claude design review](../evidence/2026-09-29-claude-capture-implementation-review.md). The selected revision-3 handoff remains SHA-256 `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`.
-**Next gate:** Mike reports the capture TestFlight looks good; he exercises the [device recovery checklist](../evidence/2026-09-29-capture-owner-feedback.md). Claude reviews the requested small AI-control follow-up. Running-list design preparation starts separately under Mike’s new request; full capture acceptance is not inferred.
+**Current:** 1.0.5 (2026092902), including the one-tap AI-controls follow-up, is VALID / IN_BETA_TESTING in existing Internal QA. Backend v31 and the synthetic capture/replay/deletion check passed. Physical iPhone acceptance remains pending.
+**Evidence:** [latest internal delivery](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), [capture delivery](../releases/2026-09-29-ios-1.0.5-2026092901-delivery.md), [backend rollout](../evidence/2026-09-29-capture-production-rollout.md), and [Claude design review](../evidence/2026-09-29-claude-capture-implementation-review.md). The selected revision-3 handoff remains SHA-256 `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`.
+**Next gate:** Mike reports the capture TestFlight looks good; he exercises the [device recovery checklist](../evidence/2026-09-29-capture-owner-feedback.md). Claude completed the AI-control review; Mike checks the follow-up on build 2026092902. Running-list design preparation starts separately under Mike’s new request; full capture acceptance is not inferred.
 **Authority:** Mike approved build and internal TestFlight delivery on 2026-09-29 in [decision-log.md](../../decision-log.md). Internal QA only; no main merge, public release, new testers, running list or evaluation activation.
 
 ## Problem and outcome
@@ -41,4 +41,9 @@ Current evidence: [implementation verification](../evidence/2026-09-29-capture-i
 
 ## September 29 owner follow-up
 
-Mike requested simpler ordinary-AI controls and Settings opt-out. This bounded local adjustment preserves capture persistence and the final dispatch boundary; it does not edit the frozen capture handoff. [Evidence](../evidence/2026-09-29-capture-owner-feedback.md) records the source checks, pending Claude review, device checklist, carryover finding and learning-loop audit. The broader running-list implementation belongs to its [new brief](running-list.md).
+Mike requested simpler ordinary-AI controls and Settings opt-out. This bounded adjustment preserves capture persistence and the final dispatch boundary; it does not edit the frozen capture handoff. [Evidence](../evidence/2026-09-29-capture-owner-feedback.md) records the initial source checks and review limits, device checklist, carryover finding and learning-loop audit; the delivery below resolves its earlier pending review. The broader running-list implementation belongs to its [new brief](running-list.md).
+
+
+### One-tap follow-up delivered
+
+Verified 2026-09-29: [build 2026092902](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md) contains exact app source `7719237`; [Claude review](../evidence/2026-09-29-claude-ai-controls-review.md) has no open P1/P2 after A1 resolution. The frozen capture contract, backend and private evaluation state are unchanged. Next owner/action: Mike installs the build and tests first recording, Settings off/on and capture recovery.

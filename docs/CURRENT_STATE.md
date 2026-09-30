@@ -1,12 +1,21 @@
 # Throughline current state
 
+## September 29 one-tap AI controls internal delivery
+
+**Verified:** 2026-09-29. **Scope:** reviewed app source, isolated signed package, Apple processing and existing Internal QA availability. [Delivery receipt](releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), [candidate](releases/2026-09-29-ios-1.0.5-2026092902-candidate.md), [Claude review](evidence/2026-09-29-claude-ai-controls-review.md).
+
+- **Current internal build:** **1.0.5 (2026092902)** is VALID, not expired, IN_BETA_TESTING and assigned to existing Internal QA. Exact app source `77192374e5f1de339047904c7ee0825e9863b96f`, local `codex/capture-tray`. No public submission, push or main merge.
+- **Experience:** one inline **Agree and record** action at first onboarding/Home recording; no large sheet or second recorder action. Native Settings switch preserves explicit off choices and readable existing notes. Claude's A1 link finding is resolved; no open P1/P2.
+- **Limits:** mocked request-boundary tests, synthetic simulator images and signed delivery do not prove physical-device capture or VoiceOver. Backend v31, approved policy bytes and Private Evaluation are unchanged.
+- **Next:** Mike installs 2026092902 and checks first recording plus Settings off/on, alongside capture recovery. Running-list design remains separate; implementation has not started. The earlier local-only/review-pending statements below are superseded by this delivery.
+
 ## September 29 owner feedback and next slice
 
 **Verified:** 2026-09-29. **Scope:** initial owner report, source inspection and read-only hosted aggregates. [Evidence and device checklist](evidence/2026-09-29-capture-owner-feedback.md).
 
-- **Current:** Mike reports the capture TestFlight looks good; recovery/device acceptance is still being exercised. Simplified first-use AI controls and Settings switch are local source only, pending Claude presentation review; no new TestFlight upload occurred.
+- **Current:** Mike reports the capture TestFlight looks good; recovery/device acceptance is still being exercised. The follow-up controls are now in build 2026092902; see the delivery above.
 - **Evidence:** ratings are stored (14 legacy rows), while immutable processing operations, note revisions, owner evaluations and corpus cases are all zero in fresh aggregate reads. No operating feedback-to-improvement loop or automatic model training is established. Evaluation activation stays deferred pending its known repairs.
-- **Next gate:** Claude reviews the small AI-control adjustment and refreshes the [running-list handoff](slices/running-list.md) against the capture base. Its local CLI login expired and desktop automation timed out. Mike's device checks can proceed independently.
+- **Next gate:** Claude completed the AI-control presentation review. Mike tests build 2026092902; the [running-list handoff](slices/running-list.md) remains a separate design/feasibility task before implementation.
 - **Authority:** Mike requested the simpler AI experience and running list next. Preserve minimal affirmative first-use acceptance, existing opt-out choices, the delivered capture behavior and evaluation separation. No policy text, backend, flag, provider/model, main merge or public-release change in this follow-up.
 
 ## September 29 capture-tray internal delivery

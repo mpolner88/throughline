@@ -730,3 +730,5 @@ The learning-loop question authorizes inspection, not activation. Read-only chec
 Codex implements and verifies the bounded adjustment, then delivers the next build to existing Internal QA after Claude reviews actual simulator images. Running-list implementation does not start: Claude's Candidate A prototype/design work stays separate. This continues the previously approved internal release lane; no public submission, main merge, provider/model change or evaluation activation follows.
 
 **Candidate evidence:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-candidate.md).
+
+**Delivery evidence for the one-tap follow-up:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), exact app source `7719237`, verified in existing Internal QA after Claude resolved A1. Running-list implementation and evaluation activation remain separate.

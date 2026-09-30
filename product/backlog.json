@@ -19,7 +19,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
     "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-    "next_gate": "Mike exercises capture recovery device checks; Claude reviews the small AI-control adjustment and refreshes the running-list handoff against the delivered capture base. Claude login needs restoration. Main merge/public release remain separate.",
+    "next_gate": "Mike tests build 2026092902 and the capture recovery checklist. Claude running-list prototype/handoff remains separate; Codex feasibility and Mike build entry precede implementation. Main merge/public release remain separate.",
     "review": "docs/evidence/2026-09-29-capture-handoff-ready.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
@@ -282,7 +282,7 @@
       "evidence": {
         "as_of": "2026-09-29",
         "source": "Exact-file revision-3 Codex review against base 3faf0f2, resolved C1\u2013C6 and follow-up F1\u2013F6, and Claude readiness confirmation. Source inspection and synthetic references, not implementation/device/runtime proof.",
-        "implementation_observation": "Internal build 1.0.5 (2026092901), app source c9d2d5c, verified VALID / IN_BETA_TESTING in existing Internal QA. Backend v31 and synthetic processed/replayed/deleted capture passed; Claude design review passed without P1/P2 blockers. Physical iPhone acceptance remains pending.",
+        "implementation_observation": "Internal follow-up 1.0.5 (2026092902), app source 7719237, verified VALID / IN_BETA_TESTING in existing Internal QA after exact-source Claude review. Prior backend v31 capture/replay/deletion evidence remains valid for its dated scope; no backend change in this UI follow-up. Physical iPhone acceptance remains pending.",
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
         "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
@@ -293,12 +293,14 @@
         "handoff_commit": "4c7cea1060f55438a0fd0c8deee97019376d1d9b",
         "slice": "docs/slices/capture-recovery.md",
         "implementation_verification": "docs/evidence/2026-09-29-capture-implementation.md",
-        "release_candidate": "docs/releases/2026-09-29-ios-1.0.5-2026092901-candidate.md",
+        "release_candidate": "docs/releases/2026-09-29-ios-1.0.5-2026092902-candidate.md",
         "claude_implementation_review": "docs/evidence/2026-09-29-claude-capture-implementation-review.md",
-        "internal_delivery": "docs/releases/2026-09-29-ios-1.0.5-2026092901-delivery.md",
+        "internal_delivery": "docs/releases/2026-09-29-ios-1.0.5-2026092902-delivery.md",
         "backend_rollout": "docs/evidence/2026-09-29-capture-production-rollout.md",
-        "owner_feedback": "Initial positive TestFlight report on September 29; full device recovery checks remain open. Requested simplified ordinary-AI controls are local source only, pending Claude review.",
-        "owner_feedback_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md"
+        "owner_feedback": "Initial positive capture TestFlight report on September 29; full device recovery checks remain open. Simplified one-tap ordinary-AI controls were reviewed by Claude and delivered in build 2026092902.",
+        "owner_feedback_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
+        "capture_internal_delivery": "docs/releases/2026-09-29-ios-1.0.5-2026092901-delivery.md",
+        "claude_ai_controls_review": "docs/evidence/2026-09-29-claude-ai-controls-review.md"
       },
       "funnel_step": "recording_started -> recording_uploaded",
       "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
@@ -309,7 +311,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Mike tests the capture device checklist; Claude reviews the requested brief AI first-use and Settings controls before a follow-up internal build.",
+      "next_action": "Mike installs build 2026092902, tests first recording and Settings off/on, and continues the capture recovery device checklist.",
       "slice_phase": "canary"
     },
     {
