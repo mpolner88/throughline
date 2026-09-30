@@ -63,3 +63,7 @@ Rollback must retain the occurrence-aware API and tables once accounts are enrol
 ## September 30 Claude access follow-up
 
 Mike explicitly approved opening the correct Claude session. Navigation selected **Throughline-working-design-updates** and reported its correct session identity. The subsequent composer attempts did not populate the prompt; paste timed out and text entry did not change its value. No Send action was taken and no implementation review was received. The desktop screenshot and navigation state disagreed, so an ungrounded coordinate retry was refused by automatic approval review. The alternate CLI still reports signed out. Do not request the same access approval again; the remaining action is to send the already-prepared review instruction through a working Throughline composer. No product source, backend, package or release changed.
+
+## Claude review corrections — September 30
+
+Claude completed the [implementation review](2026-09-30-claude-running-list-implementation-review.md) with no P1s. Codex implemented F1–F3 and P3-1 at `a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068`, passed ten Swift groups and 111 Deno tests, re-captured four affected native views and rebuilt the signed package. The [narrow recheck packet](2026-09-30-running-list-recheck.md) and [rebuilt candidate](../releases/2026-09-30-ios-1.0.5-2026093001-recheck.md) supersede the earlier pending-initial-review/package state. P3-2 through P3-13 remain follow-ups. Claude's narrow recheck, hosted verification and internal delivery are the next steps; no delivery is claimed.

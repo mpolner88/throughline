@@ -1,5 +1,7 @@
 # Claude review request: Running List — Today, This Week, Later
 
+**Review received:** Claude completed the [implementation review](2026-09-30-claude-running-list-implementation-review.md). The [corrections and narrow recheck packet](2026-09-30-running-list-recheck.md) now supersede this initial request.
+
 **Prepared:** September 30, 2026. **Owner:** Codex. **Review:** [draft PR #4](https://github.com/mpolner88/throughline/pull/4). **Status:** ready for Claude to inspect; no Claude implementation approval is claimed.
 
 ## Assignment
