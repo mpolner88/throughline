@@ -362,7 +362,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Claude reviews the prepared native images and exact app source; Codex resolves material findings, verifies the hosted task backend, then delivers to existing Internal QA. Direct Claude access awaits confirmation that the Throughline session is foregrounded.",
+      "next_action": "Send the prepared request to the Throughline Claude session for implementation review. Access is approved; desktop text entry failed and the CLI is signed out. After Claude resolves review, Codex verifies the hosted task backend and delivers to existing Internal QA.",
       "slice_phase": "building"
     },
     {
