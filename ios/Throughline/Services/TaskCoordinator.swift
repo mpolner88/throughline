@@ -450,14 +450,23 @@ import UIKit
                 guard state.editors[recordingID]?.request.mutationID == pending.request.mutationID,
                       !state.deletedRecordingIDs.contains(recordingID) else { throw TaskSyncError.removed }
                 applied = try TaskStore.apply(response, to: &state)
-                state.editors.removeValue(forKey: recordingID)
-                state.resolvedEditorDrafts[recordingID] = pending.draft
+                if applied {
+                    state.editors.removeValue(forKey: recordingID)
+                    state.resolvedEditorDrafts[recordingID] = pending.draft
+                }
             }
             if !applied {
-                // The replay proves this edit, but its old note is not the current note.
+                // Keep the frozen request durable until current detail is saved. A failed
+                // fetch or disk write must retry the same receipt, never return an old note.
                 let current = try await transport.detail(recordingID: recordingID, ownerID: context.owner)
                 try check(context)
-                try store.transaction(ownerID: context.owner) { _ = try TaskStore.apply(current, to: &$0) }
+                try store.transaction(ownerID: context.owner) { state in
+                    guard state.editors[recordingID]?.request.mutationID == pending.request.mutationID,
+                          !state.deletedRecordingIDs.contains(recordingID) else { throw TaskSyncError.removed }
+                    guard try TaskStore.apply(current, to: &state) else { throw TaskSyncError.invalidResponse }
+                    state.editors.removeValue(forKey: recordingID)
+                    state.resolvedEditorDrafts[recordingID] = pending.draft
+                }
             }
             publish()
             guard let note = state.notes[recordingID]?.note else { throw TaskSyncError.invalidResponse }

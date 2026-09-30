@@ -33,6 +33,7 @@ struct RecordingPayload: Decodable {
     var listCalls = 0
     var loseMutationResponse = false
     var loseEditResponse = false
+    var failDetail = false
     var rejectMutation = false
     var requireSignIn = false
     var pauseMutation: CheckedContinuation<Void, Never>?
@@ -44,7 +45,11 @@ struct RecordingPayload: Decodable {
         self.note = TaskNoteEnvelope(note: note, taskRevision: 1, snapshotVersion: version, tasks: tasks)
     }
     func list(ownerID: String) async throws -> TaskListResponse { owners.append(ownerID); listCalls += 1; return response }
-    func detail(recordingID: String, ownerID: String) async throws -> TaskNoteEnvelope { owners.append(ownerID); return note }
+    func detail(recordingID: String, ownerID: String) async throws -> TaskNoteEnvelope {
+        owners.append(ownerID)
+        if failDetail { throw URLError(.timedOut) }
+        return note
+    }
     func mutate(occurrenceID: String, request: TaskMutationRequest, ownerID: String, beforeDispatch: () throws -> Void) async throws -> TaskMutationResponse {
         try beforeDispatch(); owners.append(ownerID); requests.append(request)
         if shouldPauseMutation { await withCheckedContinuation { pauseMutation = $0 } }
@@ -110,11 +115,12 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         try storeIntegrity(root.appendingPathComponent("integrity"))
         try await commands(root.appendingPathComponent("commands"))
         try await editors(root.appendingPathComponent("editors"))
+        try await staleEditorReceipt(root.appendingPathComponent("stale-editor"))
         try await accountIsolation(root.appendingPathComponent("owners"))
         try await heldOwnerAndRecovery(root.appendingPathComponent("held"))
         try await transportChecks()
         try await previewEditing(root.appendingPathComponent("preview"))
-        print("RunningListTests: 9 groups passed (calendar, identity, atomic store, replay, editor, owner/deletion, transport, preview editor, held owner/recovery)")
+        print("RunningListTests: 10 groups passed (calendar, identity, atomic store, replay, editor, stale editor receipt, owner/deletion, transport, preview editor, held owner/recovery)")
     }
     @MainActor static func projection() throws {
         let la = TimeZone(identifier: "America/Los_Angeles")!
@@ -270,6 +276,47 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         do { _ = try await relaunch.saveEditor(next); fatalError("Expected conflict") }
         catch { expect(error as? TaskSyncError == .conflict, "Stale editor applies nothing") }
         expect(relaunch.pendingEditor(recordingID: "rec_synthetic") == nil, "Conflict releases frozen state")
+        await relaunch.setForeground(false)
+    }
+    @MainActor static func staleEditorReceipt(_ root: URL) async throws {
+        let store = try TaskStore(directory: root)
+        let fake = FakeTaskTransport(tasks: [fixtureTask()], note: fixtureNote())
+        let coordinator = TaskCoordinator(store: store, transport: fake, monitorConnectivity: false)
+        coordinator.configure(ownerID: "synthetic-a", accountGeneration: UUID())
+        await coordinator.refresh()
+        var draft = try await coordinator.prepareEditor(recordingID: "rec_synthetic")
+        draft.title = "Synthetic saved title"
+        draft.summary = "Synthetic saved summary"
+        draft.todoRows.append(TodoEditRow(newText: "Synthetic added task"))
+        fake.loseEditResponse = true
+        do { _ = try await coordinator.saveEditor(draft); fatalError("Expected unknown save") }
+        catch { expect(error as? TaskSyncError == .savePending, "Lost editor receipt remains pending") }
+        let frozen = coordinator.pendingEditor(recordingID: "rec_synthetic")!
+        // An unrelated owner change advances the snapshot beyond the immutable receipt.
+        fake.response.snapshotVersion += 1
+        fake.note.snapshotVersion = fake.response.snapshotVersion
+        await coordinator.refresh()
+        fake.failDetail = true
+        do { _ = try await coordinator.saveEditor(draft); fatalError("Expected pending fresh detail") }
+        catch { expect(error as? TaskSyncError == .savePending, "Failed detail after old receipt stays frozen") }
+        expect(coordinator.pendingEditor(recordingID: "rec_synthetic") == frozen, "Old receipt does not discard frozen request")
+        expect(store.owner("synthetic-a").resolvedEditorDrafts["rec_synthetic"] == nil, "Stale cached note is not marked resolved")
+        await coordinator.setForeground(false)
+        let restored = try TaskStore(directory: root)
+        expect(restored.owner("synthetic-a").editors["rec_synthetic"] == frozen, "Frozen retry survives relaunch after failed detail")
+        let relaunch = TaskCoordinator(store: restored, transport: fake, monitorConnectivity: false)
+        relaunch.configure(ownerID: "synthetic-a", accountGeneration: UUID())
+        await relaunch.refresh()
+        fake.failDetail = false
+        let reopened = try await relaunch.prepareEditor(recordingID: "rec_synthetic")
+        expect(reopened == draft, "Relaunch reopens the same draft")
+        let saved = try await relaunch.saveEditor(reopened)
+        expect(saved.title == draft.title && saved.summary == draft.summary, "Retry returns current saved prose, never the pre-edit cache")
+        expect(saved.todos.count == 2 && fake.editReceipts.count == 1, "Retry creates no duplicate additions")
+        expect(fake.edits.count == 3 && fake.edits.allSatisfy { $0 == frozen.request }, "All retries preserve the exact mutation and payload")
+        expect(relaunch.pendingEditor(recordingID: "rec_synthetic") == nil, "Only persisted fresh detail settles the frozen editor")
+        _ = try await relaunch.saveEditor(draft)
+        expect(fake.edits.count == 3, "Confirmed fresh draft recognizes a late Save tap")
         await relaunch.setForeground(false)
     }
     @MainActor static func accountIsolation(_ root: URL) async throws {
