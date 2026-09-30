@@ -1,6 +1,6 @@
 # Running List backend rollout — September 30, 2026
 
-**Owner:** Codex. **Status:** reviewed database/API deployed and read-only checks passed; hosted synthetic test is blocked by automatic approval review. The signed iOS candidate is still local. [Running List — PR #4](https://github.com/mpolner88/throughline/pull/4).
+**Owner:** Codex. **Status:** reviewed database/API deployed; hosted synthetic task and capture checks passed with cleanup confirmed after Mike explicitly approved the exact test. See the [internal delivery](../releases/2026-09-30-ios-1.0.5-2026093001-delivery.md). The initial approval block below is historical. [Running List — PR #4](https://github.com/mpolner88/throughline/pull/4).
 
 ## Deployed source
 
@@ -35,3 +35,17 @@ Automatic approval review rejected this execution twice, interpreting Mike's phr
 [Rebuilt candidate 1.0.5 (2026093001)](../releases/2026-09-30-ios-1.0.5-2026093001-recheck.md) is signed and retained privately but **not uploaded**. No main merge, PR comment, public App Store action or new tester population is included. The last verified internal build remains 2026092902.
 
 Preserve the additive task schema, identities, receipts and existing capture store. Recovery uses a compatible fix-forward API/client; do not drop task tables or restore a pre-task API after an account enrolls. No existing data was bulk-enrolled by this migration. Actual device scrolling, VoiceOver, offline/relaunch, midnight and timezone acceptance still belongs on the eventual internal build. Categories/search follow that delivery; Private Evaluation stays deferred.
+
+## Approved hosted verification completed — September 30
+
+Mike explicitly approved the exact test described above. The unchanged private harness ran against API v32 using two new internally classified disposable accounts, synthetic task content and one generated two-second tone. No real user note/account was used as a fixture and no provider/model configuration changed.
+
+**Passed:** all **12 hosted task check groups**: fixture identity/binding, stable enrollment/cutover, post-enrollment undated-task classification, occurrence identity despite repeated wording, pagination and invalidation, account isolation, four concurrent identical completion receipts and conflicting retry refusal, persistent moves, safe and unsafe legacy writes with exact F3 copy, atomic identity-preserving edits/replay/conflicts/tombstones, second-owner completion and note deletion. Account deletion with a live task and mutation receipt cascaded successfully.
+
+**Capture passed:** concurrent upload/replay, accepted receipt, claimed processing, completed `processed` state, exact note deletion and verified physical absence of the generated audio object. This verifies ordinary API/provider processing, not extraction quality, actual device microphone recovery or an independently counted provider invocation total.
+
+**Cleanup confirmed:** both synthetic Auth accounts, their notes/tasks/receipts/enrollments, synthetic events and capture data were removed. An independent aggregate query returned the original 21 recordings, zero evaluation-linked recordings, zero task accounts/occurrences/mutations and zero running-list fixture accounts. No cleanup remains pending.
+
+**Unchanged services:** API v32 retains its verified bundle; MCP v15 and private-artifact-delete v3 were not changed. Private journals, exact fixture identities, test-source hashes and aggregate receipts are retained in ignored release storage. Only this content-free summary is tracked.
+
+The automatic approval block is resolved. Hosted checks passed before upload; [the delivery manifest](../releases/2026-09-30-ios-1.0.5-2026093001-delivery.md) records the separate Apple result and remaining device checks.

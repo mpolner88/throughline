@@ -1,19 +1,19 @@
 # Running List — Today, This Week, Later
 
-**Progress:** Design review passed; backend deployed; hosted synthetic test awaiting explicit approval.
+**Progress:** In internal TestFlight — 1.0.5 (2026093001); ready for Mike to test.
 **What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Mike approves the exact hosted synthetic test below; Codex runs it and then delivers internal TestFlight.
+**Next:** Mike tests the delivered build using the [device checklist](../releases/2026-09-30-ios-1.0.5-2026093001-delivery.md#device-acceptance-and-next-work). Claude designs categories/search next.
 **Review PR:** [Running List — Today, This Week, Later · #4](https://github.com/mpolner88/throughline/pull/4), open as a draft. It includes the already-delivered capture and recording-control prerequisites and stays unmerged.
 
 ## Technical record
 
 **Verified baseline:** 2026-09-30, local source `f6983ed01cd41355cc950dd9bd1226cb9da85294`; last verified internal delivery 1.0.5 (2026092902). [Exact readiness receipt](../evidence/2026-09-30-running-list-ready.md); [last delivery](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md).
-**Backlog state:** `approved_for_build`
+**Backlog state:** `shipped`
 **Slice phase:** `canary`
-**Tandem stage:** `local_verified`
-**Current:** Verified September 30: Claude passed the corrected implementation at `a59d68d`. API v32 and the task migration are deployed, exact-source/access checks pass, and the signed candidate remains local. [Backend rollout evidence](../evidence/2026-09-30-running-list-production-rollout.md), [recheck](../evidence/2026-09-30-running-list-recheck.md), [rebuilt candidate](../releases/2026-09-30-ios-1.0.5-2026093001-recheck.md).
+**Tandem stage:** `internal_testflight`
+**Current:** Verified September 30: build 2026093001 is VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA. Claude passed corrected source `a59d68d`; API v32 and the task migration passed hosted compatibility, capture and cleanup checks. [Delivery evidence](../releases/2026-09-30-ios-1.0.5-2026093001-delivery.md).
 **Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** Automatic approval review rejected the prepared hosted test, interpreting the tracked-content restriction as forbidding hosted synthetic data. Mike must explicitly approve two disposable internal test accounts, synthetic tasks and one two-second generated-tone processing check with exact cleanup. No test account or provider call occurred. After this test passes, Codex uploads only to existing Internal QA. The [rollout receipt](../evidence/2026-09-30-running-list-production-rollout.md) records the exact scope and remaining device checks.
+**Next gate:** Mike's physical-device acceptance: recording and distinct repeated tasks, completion/moves/Undo across relaunch, offline/reconnect, accessibility, midnight and timezone behavior. The hosted-test approval block is resolved and cleanup is complete. Categories/search design follows this internal delivery; broader implementation still needs its bounded design contract.
 **Authority:** Approved running-list implementation and internal-only TestFlight to existing Internal QA. Preserve shipped capture, recorder and AI controls. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or public release. Categories/search follow delivery; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward

@@ -20,7 +20,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
     "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
-    "next_gate": "Authorize the exact hosted synthetic test blocked by automatic approval review; Codex then verifies compatibility and delivers internal TestFlight.",
+    "next_gate": "Running List internal delivery is complete. Claude prepares categories/search designs; Mike selects the bounded design before implementation. Private Evaluation follows.",
     "review": "docs/evidence/2026-09-30-running-list-ready.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
@@ -322,7 +322,7 @@
       "id": "TL-TASK-001",
       "title": "Running List — Today, This Week, Later",
       "type": "retention",
-      "state": "approved_for_build",
+      "state": "shipped",
       "problem": "Tasks from several voice notes do not form one dependable list; repeated wording can collide and the old carry-over section uses inaccurate dates.",
       "evidence": {
         "as_of": "2026-09-30",
@@ -330,7 +330,7 @@
         "market_pattern": "Successful task products organize work by time and status; voice-workflow users ask for dated tasks that route into daily systems.",
         "sample_size_warning": "The rejected implementation and its rollback were available to one internal tester; internal use is not a public-product outcome and does not establish lift.",
         "implementation_selection": "The August Home design was rolled back. On September 30 Mike selected the new Candidate A and approved its bounded running-list build; the old PR remains a reference only.",
-        "implementation_delivery": "The selected slice reached internal build 2026082601. On 2026-08-28 the source and internal canary were rolled back through build 2026082801, which Apple processed to VALID and which was freshly verified in the one-tester Internal QA group.",
+        "implementation_delivery": "Candidate A Running List is available as internal-only 1.0.5 (2026093001), VALID and IN_BETA_TESTING in existing Internal QA after Claude review, exact-source backend deployment and hosted synthetic checks with verified cleanup.",
         "verification": "docs/evidence/2026-08-28-home-ui-rollback.md",
         "reconciliation_as_of": "2026-09-28",
         "product_order": "Running-list internal TestFlight first; categories/search next; Private Evaluation after.",
@@ -338,15 +338,15 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike selected Candidate A and approved implementation/internal delivery after feasibility and handoff readiness. D1: undated tasks go to Today.",
-        "current_bug": "The former unfinished-from-last-night block is removed in the local Running List implementation; delivery and owner verification are pending.",
-        "current_verification": "docs/evidence/2026-09-30-running-list-production-rollout.md",
+        "current_bug": "The inaccurate unfinished-from-last-night block is removed in internal build 2026093001; owner device acceptance remains pending.",
+        "current_verification": "docs/releases/2026-09-30-ios-1.0.5-2026093001-delivery.md",
         "slice": "docs/slices/running-list.md",
-        "tandem_stage": "local_verified",
+        "tandem_stage": "internal_testflight",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
-        "feasibility_status": "Selected contract resolved and implementation verified. Claude passed F1-F3 and P3-1 at the corrected source after inspecting all four fresh frames. Hosted compatibility and internal delivery are next.",
-        "display_progress": "Backend deployed; awaiting approval for hosted synthetic test",
+        "feasibility_status": "Selected contract resolved; corrected implementation passed Claude review, local engineering verification and hosted compatibility/capture checks. Internal TestFlight delivery is verified; Mike's device acceptance remains pending.",
+        "display_progress": "In internal TestFlight; ready for Mike to test",
         "review_pr_status": "Draft PR #4 is open; no merge is authorized.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
         "implementation_candidate": "docs/releases/2026-09-30-ios-1.0.5-2026093001-recheck.md",
@@ -354,7 +354,7 @@
         "implementation_review": "docs/evidence/2026-09-30-claude-running-list-implementation-review.md",
         "implementation_followups": "P3-2 through P3-13 in Claude's review remain follow-ups, outside this correction pass. Check that hosted evaluation-linked recordings remain zero before rollout; a nonzero count needs P3-8 disposition.",
         "implementation_review_sha256": "f0682771599d5a470be55d3bdfff6edcbe20b99faf0ba971e93644cb12e36985",
-        "hosted_rollout": "API v32 and migration 20260930231946 deployed and exact-source/access checks passed; hosted synthetic execution blocked by automatic approval review; no test fixtures created and no iOS upload."
+        "hosted_rollout": "API v32 and migration 20260930231946 verified; 12 hosted task check groups and synthetic capture processing/recovery passed. Two fixture accounts and all test data cleaned up; evaluation-linked recordings remain zero."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -366,7 +366,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Mike explicitly approves two disposable internal test accounts, synthetic tasks and a generated two-second tone through the existing provider pipeline, with exact cleanup verification. Codex then runs the hosted test and delivers the rebuilt candidate to existing Internal QA.",
+      "next_action": "Mike installs internal build 2026093001 and exercises the delivery checklist. Claude designs the next categories/search slice; Codex reviews feasibility before implementation.",
       "slice_phase": "canary"
     },
     {
@@ -392,7 +392,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "After running-list internal TestFlight delivery, Claude prepares categories and search designs: automatic categories from what was said, and search over both notes and tasks. Return the bounded contract for review before implementation."
+      "next_action": "Claude prepares categories and search designs now that Running List internal build 2026093001 is delivered: automatic categories from what was said, and search over both notes and tasks. Return a bounded contract for Codex feasibility review and Mike's selection before implementation."
     },
     {
       "id": "TL-AGENT-001",
