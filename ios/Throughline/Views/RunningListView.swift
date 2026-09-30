@@ -212,16 +212,18 @@ struct RunningListView: View {
     private var earlierSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeading("from earlier notes", count: earlierRows.count)
+            if earlierExpanded { rows(earlierRows) }
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { earlierExpanded.toggle() }
             } label: {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("To-dos from notes before this update").foregroundStyle(.secondary)
+                    if !earlierExpanded {
+                        Text("To-dos from notes before this update").foregroundStyle(.secondary)
+                    }
                     Spacer(minLength: 8)
                     Text(earlierExpanded ? "Hide" : "Show").foregroundStyle(Theme.blue)
                 }.font(.subheadline).frame(minHeight: 44)
             }.buttonStyle(.plain).accessibilityLabel("\(earlierExpanded ? "Hide" : "Show") \(earlierRows.count) tasks from earlier notes")
-            if earlierExpanded { rows(earlierRows) }
         }
     }
     private func change(_ row: RunningListRow, completed: Bool) {
