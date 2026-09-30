@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Combine
 
 @MainActor
 final class AppState: ObservableObject {
@@ -17,6 +18,9 @@ final class AppState: ObservableObject {
     @Published private(set) var session: AuthSession?
     private(set) var accountGeneration = UUID()
     let captureQueue = CaptureQueue()
+    let runningList = TaskCoordinator()
+    private var taskObservation: AnyCancellable?
+    private var deletionObservation: AnyCancellable?
 
     var isSignedIn: Bool {
         session != nil
@@ -35,7 +39,7 @@ final class AppState: ObservableObject {
     }
 
     var latestNotes: [ThroughlineNote] {
-        notes.sorted { $0.createdAt > $1.createdAt }
+        notes.map { runningList.decorated($0) }.sorted { $0.createdAt > $1.createdAt }
     }
 
     init() {
@@ -61,6 +65,12 @@ final class AppState: ObservableObject {
             )
             route = .home
             bindCaptureQueue()
+            if RunningListPreview.isActive {
+                notes = RunningListPreview.notes
+                runningList.seedPreview(tasks: RunningListPreview.tasks, notes: notes,
+                    offline: ProcessInfo.processInfo.arguments.contains("--throughline-preview-running=offline"),
+                    now: RunningListPreview.currentDate)
+            }
             let arguments = ProcessInfo.processInfo.arguments
             if let flag = arguments.first(where: { $0.hasPrefix("--throughline-preview-capture=") }),
                let state = CaptureState(rawValue: String(flag.split(separator: "=", maxSplits: 1).last!)) {
@@ -86,6 +96,12 @@ final class AppState: ObservableObject {
     }
 
     private func bindCaptureQueue() {
+        runningList.onNote = { [weak self] note in self?.addUploadedNote(note) }
+        taskObservation = runningList.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        deletionObservation = captureQueue.$deletionPending.sink { [weak self] pending in
+            self?.runningList.setAccountDeletionPending(pending)
+        }
+        runningList.configure(ownerID: session?.user.id, accountGeneration: accountGeneration)
         captureQueue.onNote = { [weak self] note in self?.addUploadedNote(note) }
         captureQueue.onAccountDeleted = { [weak self] in self?.finishAccountDeletion() }
         captureQueue.onSessionRefreshed = { [weak self] refreshed in
@@ -101,6 +117,7 @@ final class AppState: ObservableObject {
         self.session = session
         AuthSessionStore.save(session)
         if changedOwner { notes = Self.loadCachedNotes(ownerID: session.user.id) }
+        runningList.configure(ownerID: session.user.id, accountGeneration: accountGeneration)
         captureQueue.configure(session: session)
     }
 
@@ -125,12 +142,14 @@ final class AppState: ObservableObject {
         notes = []
         // Owner-bound and legacy caches are preserved; unsigned views never load them.
         UserDefaults.standard.set(false, forKey: Self.hasFinishedOnboardingKey)
+        runningList.configure(ownerID: nil, accountGeneration: accountGeneration)
         captureQueue.configure(session: nil)
         route = .onboarding
     }
 
     func finishAccountDeletion() {
         if let ownerID = session?.user.id {
+            try? runningList.accountDeleted(ownerID: ownerID)
             UserDefaults.standard.removeObject(forKey: Self.cacheKey(ownerID: ownerID))
         }
         clearSession()
@@ -140,6 +159,7 @@ final class AppState: ObservableObject {
         notes.removeAll { $0.id == note.id }
         notes.insert(note, at: 0)
         persistNotes()
+        runningList.requestRefresh()
     }
 
     func replaceNotes(_ notes: [ThroughlineNote]) {
@@ -151,6 +171,7 @@ final class AppState: ObservableObject {
     }
 
     func removeNote(id: String) {
+        try? runningList.recordingDeleted(id)
         notes.removeAll { $0.id == id }
         persistNotes()
     }

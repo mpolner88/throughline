@@ -29,6 +29,14 @@
 		CB0000000000000000000003 /* Services/CaptureTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0000000000000000000003 /* Services/CaptureTransport.swift */; };
 		CB0000000000000000000004 /* Services/CaptureQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0000000000000000000004 /* Services/CaptureQueue.swift */; };
 		CB0000000000000000000005 /* Views/CaptureTrayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0000000000000000000005 /* Views/CaptureTrayView.swift */; };
+		FB0000000000000000000001 /* Models/TaskOccurrence.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000001 /* Models/TaskOccurrence.swift */; };
+		FB0000000000000000000002 /* Models/RunningListProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000002 /* Models/RunningListProjection.swift */; };
+		FB0000000000000000000003 /* Models/RunningListPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000003 /* Models/RunningListPreview.swift */; };
+		FB0000000000000000000004 /* Services/TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000004 /* Services/TaskStore.swift */; };
+		FB0000000000000000000005 /* Services/TaskTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000005 /* Services/TaskTransport.swift */; };
+		FB0000000000000000000006 /* Services/TaskCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000006 /* Services/TaskCoordinator.swift */; };
+		FB0000000000000000000007 /* Views/RunningListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000007 /* Views/RunningListView.swift */; };
+		FB0000000000000000000008 /* Views/TodoRowsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000008 /* Views/TodoRowsEditor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +66,14 @@
 		CA0000000000000000000003 /* Services/CaptureTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/CaptureTransport.swift; sourceTree = "<group>"; };
 		CA0000000000000000000004 /* Services/CaptureQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/CaptureQueue.swift; sourceTree = "<group>"; };
 		CA0000000000000000000005 /* Views/CaptureTrayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CaptureTrayView.swift; sourceTree = "<group>"; };
+		FA0000000000000000000001 /* Models/TaskOccurrence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/TaskOccurrence.swift; sourceTree = "<group>"; };
+		FA0000000000000000000002 /* Models/RunningListProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RunningListProjection.swift; sourceTree = "<group>"; };
+		FA0000000000000000000003 /* Models/RunningListPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RunningListPreview.swift; sourceTree = "<group>"; };
+		FA0000000000000000000004 /* Services/TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TaskStore.swift; sourceTree = "<group>"; };
+		FA0000000000000000000005 /* Services/TaskTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TaskTransport.swift; sourceTree = "<group>"; };
+		FA0000000000000000000006 /* Services/TaskCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TaskCoordinator.swift; sourceTree = "<group>"; };
+		FA0000000000000000000007 /* Views/RunningListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RunningListView.swift; sourceTree = "<group>"; };
+		FA0000000000000000000008 /* Views/TodoRowsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TodoRowsEditor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +101,14 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000011 /* ThroughlineApp.swift */,
+				FA0000000000000000000008 /* Views/TodoRowsEditor.swift */,
+				FA0000000000000000000007 /* Views/RunningListView.swift */,
+				FA0000000000000000000006 /* Services/TaskCoordinator.swift */,
+				FA0000000000000000000005 /* Services/TaskTransport.swift */,
+				FA0000000000000000000004 /* Services/TaskStore.swift */,
+				FA0000000000000000000003 /* Models/RunningListPreview.swift */,
+				FA0000000000000000000002 /* Models/RunningListProjection.swift */,
+				FA0000000000000000000001 /* Models/TaskOccurrence.swift */,
 				A00000000000000000000026 /* Info.plist */,
 				C00000000000000000000001 /* Assets.xcassets */,
 				C00000000000000000000002 /* PrivacyInfo.xcprivacy */,
@@ -200,6 +224,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				A00000000000000000000101 /* ThroughlineApp.swift in Sources */,
+				FB0000000000000000000008 /* Views/TodoRowsEditor.swift in Sources */,
+				FB0000000000000000000007 /* Views/RunningListView.swift in Sources */,
+				FB0000000000000000000006 /* Services/TaskCoordinator.swift in Sources */,
+				FB0000000000000000000005 /* Services/TaskTransport.swift in Sources */,
+				FB0000000000000000000004 /* Services/TaskStore.swift in Sources */,
+				FB0000000000000000000003 /* Models/RunningListPreview.swift in Sources */,
+				FB0000000000000000000002 /* Models/RunningListProjection.swift in Sources */,
+				FB0000000000000000000001 /* Models/TaskOccurrence.swift in Sources */,
 				CB0000000000000000000001 /* Models/CaptureRecord.swift in Sources */,
 				CB0000000000000000000002 /* Services/CaptureStore.swift in Sources */,
 				CB0000000000000000000003 /* Services/CaptureTransport.swift in Sources */,
@@ -348,7 +380,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Throughline/Throughline.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2026092902;
+				CURRENT_PROJECT_VERSION = 2026093001;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = RZT3KU8KMY;
 				ENABLE_PREVIEWS = YES;
@@ -386,7 +418,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Throughline/Throughline.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2026092902;
+				CURRENT_PROJECT_VERSION = 2026093001;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = RZT3KU8KMY;
 				ENABLE_PREVIEWS = YES;
