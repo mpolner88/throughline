@@ -20,7 +20,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
     "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
-    "next_gate": "Claude passed the corrected Running List; Codex verifies hosted compatibility and delivers internal TestFlight.",
+    "next_gate": "Authorize the exact hosted synthetic test blocked by automatic approval review; Codex then verifies compatibility and delivers internal TestFlight.",
     "review": "docs/evidence/2026-09-30-running-list-ready.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
@@ -339,21 +339,22 @@
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike selected Candidate A and approved implementation/internal delivery after feasibility and handoff readiness. D1: undated tasks go to Today.",
         "current_bug": "The former unfinished-from-last-night block is removed in the local Running List implementation; delivery and owner verification are pending.",
-        "current_verification": "docs/evidence/2026-09-30-running-list-recheck.md",
+        "current_verification": "docs/evidence/2026-09-30-running-list-production-rollout.md",
         "slice": "docs/slices/running-list.md",
         "tandem_stage": "local_verified",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
         "feasibility_status": "Selected contract resolved and implementation verified. Claude passed F1-F3 and P3-1 at the corrected source after inspecting all four fresh frames. Hosted compatibility and internal delivery are next.",
-        "display_progress": "Design review passed; preparing internal TestFlight",
+        "display_progress": "Backend deployed; awaiting approval for hosted synthetic test",
         "review_pr_status": "Draft PR #4 is open; no merge is authorized.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
         "implementation_candidate": "docs/releases/2026-09-30-ios-1.0.5-2026093001-recheck.md",
         "implementation_review_request": "docs/evidence/2026-09-30-running-list-recheck.md",
         "implementation_review": "docs/evidence/2026-09-30-claude-running-list-implementation-review.md",
         "implementation_followups": "P3-2 through P3-13 in Claude's review remain follow-ups, outside this correction pass. Check that hosted evaluation-linked recordings remain zero before rollout; a nonzero count needs P3-8 disposition.",
-        "implementation_review_sha256": "f0682771599d5a470be55d3bdfff6edcbe20b99faf0ba971e93644cb12e36985"
+        "implementation_review_sha256": "f0682771599d5a470be55d3bdfff6edcbe20b99faf0ba971e93644cb12e36985",
+        "hosted_rollout": "API v32 and migration 20260930231946 deployed and exact-source/access checks passed; hosted synthetic execution blocked by automatic approval review; no test fixtures created and no iOS upload."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -365,8 +366,8 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Codex verifies hosted task compatibility from the corrected API source, including the content-free evaluation-linked count, then delivers the rebuilt candidate to existing Internal QA.",
-      "slice_phase": "building"
+      "next_action": "Mike explicitly approves two disposable internal test accounts, synthetic tasks and a generated two-second tone through the existing provider pipeline, with exact cleanup verification. Codex then runs the hosted test and delivers the rebuilt candidate to existing Internal QA.",
+      "slice_phase": "canary"
     },
     {
       "id": "TL-KNOW-001",
