@@ -758,3 +758,8 @@ Codex implements and verifies the bounded adjustment, then delivers the next bui
 **Decision owner:** Mike. After the automatic approval review blocked hosted synthetic testing, Mike explicitly said “go for it” to creating two disposable internal test accounts, testing synthetic tasks and one two-second generated tone through the existing processing service, then deleting and verifying all test data. This resolves that execution-specific approval block and continues the already approved internal TestFlight delivery after the test passes. It does not authorize real user fixtures, provider/model changes, Private Evaluation, public release or a new tester population.
 
 **Result:** [Hosted verification](docs/evidence/2026-09-30-running-list-production-rollout.md) passed with cleanup confirmed; [internal delivery](docs/releases/2026-09-30-ios-1.0.5-2026093001-delivery.md) records Apple's processing and existing Internal QA availability.
+
+
+## 2026-09-30 — Repair Running List responsiveness and put older unfinished tasks in Today
+
+**Decision owner:** Mike. After using internal build 2026093001, Mike reported severe delays switching task tabs and requested that unfinished tasks from earlier notes appear directly in Today automatically. This supersedes the earlier collapsed group under Later. Preserve completed state and explicit manual moves; no merging by text, invented tasks, extraction change or automatic reprocessing. Codex fixes and measures the defect, Claude reviews the changed behavior, and the corrected build follows the existing Internal QA delivery lane before categories/search. [Diagnosis and verification](docs/evidence/2026-09-30-running-list-responsiveness.md).
