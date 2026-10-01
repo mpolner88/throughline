@@ -9,6 +9,7 @@ xcrun swiftc "${swift_flags[@]}" -D DEBUG -module-cache-path "$test_dir/modules"
   ios/Throughline/Models/ThroughlineNote.swift \
   ios/Throughline/Models/TaskOccurrence.swift \
   ios/Throughline/Models/RunningListProjection.swift \
+  ios/Throughline/Models/RunningListCompletionPresentation.swift \
   ios/Throughline/Services/TaskStore.swift \
   ios/Throughline/Services/TaskTransport.swift \
   ios/Throughline/Services/TaskCoordinator.swift \

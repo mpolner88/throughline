@@ -27,6 +27,8 @@ struct RunningListView: View {
     @State private var additions: [RunningListTab: Int] = [:]
     @State private var additionToken = UUID()
     @State private var localError: String?
+    /// A row completed a moment ago stays at its open position, checked and struck through, before joining done today.
+    @State private var settling = RunningListCompletionPresentation()
 
     private var snapshot: RunningListSnapshot { coordinator.snapshot(now: displayNow, timeZone: .current) }
     private var displayNow: Date {
@@ -38,8 +40,12 @@ struct RunningListView: View {
     private func visible(_ rows: [RunningListRow]) -> [RunningListRow] {
         rows.filter { !hiddenRecordingIDs.contains($0.recordingID) }
     }
-    private var openRows: [RunningListRow] { visible(snapshot[selectedTab].open) }
-    private var doneRows: [RunningListRow] { visible(snapshot[selectedTab].doneToday) }
+    private var presented: RunningListTabSnapshot {
+        settling.present(open: visible(snapshot[selectedTab].open),
+                         done: visible(snapshot[selectedTab].doneToday), tab: selectedTab)
+    }
+    private var openRows: [RunningListRow] { presented.open }
+    private var doneRows: [RunningListRow] { presented.doneToday }
     private var earlierRows: [RunningListRow] { visible(snapshot.earlier) }
     private var allVisibleRows: [RunningListRow] {
         RunningListTab.allCases.flatMap { visible(snapshot[$0].open) + visible(snapshot[$0].doneToday) } + earlierRows
@@ -103,7 +109,11 @@ struct RunningListView: View {
             }
             #endif
         }
-        .onChange(of: allVisibleRows.map(\.id)) { _, _ in trackArrivals() }
+        .onDisappear { settling.clear() }
+        .onChange(of: allVisibleRows.map(\.id)) { _, ids in
+            settling.retain(ids: Set(ids))
+            trackArrivals()
+        }
         .onChange(of: coordinator.allOccurrenceIDs) { _, _ in trackArrivals() }
         .onChange(of: coordinator.hasLoadedSnapshot) { _, _ in trackArrivals() }
         .task(id: scenePhase) {
@@ -227,15 +237,33 @@ struct RunningListView: View {
         }
     }
     private func change(_ row: RunningListRow, completed: Bool) {
+        let openOrder = openRows.map(\.id)
+        let tab = selectedTab
+        var settleToken: UUID?
         do {
             try withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                 try coordinator.setCompleted(id: row.id, completed: completed, from: row.placement)
+                if completed, openOrder.contains(row.id) {
+                    settleToken = settling.begin(id: row.id, tab: tab, order: openOrder)
+                } else {
+                    settling.cancel(row.id)
+                }
             }
             localError = nil
             if UIAccessibility.isVoiceOverRunning {
                 UIAccessibility.post(notification: .announcement, argument: completed ? "Done. Undo available." : "Reopened.")
             }
+            if let token = settleToken { settle(row.id, token: token) }
         } catch { localError = error.localizedDescription }
+    }
+    /// The completion is already saved; this only delays the row's move so the check registers where it was.
+    private func settle(_ id: String, token: UUID) {
+        Task { @MainActor in
+            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                settling.finish(id: id, token: token)
+            }
+        }
     }
     private func move(_ row: RunningListRow, to tab: RunningListTab) {
         do {
@@ -278,7 +306,11 @@ private struct RunningTaskRow: View {
     let onOpen: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    @State private var horizontalOffset: CGFloat = 0
+    /// Follows the finger, then springs back whether the drag ends or the scroll view cancels it.
+    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.24, dampingFraction: 0.82)))
+    private var dragOffset: CGFloat = 0
+    @State private var previewOffset: CGFloat = 0
+    private var horizontalOffset: CGFloat { max(dragOffset, previewOffset) }
     @State private var showingMenu = false
     @ScaledMetric(relativeTo: .body) private var taskFontSize: CGFloat = 16
     private let completeThreshold: CGFloat = 76
@@ -326,23 +358,22 @@ private struct RunningTaskRow: View {
             }
             .padding(.vertical, 11).background(.background)
             .contentShape(Rectangle())
-            .offset(x: max(0, horizontalOffset))
+            .offset(x: horizontalOffset)
             .gesture(DragGesture(minimumDistance: 18)
-                .onChanged { value in
-                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                    horizontalOffset = max(0, min(value.translation.width, completeThreshold + 18))
+                .updating($dragOffset) { value, offset, _ in
+                    guard value.translation.width > abs(value.translation.height) else { return }
+                    offset = min(value.translation.width, completeThreshold + 18)
                 }
                 .onEnded { value in
-                    let shouldToggle = value.translation.width >= completeThreshold && abs(value.translation.width) > abs(value.translation.height)
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.82)) { horizontalOffset = 0 }
-                    if shouldToggle { onToggle() }
+                    if value.translation.width >= completeThreshold && value.translation.width > abs(value.translation.height) { onToggle() }
                 })
             .simultaneousGesture(LongPressGesture().onEnded { _ in showingMenu = true })
         }
+        .transaction { if reduceMotion { $0.animation = nil } }
         .onAppear {
             #if DEBUG
             if RunningListPreview.scenario == "menu" && row.id == RunningListPreview.firstTaskID { showingMenu = true }
-            if RunningListPreview.scenario == "swipe" && row.id == "00000000-0000-4000-8000-000000000004" { horizontalOffset = 80 }
+            if RunningListPreview.scenario == "swipe" && row.id == "00000000-0000-4000-8000-000000000004" { previewOffset = 80 }
             #endif
         }
         .confirmationDialog(row.text, isPresented: $showingMenu, titleVisibility: .visible) {

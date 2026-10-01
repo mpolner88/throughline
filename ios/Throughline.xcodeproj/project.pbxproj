@@ -37,6 +37,7 @@
 		FB0000000000000000000006 /* Services/TaskCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000006 /* Services/TaskCoordinator.swift */; };
 		FB0000000000000000000007 /* Views/RunningListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000007 /* Views/RunningListView.swift */; };
 		FB0000000000000000000008 /* Views/TodoRowsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000008 /* Views/TodoRowsEditor.swift */; };
+		FB0000000000000000000009 /* Models/RunningListCompletionPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000009 /* Models/RunningListCompletionPresentation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +75,7 @@
 		FA0000000000000000000006 /* Services/TaskCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TaskCoordinator.swift; sourceTree = "<group>"; };
 		FA0000000000000000000007 /* Views/RunningListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RunningListView.swift; sourceTree = "<group>"; };
 		FA0000000000000000000008 /* Views/TodoRowsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TodoRowsEditor.swift; sourceTree = "<group>"; };
+		FA0000000000000000000009 /* Models/RunningListCompletionPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RunningListCompletionPresentation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +109,7 @@
 				FA0000000000000000000005 /* Services/TaskTransport.swift */,
 				FA0000000000000000000004 /* Services/TaskStore.swift */,
 				FA0000000000000000000003 /* Models/RunningListPreview.swift */,
+				FA0000000000000000000009 /* Models/RunningListCompletionPresentation.swift */,
 				FA0000000000000000000002 /* Models/RunningListProjection.swift */,
 				FA0000000000000000000001 /* Models/TaskOccurrence.swift */,
 				A00000000000000000000026 /* Info.plist */,
@@ -230,6 +233,7 @@
 				FB0000000000000000000005 /* Services/TaskTransport.swift in Sources */,
 				FB0000000000000000000004 /* Services/TaskStore.swift in Sources */,
 				FB0000000000000000000003 /* Models/RunningListPreview.swift in Sources */,
+				FB0000000000000000000009 /* Models/RunningListCompletionPresentation.swift in Sources */,
 				FB0000000000000000000002 /* Models/RunningListProjection.swift in Sources */,
 				FB0000000000000000000001 /* Models/TaskOccurrence.swift in Sources */,
 				CB0000000000000000000001 /* Models/CaptureRecord.swift in Sources */,
@@ -380,7 +384,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Throughline/Throughline.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2026093003;
+				CURRENT_PROJECT_VERSION = 2026093004;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = RZT3KU8KMY;
 				ENABLE_PREVIEWS = YES;
@@ -418,7 +422,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Throughline/Throughline.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2026093003;
+				CURRENT_PROJECT_VERSION = 2026093004;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = RZT3KU8KMY;
 				ENABLE_PREVIEWS = YES;

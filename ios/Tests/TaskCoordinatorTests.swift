@@ -113,6 +113,7 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         if CommandLine.arguments.contains("--benchmark") { try benchmark(root); return }
         try projection()
         try models()
+        completionPresentation()
         try snapshotCache(root.appendingPathComponent("snapshot-cache"))
         try storeIntegrity(root.appendingPathComponent("integrity"))
         try await commands(root.appendingPathComponent("commands"))
@@ -122,7 +123,57 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         try await heldOwnerAndRecovery(root.appendingPathComponent("held"))
         try await transportChecks()
         try await previewEditing(root.appendingPathComponent("preview"))
-        print("RunningListTests: 11 groups passed (calendar, identity, atomic store, replay, editor, stale editor receipt, owner/deletion, transport, preview editor, held owner/recovery, snapshot cache)")
+        print("RunningListTests: 12 groups passed (calendar, identity, atomic store, replay, editor, stale editor receipt, owner/deletion, transport, preview editor, held owner/recovery, snapshot cache, completion presentation)")
+    }
+    static func completionPresentation() {
+        func row(_ id: String, completed: Bool = false, tab: TaskPresentationPlacement = .today) -> RunningListRow {
+            var task = fixtureTask(id)
+            if completed { task.status = "completed" }
+            return RunningListRow(occurrence: task, placement: tab, marker: nil, isDateMarker: false, isPending: completed)
+        }
+        func ids(_ snapshot: RunningListTabSnapshot) -> [String] { snapshot.open.map(\.id) }
+        let order = ["a", "b", "c"]
+        var state = RunningListCompletionPresentation()
+        let first = state.begin(id: "a", tab: .today, order: order)
+        var result = state.present(open: [row("b"), row("c")], done: [row("a", completed: true)], tab: .today)
+        expect(ids(result) == order && result.open[0].isCompleted && result.doneToday.isEmpty, "Completed row stays checked at its open position")
+        state.cancel("a")
+        result = state.present(open: order.map { row($0) }, done: [], tab: .today)
+        expect(ids(result) == order && !result.open[0].isCompleted, "Undo immediately reopens the paused row")
+        let second = state.begin(id: "a", tab: .today, order: order)
+        state.finish(id: "a", token: first)
+        result = state.present(open: [row("b"), row("c")], done: [row("a", completed: true)], tab: .today)
+        expect(ids(result) == order, "Old timer cannot end a newer completion pause")
+        let b = state.begin(id: "b", tab: .today, order: order)
+        result = state.present(open: [row("c")], done: [row("b", completed: true), row("a", completed: true)], tab: .today)
+        expect(ids(result) == order && result.doneToday.isEmpty, "Two quick completions preserve open order and appear exactly once")
+        state.finish(id: "a", token: second)
+        result = state.present(open: [row("c")], done: [row("b", completed: true), row("a", completed: true)], tab: .today)
+        expect(ids(result) == ["b", "c"] && result.doneToday.map(\.id) == ["a"], "Each completion settles independently")
+        result = state.present(open: [row("a"), row("c")], done: [row("b", completed: true)], tab: .today)
+        expect(ids(result) == order, "Undo of a settled preceding row preserves the second row's neighbours")
+        let later = state.begin(id: "z", tab: .later, order: ["x", "y", "z"])
+        state.finish(id: "b", token: b)
+        result = state.present(open: [row("x"), row("y")], done: [row("z", completed: true)], tab: .later)
+        expect(ids(result) == ["x", "y", "z"], "Other tab expiry never changes this tab's order")
+        state.finish(id: "z", token: later)
+        result = state.present(open: [row("x"), row("y")], done: [row("z", completed: true)], tab: .later)
+        expect(ids(result) == ["x", "y"] && result.doneToday.map(\.id) == ["z"], "Only the matching timer moves the row to done")
+        let stale = state.begin(id: "a", tab: .today, order: order)
+        state.clear()
+        let current = state.begin(id: "a", tab: .today, order: order)
+        state.finish(id: "a", token: stale)
+        result = state.present(open: [row("b"), row("c")], done: [row("a", completed: true)], tab: .today)
+        expect(ids(result) == order, "View replacement invalidates old timers")
+        state.retain(ids: ["b", "c"])
+        state.finish(id: "a", token: current)
+        result = state.present(open: [row("b"), row("c")], done: [], tab: .today)
+        expect(ids(result) == ["b", "c"] && result.doneToday.isEmpty, "Removed or hidden rows are never recreated")
+        state = RunningListCompletionPresentation()
+        _ = state.begin(id: "c", tab: .today, order: order)
+        _ = state.begin(id: "b", tab: .today, order: order)
+        result = state.present(open: [row("a")], done: [row("c", completed: true), row("b", completed: true)], tab: .today)
+        expect(ids(result) == order, "Reverse-order completions at the tail retain stable ordering")
     }
     @MainActor static func projection() throws {
         let la = TimeZone(identifier: "America/Los_Angeles")!
