@@ -763,3 +763,10 @@ Codex implements and verifies the bounded adjustment, then delivers the next bui
 ## 2026-09-30 — Repair Running List responsiveness and put older unfinished tasks in Today
 
 **Decision owner:** Mike. After using internal build 2026093001, Mike reported severe delays switching task tabs and requested that unfinished tasks from earlier notes appear directly in Today automatically. This supersedes the earlier collapsed group under Later. Preserve completed state and explicit manual moves; no merging by text, invented tasks, extraction change or automatic reprocessing. Codex fixes and measures the defect, Claude reviews the changed behavior, and the corrected build follows the existing Internal QA delivery lane before categories/search. [Diagnosis and verification](docs/evidence/2026-09-30-running-list-responsiveness.md).
+
+
+## 2026-09-30 — Accept Running List repair and publish the App Store update
+
+**Decision owner:** Mike. After installing the responsiveness repair in internal TestFlight 1.0.5 (2026093002), Mike said “Great, its perfect” and explicitly requested updating and publishing on the App Store, with ASO improvements as needed and notification when complete. This accepts the repaired Running List and authorizes a public App Store submission and automatic release after Apple approval, plus accurate listing text and current synthetic screenshots. The internal-only package cannot be submitted publicly, so build 2026093003 uses the same accepted app source with only its build number changed.
+
+Codex prepares, verifies and submits; Claude reviews the exact listing/screenshots. This decision supersedes earlier internal-only release limits for this accepted slice. It does not authorize a main merge, unrelated features, policy edits, provider/model changes, pricing changes or Private Evaluation activation. Categories/search remains the next product priority, followed by Private Evaluation. Release state must be read back from Apple and independently checked on the storefront before claiming publication.
