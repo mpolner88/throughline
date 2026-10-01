@@ -1,0 +1,32 @@
+{
+  "source": "957e5be40451c5d36ccf2706b222ffc8760505ae",
+  "version": "1.0.5",
+  "build": "2026093004",
+  "device": "iPhone 15 Pro Max simulator, iOS 26.3",
+  "content": "Synthetic preview tasks only",
+  "action": "Accessibility Complete action; no pointer-swipe or circle-tap claim",
+  "frames": {
+    "before-complete.png": {
+      "requested_seconds": 7.8,
+      "actual_seconds": 0
+    },
+    "checked-in-place.png": {
+      "requested_seconds": 8.3,
+      "actual_seconds": 8.1
+    },
+    "done-today.png": {
+      "requested_seconds": 9,
+      "actual_seconds": 8.763333333333334
+    }
+  },
+  "reduce_motion": "Settings enabled and verified; completion under that setting not exercised before Mac lock blocked controls",
+  "sha256": {
+    "apple-hold-check.json": "933973613a2b4b58cc9e65830c771e0e740f3a2b1870f380f2ad16488c23973f",
+    "before-complete.png": "e44ea3edfe1a89ee2f3cd0e68e6dbcd61143ab5b6a7d55b0557acee67a5b7d1d",
+    "checked-in-place.png": "56117793a71b494c0d751ce4256a541b3cb38bb40145a7669df87a7ebf07b706",
+    "done-today.png": "96e6607ae8dea1892bf47d7184497851c4df8b61e6a1c524510da21823daf9b6",
+    "package-verification.json": "66fad4ccbe1143d4ec413421ca3db202931d7e466eeebdfdc75149610beb3d7c",
+    "reduce-motion-enabled.png": "b894a26c6b5534845b3872027f17a0865ab387b88efd33ec1d88d00136417161",
+    "source-hashes.json": "3ba026615d291b4c99b7b882c508378f61b26ee6982b6d45efb44f9ac6cfd21c"
+  }
+}

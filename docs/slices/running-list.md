@@ -1,8 +1,8 @@
 # Running List — Today, This Week, Later
 
-**Progress:** In internal TestFlight — responsiveness repair 1.0.5 (2026093002), ready for Mike to retest.
+**Progress:** Review and testing — swipe completion repair; App Store submission held.
 **What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Mike retests tab response and earlier unfinished tasks in Today using the [repair delivery checklist](../releases/2026-09-30-ios-1.0.5-2026093002-delivery.md#device-acceptance-and-next-work).
+**Next:** Codex verifies the swipe/circle/Undo/cancellation/accessibility interactions and delivers a new internal build for Mike's device check. [Swipe repair record](../evidence/2026-09-30-running-list-swipe.md).
 **Review PR:** [Running List — Today, This Week, Later · #4](https://github.com/mpolner88/throughline/pull/4), open as a draft. It includes the already-delivered capture and recording-control prerequisites and stays unmerged.
 
 ## Technical record
@@ -10,10 +10,10 @@
 **Verified baseline:** 2026-09-30, local source `f6983ed01cd41355cc950dd9bd1226cb9da85294`; last verified internal delivery 1.0.5 (2026092902). [Exact readiness receipt](../evidence/2026-09-30-running-list-ready.md); [last delivery](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md).
 **Backlog state:** `shipped`
 **Slice phase:** `canary`
-**Tandem stage:** `internal_testflight`
-**Current:** Verified September 30: repair build 2026093002 is VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA after Claude review of source `4f33feb`. The API v32/task migration remain unchanged. [Delivery evidence](../releases/2026-09-30-ios-1.0.5-2026093002-delivery.md).
+**Tandem stage:** `building` (repair built; requested runtime checks and narrow presentation review incomplete)
+**Current:** Verified September 30: source 957e5be integrates the reviewed swipe fix. Twelve Running List groups, capture/AI regressions, isolated simulator build and signed internal archive/export pass. Accessible Complete/Reopen and checked-in-place transition were exercised; pointer-driven checks remain blocked by the locked Mac. Candidate 2026093004 is preserved but not uploaded. Internal 2026093002 remains available. [Swipe evidence](../evidence/2026-09-30-running-list-swipe.md), [held candidate](../releases/2026-09-30-ios-1.0.5-2026093004-candidate.md).
 **Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** Mike's real-device acceptance of responsiveness, scrolling, Today coverage and durable task actions. His September 30 direction supersedes the collapsed earlier-notes rule in the frozen handoff; completed tasks and manual moves stay intact. Categories/search follow.
+**Next gate:** Unlock the Mac; finish actual swipe/circle completion, Undo during the pause, two quick completions, cancelled drag and Reduce Motion; obtain the narrow presentation recheck, then internal delivery and Mike's physical-device acceptance. The exposed accessibility Complete/Reopen actions passed; spoken VoiceOver remains a device check. Source tests do not substitute for missing runtime interactions.
 **Authority:** Approved running-list implementation and internal-only TestFlight to existing Internal QA. Preserve shipped capture, recorder and AI controls. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or public release. Categories/search follow delivery; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward
