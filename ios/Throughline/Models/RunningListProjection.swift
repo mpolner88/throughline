@@ -135,7 +135,9 @@ enum RunningListProjection {
     }
     static func placement(_ task: TaskOccurrence, now: Date, timeZone: TimeZone) -> TaskPresentationPlacement {
         if let override = task.placementOverride { return TaskPresentationPlacement(rawValue: override.rawValue)! }
-        if task.isEarlier { return .earlier }
+        // Mike's device feedback supersedes the collapsed earlier-notes section.
+        // Keep provenance in storage; an explicit move above still wins.
+        if task.isEarlier { return .today }
         guard let day = TaskDates.dateOnly(task.due) ?? TaskDates.dateOnly(task.forDate) else { return .today }
         if day <= TaskDates.civil(now, zone: timeZone) { return .today }
         return day <= TaskDates.sunday(now: now, zone: timeZone) ? .thisWeek : .later
@@ -143,12 +145,35 @@ enum RunningListProjection {
     static func project(occurrences: [TaskOccurrence], commands: [TaskPendingCommand] = [],
                         now: Date, timeZone: TimeZone) -> RunningListSnapshot {
         var result = RunningListSnapshot()
+        // One parser and one set of sort keys per projection, not per comparison.
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let whole = ISO8601DateFormatter()
+        whole.formatOptions = [.withInternetDateTime]
+        var instants: [String: Date] = [:]
+        func instant(_ value: String) -> Date {
+            if let cached = instants[value] { return cached }
+            let date = fractional.date(from: value) ?? whole.date(from: value) ?? .distantPast
+            instants[value] = date
+            return date
+        }
+        var sortKeys: [String: SortKey] = [:]
+        var completionDates: [String: Date] = [:]
         let calendar = TaskDates.calendar(timeZone)
         let today = TaskDates.civil(now, zone: timeZone)
         let yesterday = TaskDates.civil(calendar.date(byAdding: .day, value: -1, to: now)!, zone: timeZone)
         let tomorrow = TaskDates.civil(calendar.date(byAdding: .day, value: 1, to: now)!, zone: timeZone)
         let pending = Set(commands.map(\.occurrenceID))
         for item in overlay(occurrences, commands: commands) {
+            if item.isCompleted {
+                guard let timestamp = item.completedAt,
+                      calendar.isDate(instant(timestamp), inSameDayAs: now) else { continue }
+                completionDates[item.id] = instant(timestamp)
+            }
+            let moved = item.placementOverride != nil
+            sortKeys[item.id] = SortKey(moved: moved,
+                day: (moved ? item.placementAnchorDate : TaskDates.dateOnly(item.due) ?? TaskDates.dateOnly(item.forDate) ?? item.originLocalDate) ?? "",
+                source: instant(item.sourceCreatedAt), order: item.sourceOrder, id: item.id)
             let home = placement(item, now: now, timeZone: timeZone)
             var marker: String?
             var dated = false
@@ -169,7 +194,6 @@ enum RunningListProjection {
             }
             var row = RunningListRow(occurrence: item, placement: home, marker: marker, isDateMarker: dated, isPending: pending.contains(item.id))
             if item.isCompleted {
-                guard let instant = item.completedAt.flatMap(TaskDates.instant), calendar.isDate(instant, inSameDayAs: now) else { continue }
                 let tab = item.completedPlacement ?? home.tab
                 row.placement = TaskPresentationPlacement(rawValue: tab.rawValue)!
                 row.marker = nil
@@ -179,33 +203,30 @@ enum RunningListProjection {
             else { result[home.tab].open.append(row) }
         }
         for tab in RunningListTab.allCases {
-            result[tab].open.sort { ordered($0.occurrence, $1.occurrence, tab: tab) }
+            result[tab].open.sort { ordered(sortKeys[$0.id]!, sortKeys[$1.id]!, tab: tab) }
             result[tab].doneToday.sort {
-                let a = $0.occurrence.completedAt.flatMap(TaskDates.instant) ?? .distantPast
-                let b = $1.occurrence.completedAt.flatMap(TaskDates.instant) ?? .distantPast
+                let a = completionDates[$0.id] ?? .distantPast
+                let b = completionDates[$1.id] ?? .distantPast
                 return a == b ? $0.id < $1.id : a < b
             }
         }
-        result.earlier.sort {
-            if $0.sourceCreatedAt != $1.sourceCreatedAt { return $0.sourceCreatedAt > $1.sourceCreatedAt }
-            return tie($0.occurrence, $1.occurrence)
-        }
         return result
     }
-    private static func ordered(_ a: TaskOccurrence, _ b: TaskOccurrence, tab: RunningListTab) -> Bool {
-        let am = a.placementOverride != nil, bm = b.placementOverride != nil
-        if tab != .today && am != bm { return !am }
-        let ad = am ? a.placementAnchorDate : TaskDates.dateOnly(a.due) ?? TaskDates.dateOnly(a.forDate) ?? a.originLocalDate
-        let bd = bm ? b.placementAnchorDate : TaskDates.dateOnly(b.due) ?? TaskDates.dateOnly(b.forDate) ?? b.originLocalDate
-        if ad != bd {
-            if tab == .later && am && bm { return (ad ?? "") > (bd ?? "") }
-            return (ad ?? "") < (bd ?? "")
-        }
-        return tie(a, b)
+    private struct SortKey {
+        let moved: Bool
+        let day: String
+        let source: Date
+        let order: Int
+        let id: String
     }
-    private static func tie(_ a: TaskOccurrence, _ b: TaskOccurrence) -> Bool {
-        if a.sourceDate != b.sourceDate { return a.sourceDate < b.sourceDate }
-        if a.sourceOrder != b.sourceOrder { return a.sourceOrder < b.sourceOrder }
+    private static func ordered(_ a: SortKey, _ b: SortKey, tab: RunningListTab) -> Bool {
+        if tab != .today && a.moved != b.moved { return !a.moved }
+        if a.day != b.day {
+            if tab == .later && a.moved && b.moved { return a.day > b.day }
+            return a.day < b.day
+        }
+        if a.source != b.source { return a.source < b.source }
+        if a.order != b.order { return a.order < b.order }
         return a.id < b.id
     }
 }

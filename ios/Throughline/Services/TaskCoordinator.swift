@@ -35,6 +35,8 @@ import UIKit
     private var previewTasks: [TaskOccurrence] = []
     private var previewNotes: [ThroughlineNote] = []
     private var previewNow: Date?
+    // Placement depends on the local day, zone and task state, never the selected tab.
+    private var cachedSnapshot: (day: String, zone: TimeZone, locale: String, value: RunningListSnapshot)?
 
     init(store: TaskStore? = nil, transport: (any TaskTransporting)? = nil,
          now: @escaping () -> Date = { Date() }, monitorConnectivity: Bool = true) {
@@ -117,9 +119,16 @@ import UIKit
     }
     func snapshot(now: Date, timeZone: TimeZone) -> RunningListSnapshot {
         guard !deletionPending, preview || ownerID != nil else { return RunningListSnapshot() }
-        if preview { return RunningListProjection.project(occurrences: previewTasks, now: now, timeZone: timeZone) }
-        return RunningListProjection.project(occurrences: state.tasks.filter { !blockedRecordingIDs.contains($0.recordingID) },
-            commands: state.commands, now: now, timeZone: timeZone)
+        let day = TaskDates.civil(now, zone: timeZone)
+        let locale = Locale.current.identifier
+        if let cachedSnapshot, cachedSnapshot.day == day, cachedSnapshot.zone == timeZone,
+           cachedSnapshot.locale == locale { return cachedSnapshot.value }
+        let owner = state
+        let value = RunningListProjection.project(
+            occurrences: preview ? previewTasks : owner.tasks.filter { !blockedRecordingIDs.contains($0.recordingID) },
+            commands: preview ? [] : owner.commands, now: now, timeZone: timeZone)
+        cachedSnapshot = (day, timeZone, locale, value)
+        return value
     }
     var allOccurrenceIDs: Set<String> { Set(occurrences.map(\.id)) }
     func occurrence(id: String) -> TaskOccurrence? { occurrences.first { $0.id == id } }
@@ -504,6 +513,7 @@ import UIKit
         errorMessage = (error as? TaskSyncError)?.localizedDescription ?? "Couldn't refresh your notes. Pull down to try again."
     }
     private func publish() {
+        cachedSnapshot = nil
         if deletionPending {
             occurrences = []; hasLoadedSnapshot = false
         } else if preview {

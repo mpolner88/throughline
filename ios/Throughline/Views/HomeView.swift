@@ -192,7 +192,7 @@ struct HomeView: View {
 
     private var hiddenRecordingIDs: Set<String> {
         var ids = captureQueue.representedRecordingIDs
-        for note in appState.latestNotes where captureQueue.representedCaptureIDs.contains(note.captureID?.lowercased() ?? "") {
+        for note in appState.notes where captureQueue.representedCaptureIDs.contains(note.captureID?.lowercased() ?? "") {
             ids.insert(note.id)
         }
         return ids
@@ -223,7 +223,7 @@ struct HomeView: View {
         appState.latestNotes.filter { note in
             !captureQueue.representedRecordingIDs.contains(note.id)
                 && !captureQueue.representedCaptureIDs.contains(note.captureID?.lowercased() ?? "")
-        }.map { appState.runningList.decorated($0) }
+        }
     }
 
     private var bottomRecorder: some View {

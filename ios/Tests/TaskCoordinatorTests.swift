@@ -110,8 +110,10 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("running-list-tests-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        if CommandLine.arguments.contains("--benchmark") { try benchmark(root); return }
         try projection()
         try models()
+        try snapshotCache(root.appendingPathComponent("snapshot-cache"))
         try storeIntegrity(root.appendingPathComponent("integrity"))
         try await commands(root.appendingPathComponent("commands"))
         try await editors(root.appendingPathComponent("editors"))
@@ -120,7 +122,7 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         try await heldOwnerAndRecovery(root.appendingPathComponent("held"))
         try await transportChecks()
         try await previewEditing(root.appendingPathComponent("preview"))
-        print("RunningListTests: 10 groups passed (calendar, identity, atomic store, replay, editor, stale editor receipt, owner/deletion, transport, preview editor, held owner/recovery)")
+        print("RunningListTests: 11 groups passed (calendar, identity, atomic store, replay, editor, stale editor receipt, owner/deletion, transport, preview editor, held owner/recovery, snapshot cache)")
     }
     @MainActor static func projection() throws {
         let la = TimeZone(identifier: "America/Los_Angeles")!
@@ -149,7 +151,7 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         var moved = mondayTask; moved.placementOverride = .thisWeek; moved.placementAnchorDate = "2026-09-30"
         expect(RunningListProjection.project(occurrences: [moved], now: monday, timeZone: la).thisWeek.open.count == 1, "Manual week remains after Sunday")
         var old = fixtureTask(earlier: true)
-        expect(RunningListProjection.project(occurrences: [old], now: monday, timeZone: la).earlier.count == 1, "Old provenance is separate")
+        expect(RunningListProjection.project(occurrences: [old], now: monday, timeZone: la).today.open.count == 1, "Earlier unfinished tasks land directly in Today")
         old.status = "completed"; old.completedAt = TaskDates.iso(monday); old.completedPlacement = .later
         let done = RunningListProjection.project(occurrences: [old], now: monday, timeZone: la)
         expect(done.later.doneToday.count == 1 && done.later.doneToday[0].marker == nil && done.later.openCount == 0, "Done earlier is later with no marker/count")
@@ -160,7 +162,7 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         let mixed = RunningListProjection.project(occurrences: [second, first, equal], now: monday, timeZone: la)
         expect(mixed.today.doneToday.map(\.id) == ["equal", "first", "second"], "Done orders by instant with stable identity ties")
         old.status = "open"; old.completedAt = nil
-        expect(RunningListProjection.project(occurrences: [old], now: monday, timeZone: la).earlier.count == 1, "Undo retains earlier provenance")
+        expect(RunningListProjection.project(occurrences: [old], now: monday, timeZone: la).today.open.count == 1, "Undo of earlier task returns to Today")
         expect(TaskDates.dateOnly("2024-02-29") != nil && TaskDates.dateOnly("2025-02-29") == nil && TaskDates.dateOnly("2026-13-01") == nil, "Strict leap/calendar validation")
         let spring = fixtureDate("2026-03-08T08:00:00Z")
         let fall = fixtureDate("2026-11-01T07:00:00Z")
@@ -177,6 +179,70 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         expect(RunningListProjection.project(occurrences: [delayed], now: fixtureDate(), timeZone: la).today.open[0].marker?.hasPrefix("from ") == true, "Delayed upload retains captured civil day")
         let year = fixtureDate("2026-12-31T20:00:00Z")
         expect(TaskDates.sunday(now: year, zone: la) == "2027-01-03", "Week crosses year")
+    }
+    /// An optimized, synthetic regression probe for the work done while switching tabs.
+    @MainActor static func benchmark(_ root: URL) throws {
+        let now = fixtureDate(), zone = TimeZone(identifier: "America/Los_Angeles")!
+        for count in [52, 250, 1000] {
+            let tasks: [TaskOccurrence] = (0..<count).map { i in
+                var item = fixtureTask("synthetic-\(i)", order: i % 4, earlier: true)
+                item.sourceCreatedAt = String(format: "2026-08-%02dT19:00:00Z", i % 28 + 1)
+                item.originLocalDate = String(item.sourceCreatedAt.prefix(10))
+                if i % 52 >= 20 { item.status = "completed"; item.completedAt = "2026-09-15T19:00:00Z" }
+                return item
+            }
+            let store = try TaskStore(directory: root.appendingPathComponent("benchmark-\(count)"))
+            let coordinator = TaskCoordinator(store: store, transport: FakeTaskTransport(tasks: [], note: fixtureNote()), monitorConnectivity: false)
+            coordinator.seedPreview(tasks: tasks, notes: [], now: now)
+            let coldStart = Date()
+            let first = coordinator.snapshot(now: now, timeZone: zone)
+            let coldMS = Date().timeIntervalSince(coldStart) * 1000
+            var checksum = 0, worstMS = 0.0
+            for _ in 0..<10 {
+                let start = Date()
+                for _ in 0..<15 {
+                    let snapshot = coordinator.snapshot(now: now, timeZone: zone)
+                    checksum += snapshot.today.open.count + snapshot.thisWeek.open.count + snapshot.later.open.count
+                }
+                worstMS = max(worstMS, Date().timeIntervalSince(start) * 1000)
+            }
+            expect(checksum == first.today.open.count * 150, "Benchmark consumes complete snapshot results")
+            // Generous host budget catches the former seconds-long stall without a frame-time claim.
+            expect(worstMS < 100, "Warm tab projections must not rebuild the full list")
+            print(String(format: "RunningListPerformance tasks=%d cold_ms=%.3f warm_15_reads_max_ms=%.3f", count, coldMS, worstMS))
+        }
+    }
+    @MainActor static func snapshotCache(_ root: URL) throws {
+        let la = TimeZone(identifier: "America/Los_Angeles")!
+        let tokyo = TimeZone(identifier: "Asia/Tokyo")!
+        let now = fixtureDate()
+        var earlier = fixtureTask("earlier", date: "2027-01-01", earlier: true)
+        earlier.originLocalDate = "2026-08-01"
+        var completed = fixtureTask("old-done", earlier: true)
+        completed.status = "completed"; completed.completedAt = "2026-08-01T19:00:00Z"
+        var moved = fixtureTask("moved", earlier: true)
+        moved.placementOverride = .later; moved.placementAnchorDate = "2026-09-29"
+        let future = fixtureTask("future", date: "2026-10-01")
+        let store = try TaskStore(directory: root)
+        let fake = FakeTaskTransport(tasks: [], note: fixtureNote())
+        let coordinator = TaskCoordinator(store: store, transport: fake, monitorConnectivity: false)
+        coordinator.seedPreview(tasks: [earlier, completed, moved, future], notes: [fixtureNote()], now: now)
+        let first = coordinator.snapshot(now: now, timeZone: la)
+        expect(first.today.open.map(\.id) == ["earlier"] && first.earlier.isEmpty, "Earlier tasks appear in Today even with an old date; no hidden section")
+        expect(first.later.open.map(\.id) == ["moved"] && first.today.doneToday.isEmpty, "Manual moves and historical completion stay intact")
+        expect(coordinator.snapshot(now: now.addingTimeInterval(60), timeZone: la) == first, "Same-day cached snapshot is stable")
+        expect(coordinator.snapshot(now: now, timeZone: tokyo).today.open.count == 2, "Time-zone change invalidates cache")
+        expect(coordinator.snapshot(now: fixtureDate("2026-10-01T19:00:00Z"), timeZone: la).today.open.count == 2, "Local-day change invalidates cache")
+        try coordinator.setCompleted(id: earlier.id, completed: true, from: .today)
+        expect(coordinator.snapshot(now: now, timeZone: la).today.doneToday.map(\.id) == [earlier.id], "Completion invalidates cached projection")
+        try coordinator.setCompleted(id: earlier.id, completed: false, from: .today)
+        try coordinator.move(id: earlier.id, to: .thisWeek, now: now, timeZone: la)
+        expect(coordinator.snapshot(now: now, timeZone: la).thisWeek.open.contains { $0.id == earlier.id }, "Explicit move of earlier task wins immediately")
+        coordinator.setAccountDeletionPending(true)
+        expect(coordinator.snapshot(now: now, timeZone: la) == RunningListSnapshot(), "Deletion hold never leaks cached rows")
+        coordinator.setAccountDeletionPending(false)
+        coordinator.seedPreview(tasks: [], notes: [], now: now)
+        expect(coordinator.snapshot(now: now, timeZone: la) == RunningListSnapshot(), "Replacing owner snapshot clears old cached rows")
     }
     static func models() throws {
         let raw = Data("{\"text\":\"Synthetic\"}".utf8)
@@ -215,7 +281,7 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
     }
     @MainActor static func commands(_ root: URL) async throws {
         let store = try TaskStore(directory: root)
-        let fake = FakeTaskTransport(tasks: [fixtureTask(), fixtureTask("task-b", order: 1)], note: fixtureNote())
+        let fake = FakeTaskTransport(tasks: [fixtureTask(earlier: true), fixtureTask("task-b", order: 1, earlier: true)], note: fixtureNote())
         let coordinator = TaskCoordinator(store: store, transport: fake, now: { fixtureDate() }, monitorConnectivity: false)
         coordinator.configure(ownerID: "synthetic-a", accountGeneration: UUID())
         await coordinator.refresh()
@@ -231,6 +297,8 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         await relaunched.refresh()
         expect(fake.requests.count >= 2 && fake.requests[0] == fake.requests[1], "Exact command body and UUID replay")
         expect(restored.owner("synthetic-a").commands.isEmpty, "Replay acknowledged once")
+        let restoredSnapshot = relaunched.snapshot(now: fixtureDate(), timeZone: .current)
+        expect(restoredSnapshot.today.doneToday.map(\.id) == ["task-a"] && restoredSnapshot.today.open.map(\.id) == ["task-b"], "Earlier completion and pending replay survive relaunch in Today")
         await relaunched.setForeground(false)
         try relaunched.setCompleted(id: "task-a", completed: false, from: .today)
         try relaunched.move(id: "task-a", to: .later, now: fixtureDate(), timeZone: .current)
@@ -339,17 +407,22 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
         let coordinator = TaskCoordinator(store: store, transport: fake, now: { fixtureDate() }, monitorConnectivity: false)
         coordinator.configure(ownerID: "synthetic-a", accountGeneration: UUID())
         await coordinator.refresh()
+        expect(coordinator.snapshot(now: fixtureDate(), timeZone: .current).today.open.count == 1, "Owner snapshot cached before account switch")
         fake.shouldPauseMutation = true
         try coordinator.setCompleted(id: "task-a", completed: true, from: .today)
         for _ in 0..<100 where fake.pauseMutation == nil { await Task.yield() }
         expect(fake.pauseMutation != nil, "Mutation reached controlled suspension")
         coordinator.configure(ownerID: nil, accountGeneration: UUID())
         expect(coordinator.occurrences.isEmpty, "Signed-out state hides owner cache")
+        expect(coordinator.snapshot(now: fixtureDate(), timeZone: .current) == RunningListSnapshot(), "Sign-out clears warm snapshot")
         fake.pauseMutation?.resume(); fake.pauseMutation = nil; fake.shouldPauseMutation = false
         for _ in 0..<10 { await Task.yield() }
         expect(store.owner("synthetic-a").commands.count == 1, "Late account response cannot settle old owner's outbox")
         coordinator.configure(ownerID: "synthetic-b", accountGeneration: UUID())
+        expect(coordinator.snapshot(now: fixtureDate(), timeZone: .current) == RunningListSnapshot(), "New account cannot see previous cached snapshot")
         await coordinator.refresh()
+        try coordinator.recordingDeleted("rec_synthetic")
+        expect(coordinator.snapshot(now: fixtureDate(), timeZone: .current) == RunningListSnapshot(), "Recording deletion clears cached rows")
         expect(fake.requests.count == 1, "New account never dispatches prior owner commands")
         try coordinator.accountDeleted(ownerID: "synthetic-b")
         coordinator.configure(ownerID: "synthetic-b", accountGeneration: UUID())
