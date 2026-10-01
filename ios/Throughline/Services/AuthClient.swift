@@ -53,11 +53,22 @@ struct AuthSession: Codable, Equatable, Sendable {
 }
 
 enum AuthSessionStore {
+    private static let lock = NSRecursiveLock()
+    // Every access is serialized by the recursive keychain lock.
+    nonisolated(unsafe) private static var revision = UUID()
+    static var generation: UUID { lock.lock(); defer { lock.unlock() }; return revision }
+    static var snapshot: (session: AuthSession?, generation: UUID) {
+        lock.lock(); defer { lock.unlock() }
+        let session = currentSession
+        return (session, revision)
+    }
+
     private static let legacyStorageKey = "throughline.authSession"
     private static let keychainService = "app.throughline.ios"
     private static let keychainAccount = "authSession"
 
     static var currentSession: AuthSession? {
+        lock.lock(); defer { lock.unlock() }
         if let data = keychainData(), let session = try? JSONDecoder().decode(AuthSession.self, from: data) {
             return session
         }
@@ -74,13 +85,25 @@ enum AuthSessionStore {
     }
 
     static func save(_ session: AuthSession) {
+        lock.lock(); defer { lock.unlock() }
+        revision = UUID()
         guard let data = try? JSONEncoder().encode(session) else { return }
         saveKeychainData(data)
     }
 
     static func clear() {
+        lock.lock(); defer { lock.unlock() }
+        revision = UUID()
         UserDefaults.standard.removeObject(forKey: legacyStorageKey)
         SecItemDelete(baseKeychainQuery() as CFDictionary)
+    }
+
+    /// Conditional commit prevents an old refresh from restoring/clearing a newer account.
+    static func replace(_ session: AuthSession?, ifGeneration expected: UUID) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard revision == expected else { return false }
+        if let session { save(session) } else { clear() }
+        return true
     }
 
     private static func keychainData() -> Data? {
@@ -122,34 +145,32 @@ enum AuthSessionStore {
 
 actor AuthSessionRefresher {
     static let shared = AuthSessionRefresher()
-
     private var refreshTask: Task<AuthSession?, Error>?
+    private var taskGeneration: UUID?
 
     func validSession() async throws -> AuthSession? {
-        guard let session = AuthSessionStore.currentSession else { return nil }
+        let snapshot = AuthSessionStore.snapshot
+        guard let session = snapshot.session else { return nil }
         guard session.needsRefresh() else { return session }
-
-        if let refreshTask {
-            return try await refreshTask.value
-        }
-
-        let refreshToken = session.refreshToken
+        let generation = snapshot.generation
+        if let refreshTask, taskGeneration == generation { return try await refreshTask.value }
         let task = Task { () throws -> AuthSession? in
-            let refreshed = try await AuthClient().refreshSession(refreshToken: refreshToken)
-            AuthSessionStore.save(refreshed)
-            return refreshed
+            do {
+                let refreshed = try await AuthClient().refreshSession(refreshToken: session.refreshToken)
+                guard AuthSessionStore.replace(refreshed, ifGeneration: generation) else { throw CancellationError() }
+                return refreshed
+            } catch {
+                // Offline/timeouts retain sign-in. Only an explicit credential rejection clears it.
+                if case let AuthClientError.serverError(status, _) = error, status == 400 || status == 401 {
+                    _ = AuthSessionStore.replace(nil, ifGeneration: generation)
+                }
+                throw error
+            }
         }
-
         refreshTask = task
-        do {
-            let refreshed = try await task.value
-            refreshTask = nil
-            return refreshed
-        } catch {
-            refreshTask = nil
-            AuthSessionStore.clear()
-            throw error
-        }
+        taskGeneration = generation
+        defer { if taskGeneration == generation { refreshTask = nil; taskGeneration = nil } }
+        return try await task.value
     }
 }
 

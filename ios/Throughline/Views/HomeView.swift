@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 private enum FeedbackStatus: Equatable {
@@ -16,83 +17,39 @@ private enum FeedbackStatus: Equatable {
 
 struct HomeView: View {
     @EnvironmentObject private var appState: AppState
-    @StateObject private var recorder = AudioRecorder()
+    @EnvironmentObject private var recorder: AudioRecorder
+    @EnvironmentObject private var captureQueue: CaptureQueue
+    @State private var showingCaptureSignIn = false
+    @State private var microphoneDenied = false
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showingAIProcessingConsent = false
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var isVisible = false
     @State private var uploadError: String?
     @State private var feedbackStatus: [String: FeedbackStatus] = [:]
     @State private var showingSettings = false
     @State private var isRefreshing = false
-    @State private var isFinishingRecording = false
-    @State private var isPreparingRecording = false
-    @State private var isUploading = false
-    @State private var isProcessing = false
-    @State private var didJustSave = false
     @State private var selectedNote: ThroughlineNote?
+    @State private var showingNotes = false
+    @State private var selectedTab: RunningListTab = .today
     private let maxRecordingSeconds = 300
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    dateBlock
-
-                    if isHomeEmpty {
-                        EmptyHomeContent(isDeemphasized: isShowingRecording || isShowingProcessing)
-                    } else {
-                        Text("Today’s plan")
-                            .font(.throughlineHeading)
-
-                        if !appState.carriedForwardItems.isEmpty {
-                            CarryForwardView(items: appState.carriedForwardItems)
-                        }
-
-                        let importantItems = mostImportantItems
-                        if !importantItems.isEmpty {
-                            MostImportantView(
-                                items: importantItems,
-                                onToggle: { item, isCompleted in
-                                    setActionItem(item, isCompleted: isCompleted)
-                                }
-                            )
-                        }
-
-                        ForEach(appState.latestNotes) { note in
-                            CapturedCard(
-                                note: note,
-                                label: note.type.displayName,
-                                feedbackStatus: feedbackStatus[note.id],
-                                onOpen: {
-                                    ProductAnalytics.track("note_opened")
-                                    selectedNote = note
-                                },
-                                onToggleImportant: { actionItem, isCompleted in
-                                    setActionItem(
-                                        ImportantItem(
-                                            id: "\(note.id)-\(actionItem.id)",
-                                            recordingID: note.id,
-                                            text: actionItem.text,
-                                            noteTitle: note.title,
-                                            createdAt: note.createdAt,
-                                            isCompleted: actionItem.isCompleted
-                                        ),
-                                        isCompleted: isCompleted
-                                    )
-                                },
-                                onFeedback: { sendFeedback(for: note, qualityScore: $0) },
-                                onDelete: { delete(note: note) }
-                            )
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .refreshable {
-                await refreshFromBackend()
+            if showingNotes {
+                notesContent
+            } else {
+                RunningListView(
+                    coordinator: appState.runningList,
+                    selectedTab: $selectedTab,
+                    hiddenRecordingIDs: hiddenRecordingIDs,
+                    isFirstUse: isHomeEmpty,
+                    emptyContent: AnyView(EmptyHomeContent(isDeemphasized: isShowingRecording || isShowingProcessing)),
+                    onOpenNote: openNote,
+                    onSignIn: { showingCaptureSignIn = true },
+                    onRefresh: refreshFromBackend
+                )
             }
 
             bottomRecorder
@@ -109,10 +66,43 @@ struct HomeView: View {
                 properties: ["state": isHomeEmpty ? "empty" : "populated"]
             )
         }
-        .onAppear { isVisible = true }
-        .onDisappear { isVisible = false }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView()
+        .onAppear {
+            isVisible = true
+            microphoneDenied = AVAudioApplication.shared.recordPermission == .denied
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--throughline-preview-mic-off") { microphoneDenied = true }
+            if RunningListPreview.isActive {
+                showingNotes = RunningListPreview.showNotes
+                if RunningListPreview.showDetail { selectedNote = visibleNotes.first { $0.id == RunningListPreview.detailRecordingID } }
+            }
+            #endif
+            Task { await captureQueue.setForeground(true); await appState.runningList.setForeground(true) }
+        }
+        .onDisappear { isVisible = false; Task { await captureQueue.setForeground(false); await appState.runningList.setForeground(false) } }
+        .onChange(of: scenePhase) { _, phase in
+            Task {
+                if phase == .active {
+                    microphoneDenied = AVAudioApplication.shared.recordPermission == .denied
+                    #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("--throughline-preview-mic-off") { microphoneDenied = true }
+                    #endif
+                    await captureQueue.setForeground(true)
+                    await appState.runningList.setForeground(true)
+                    await refreshFromBackend()
+                } else {
+                    await captureQueue.setForeground(false)
+                    await appState.runningList.setForeground(false)
+                }
+            }
+        }
+        .sheet(isPresented: $showingCaptureSignIn) {
+            NavigationStack {
+                OnboardingView(signInOnly: true) {
+                    showingCaptureSignIn = false
+                    Task { await captureQueue.resume(); await refreshFromBackend() }
+                }
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showingCaptureSignIn = false } } }
+            }
         }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= maxRecordingSeconds {
@@ -124,21 +114,13 @@ struct HomeView: View {
         }
         .sheet(item: $selectedNote) { note in
             NoteDetailSheet(
-                note: note,
+                note: appState.runningList.decorated(appState.latestNotes.first { $0.id == note.id } ?? note),
                 feedbackStatus: feedbackStatus[note.id],
                 onToggleImportant: { actionItem, isCompleted in
-                    setActionItem(
-                        ImportantItem(
-                            id: "\(note.id)-\(actionItem.id)",
-                            recordingID: note.id,
-                            text: actionItem.text,
-                            noteTitle: note.title,
-                            createdAt: note.createdAt,
-                            isCompleted: actionItem.isCompleted
-                        ),
-                        isCompleted: isCompleted
-                    )
+                    setActionItem(actionItem, isCompleted: isCompleted)
                 },
+                onPrepareEdits: { try await appState.runningList.prepareEditor(recordingID: note.id) },
+                isEditorFrozen: { appState.runningList.pendingEditor(recordingID: note.id)?.isFrozen ?? false },
                 onFeedback: { score, issueTypes, correction in
                     sendFeedback(
                         for: note,
@@ -159,164 +141,189 @@ struct HomeView: View {
     }
 
     private var topBar: some View {
-        HStack {
-            Wordmark()
-            Spacer()
-
-            Button {
-                ProductAnalytics.track("settings_opened")
-                showingSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 17, weight: .regular))
+        Group {
+            if showingNotes {
+                Text("Notes").font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .overlay(alignment: .leading) {
+                        Button { showingNotes = false } label: { Label("Back", systemImage: "chevron.left") }
+                            .font(.body).foregroundStyle(Theme.blue).buttonStyle(.plain).frame(minHeight: 44)
+                    }
+            } else {
+                HStack {
+                    Wordmark()
+                    Spacer()
+                    Button("notes") { showingNotes = true }
+                        .font(.subheadline.weight(.medium)).foregroundStyle(Theme.blue)
+                        .frame(minWidth: 44, minHeight: 44).buttonStyle(.plain)
+                    Button {
+                        ProductAnalytics.track("settings_opened")
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape").font(.system(size: 17, weight: .regular))
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain).accessibilityLabel("Settings")
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Settings")
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 20)
-        .padding(.bottom, 14)
+        .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 14)
     }
 
-    private var dateBlock: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Eyebrow(text: "today")
-            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                .font(.system(size: 16, weight: .medium))
+    private var notesContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 22) {
+                ForEach(visibleNotes) { note in
+                    CapturedCard(
+                        note: note, label: note.type.displayName,
+                        feedbackStatus: feedbackStatus[note.id],
+                        onOpen: { openNote(note.id) },
+                        onToggleImportant: { setActionItem($0, isCompleted: $1) },
+                        onFeedback: { sendFeedback(for: note, qualityScore: $0) },
+                        onDelete: { delete(note: note) }
+                    )
+                }
+                if visibleNotes.isEmpty {
+                    Text("Your notes will appear here.").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }.padding(24)
+        }.refreshable { await refreshFromBackend() }
+    }
+
+    private var hiddenRecordingIDs: Set<String> {
+        var ids = captureQueue.representedRecordingIDs
+        for note in appState.notes where captureQueue.representedCaptureIDs.contains(note.captureID?.lowercased() ?? "") {
+            ids.insert(note.id)
+        }
+        return ids
+    }
+
+    private func openNote(_ recordingID: String) {
+        if let note = visibleNotes.first(where: { $0.id == recordingID }) {
+            ProductAnalytics.track("note_opened")
+            selectedNote = appState.runningList.decorated(note)
+            return
+        }
+        let epoch = appState.accountGeneration
+        Task {
+            do {
+                let note = try await appState.runningList.openNote(recordingID: recordingID)
+                guard epoch == appState.accountGeneration else { return }
+                appState.addUploadedNote(note)
+                selectedNote = note
+                ProductAnalytics.track("note_opened")
+            } catch {
+                guard epoch == appState.accountGeneration else { return }
+                uploadError = "Couldn't open this note. Pull down to refresh."
+            }
+        }
+    }
+
+    private var visibleNotes: [ThroughlineNote] {
+        appState.latestNotes.filter { note in
+            !captureQueue.representedRecordingIDs.contains(note.id)
+                && !captureQueue.representedCaptureIDs.contains(note.captureID?.lowercased() ?? "")
         }
     }
 
     private var bottomRecorder: some View {
         VStack(spacing: 9) {
-            Divider()
+            CaptureTrayView(isRecording: isShowingRecording, onSignIn: { showingCaptureSignIn = true })
 
-            if let uploadError {
+            if let uploadError, !captureQueue.signInRequired, !captureQueue.deletionPending {
                 Text(uploadError)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    .font(.footnote).foregroundStyle(.red)
+                    .multilineTextAlignment(.center).padding(.horizontal, 24)
             }
 
-            RecordButton(
-                isRecording: isShowingRecording,
-                isBusy: isPreparingRecording || isFinishingRecording || isUploading || isShowingProcessing,
-                title: recorderButtonTitle,
-                detail: recorderButtonDetail,
-                supportingText: recorderButtonSupportingText,
-                size: 56
-            ) {
-                handleRecordTap()
+            if microphoneDenied {
+                recorderNotice(title: "Microphone access is off", support: "Turn it on in Settings to record. Your notes are unaffected.", actionTitle: "Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                }
+            } else if captureQueue.storageUnavailable || captureQueue.insufficientSpace {
+                recorderNotice(title: captureQueue.insufficientSpace ? "Not enough space to record" : "Couldn't start recording",
+                    support: captureQueue.insufficientSpace ? "Free up storage on this phone, then try again. Your notes are unaffected." : "Tap to try again. Your notes are unaffected.", actionTitle: nil) { startRecording() }
+            } else {
+                if !hasAIProcessingPermission && !isShowingRecording {
+                    AIProcessingDisclosure().padding(.horizontal, 24)
+                }
+                RecordButton(
+                    isRecording: isShowingRecording,
+                    isBusy: captureQueue.isPreparing || captureQueue.isFinishing,
+                    title: recorderButtonTitle,
+                    detail: recorderButtonDetail,
+                    supportingText: recorderButtonSupportingText,
+                    size: 56
+                ) { handleRecordTap() }
+                .disabled(captureQueue.isPreparing || captureQueue.isFinishing)
             }
-            .disabled(isPreparingRecording || isFinishingRecording || isUploading || isProcessing)
-
-            if !recorderFooterText.isEmpty {
-                Text(recorderFooterText)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+            if isRefreshing {
+                Text("syncing").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
             }
         }
-        .padding(.top, 12)
-        .padding(.bottom, 22)
-        .background(.background)
+        .padding(.top, 12).padding(.bottom, 22).background(.background)
+    }
+
+    private func recorderNotice(title: String, support: String, actionTitle: String?, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                if microphoneDenied { Image(systemName: "mic.slash").font(.title2) }
+                else {
+                    HStack(spacing: 18) { Capsule().frame(width: 34, height: 5); Capsule().frame(width: 34, height: 5) }.frame(height: 24)
+                }
+                Text(title).font(.headline)
+                Text(support).font(.subheadline).foregroundStyle(.white.opacity(0.86))
+                if let actionTitle {
+                    Text(actionTitle).font(.subheadline.weight(.medium)).foregroundStyle(Theme.blue)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(.white, in: RoundedRectangle(cornerRadius: Theme.cardRadius))
+                }
+            }.multilineTextAlignment(.center).padding(18).frame(maxWidth: .infinity, minHeight: 92)
+                .foregroundStyle(.white)
+                .background(LinearGradient(colors: [Theme.liftedBlue, Theme.blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay { RoundedRectangle(cornerRadius: Theme.cardRadius).strokeBorder(.white.opacity(0.22), lineWidth: 1) }
+                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
+                .contentShape(Rectangle())
+        }.buttonStyle(.plain).padding(.horizontal, 24)
     }
 
     private func handleRecordTap() {
-        guard !isFinishingRecording, !isUploading, !isProcessing else { return }
-
-        if recorder.isRecording {
-            stopAndUploadRecording()
-        } else {
-            guard AIProcessingPermission.shared.isAllowed else {
-                showingAIProcessingConsent = true
-                return
-            }
+        guard isVisible, scenePhase == .active,
+              !captureQueue.isPreparing, !captureQueue.isFinishing else { return }
+        if recorder.isRecording { stopAndUploadRecording() }
+        else {
+            // The button explicitly reads Agree and record while permission is off.
+            if !hasAIProcessingPermission { AIProcessingPermission.shared.setAllowed(true) }
             startRecording()
         }
     }
 
     private func startRecording() {
-        guard !isPreparingRecording, !recorder.isRecording, AIProcessingPermission.shared.isAllowed else { return }
-        let startingAccountID = appState.session?.user.id
-
+        guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed else { return }
         Task {
-            isPreparingRecording = true
-            defer { isPreparingRecording = false }
-
-            await recorder.requestPermissionIfNeeded()
-            guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed,
-                  appState.session?.user.id == startingAccountID else { return }
-            do {
-                didJustSave = false
-                try recorder.start(limitSeconds: nil)
-                ProductAnalytics.track("recording_started", properties: ["surface": "home"])
-                uploadError = nil
-            } catch {
-                uploadError = error.localizedDescription
-            }
+            await captureQueue.startRecording(type: .freeform, limitSeconds: maxRecordingSeconds)
+            microphoneDenied = AVAudioApplication.shared.recordPermission == .denied
         }
-    }
-
-    private var recorderFooterText: String {
-        if isRefreshing {
-            return "syncing"
-        }
-
-        if didJustSave {
-            return "saved"
-        }
-
-        return ""
     }
 
     private var isHomeEmpty: Bool {
-        let hasSettledNote = appState.notes.contains {
-            $0.processingStatus == nil || $0.processingStatus == "processed"
-        }
-        return !hasSettledNote && appState.carriedForwardItems.isEmpty
+        !visibleNotes.contains { $0.processingStatus == nil || $0.processingStatus == "processed" }
     }
-
-    private var isShowingRecording: Bool {
-        recorder.isRecording || previewRecordingState
-    }
-
-    private var isShowingProcessing: Bool {
-        isProcessing || previewProcessingState
-    }
-
+    private var isShowingRecording: Bool { recorder.isRecording || previewRecordingState }
+    private var isShowingProcessing: Bool { previewProcessingState }
     private var recorderButtonTitle: String {
-        if isShowingProcessing {
-            return "Structuring your plan…"
-        }
-        if isUploading {
-            return "Saving your voice note…"
-        }
-        if isFinishingRecording {
-            return "Finishing recording…"
-        }
-        if isPreparingRecording {
-            return "Preparing microphone…"
-        }
-        if isShowingRecording {
-            return "Stop recording"
-        }
+        if captureQueue.isFinishing { return "Finishing recording…" }
+        if captureQueue.isPreparing { return "Preparing microphone…" }
+        if isShowingRecording { return "Stop recording" }
+        if !hasAIProcessingPermission { return "Agree and record" }
         return isHomeEmpty ? "Record today’s plan" : "Start recording"
     }
-
     private var recorderButtonDetail: String? {
         guard isShowingRecording else { return nil }
         return previewRecordingState ? "0:18 / 5:00" : "\(recorder.elapsedText) / 5:00"
     }
-
     private var recorderButtonSupportingText: String? {
-        if isShowingProcessing {
-            return "Saving your note and extracting to-dos"
-        }
-        if isShowingRecording {
-            return "Listening… Tap when you’re done"
-        }
-        return nil
+        isShowingRecording ? "Listening… Tap when you’re done" : nil
     }
 
     private var previewRecordingState: Bool {
@@ -335,190 +342,47 @@ struct HomeView: View {
         #endif
     }
 
-    private var mostImportantItems: [ImportantItem] {
-        var items: [ImportantItem] = []
-        var seen = Set<String>()
-
-        for note in appState.latestNotes {
-            guard note.processingStatus == "processed" || note.processingStatus == nil else { continue }
-
-            for actionItem in note.displayImportantActionItems {
-                let key = actionItem.text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                guard !key.isEmpty, !seen.contains(key) else { continue }
-
-                seen.insert(key)
-                items.append(
-                    ImportantItem(
-                        id: "\(note.id)-\(items.count)",
-                        recordingID: note.id,
-                        text: actionItem.text,
-                        noteTitle: note.title,
-                        createdAt: note.createdAt,
-                        isCompleted: actionItem.isCompleted
-                    )
-                )
-
-                if items.count >= 6 {
-                    return items
-                }
-            }
-        }
-
-        return items
-    }
-
-    private func setActionItem(_ item: ImportantItem, isCompleted: Bool) {
-        guard item.recordingID.hasPrefix("rec_") else { return }
-
-        Task {
-            do {
-                let recording = try await UploadClient().updateActionItem(
-                    recordingID: item.recordingID,
-                    text: item.text,
-                    isCompleted: isCompleted
-                )
-                let updatedNote = recording.displayNote()
-                appState.addUploadedNote(updatedNote)
-                if selectedNote?.id == updatedNote.id {
-                    selectedNote = updatedNote
-                }
-                ProductAnalytics.track(
-                    "action_item_toggled",
-                    properties: ["completed": isCompleted ? "true" : "false"]
-                )
-                uploadError = nil
-            } catch {
-                uploadError = error.localizedDescription
-            }
-        }
+    private func setActionItem(_ item: ActionItem, isCompleted: Bool) {
+        guard let id = item.occurrenceID else { return }
+        let snapshot = appState.runningList.snapshot(now: Date(), timeZone: .current)
+        let rows = RunningListTab.allCases.flatMap { snapshot[$0].open + snapshot[$0].doneToday } + snapshot.earlier
+        // Completed tasks from previous days still exist in their source note.
+        let placement = rows.first(where: { $0.id == id })?.placement ?? .today
+        do {
+            try appState.runningList.setCompleted(id: id, completed: isCompleted, from: placement)
+            if let note = selectedNote { selectedNote = appState.runningList.decorated(note) }
+            uploadError = nil
+        } catch { uploadError = error.localizedDescription }
     }
 
     private func stopAndUploadRecording() {
-        guard recorder.isRecording, !isFinishingRecording, !isUploading, !isProcessing else { return }
-
-        Task {
-            var durableRecordingID: String?
-            do {
-                didJustSave = false
-                isFinishingRecording = true
-                let duration = min(recorder.elapsedSeconds, maxRecordingSeconds)
-                let fileURL = try await recorder.stop()
-
-                isFinishingRecording = false
-
-                isUploading = true
-
-                let response = try await UploadClient().uploadRecording(
-                    fileURL: fileURL,
-                    duration: duration,
-                    type: .freeform,
-                    processingMode: .async
-                )
-                durableRecordingID = response.id
-
-                isUploading = false
-                ProductAnalytics.track(
-                    "recording_uploaded",
-                    properties: [
-                        "surface": "home",
-                        "duration_bucket": recordingDurationBucket(duration)
-                    ],
-                    recordingID: response.id
-                )
-                appState.addUploadedNote(response.displayNote)
-                uploadError = nil
-                didJustSave = true
-                isProcessing = true
-                await refreshRecordingUntilSettled(id: response.id)
-                await refreshFromBackend()
-                let finalStatus = appState.notes.first { $0.id == response.id }?.processingStatus ?? "unknown"
-                if finalStatus == "processed" {
-                    ProductAnalytics.track(
-                        "recording_processed",
-                        properties: [
-                            "surface": "home",
-                            "processing_status": finalStatus
-                        ],
-                        recordingID: response.id
-                    )
-                } else if Self.failedProcessingStatuses.contains(finalStatus) {
-                    ProductAnalytics.track(
-                        "recording_failed",
-                        properties: ["processing_status": finalStatus, "stage": "processing"],
-                        recordingID: response.id
-                    )
-                }
-                isProcessing = false
-            } catch {
-                isFinishingRecording = false
-                isUploading = false
-                isProcessing = false
-                didJustSave = false
-                if error is AIProcessingPermissionError {
-                    uploadError = "AI processing is off, so this recording was not sent. It cannot be retried from this screen."
-                    return
-                }
-                ProductAnalytics.track(
-                    "recording_failed",
-                    properties: [
-                        "surface": "home",
-                        "stage": durableRecordingID == nil ? "pre_record" : "processing"
-                    ],
-                    recordingID: durableRecordingID
-                )
-                uploadError = error.localizedDescription
-                await refreshFromBackend()
-            }
-        }
+        Task { await captureQueue.stopRecording() }
     }
 
     private func refreshFromBackend() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--throughline-preview-home") { return }
+        #endif
         guard !isRefreshing else { return }
-
+        let epoch = appState.accountGeneration
         isRefreshing = true
         defer { isRefreshing = false }
-
+        await appState.runningList.refresh()
+        guard appState.accountGeneration == epoch else { return }
         do {
             let notes = try await UploadClient().listNotes()
+            guard appState.accountGeneration == epoch else { return }
+            await captureQueue.reconcile(notes: notes)
+            guard appState.accountGeneration == epoch else { return }
             appState.replaceNotes(notes)
             uploadError = nil
         } catch {
-            if appState.notes.isEmpty {
-                uploadError = error.localizedDescription
+            guard appState.accountGeneration == epoch else { return }
+            await captureQueue.resume()
+            if appState.notes.isEmpty && !captureQueue.signInRequired && !captureQueue.isOffline {
+                uploadError = "Couldn't refresh your notes. Pull down to try again."
             }
         }
-    }
-
-    private func refreshRecordingUntilSettled(id: String) async {
-        let client = UploadClient()
-        let settledStatuses = Set([
-            "processed",
-            "needs_transcript",
-            "needs_extractor",
-            "transcription_failed",
-            "extraction_failed",
-            "processing_failed"
-        ])
-
-        for attempt in 0..<10 {
-            do {
-                let recording = try await client.recording(id: id)
-                appState.addUploadedNote(recording.displayNote())
-                uploadError = nil
-
-                if let status = recording.processingStatus, settledStatuses.contains(status) {
-                    return
-                }
-            } catch {
-                if attempt == 0 {
-                    await refreshFromBackend()
-                }
-            }
-
-            try? await Task.sleep(for: .seconds(attempt < 4 ? 2 : 5))
-        }
-
-        await refreshFromBackend()
     }
 
     private func sendFeedback(
@@ -530,6 +394,7 @@ struct HomeView: View {
         guard note.id.hasPrefix("rec_") else { return }
 
         feedbackStatus[note.id] = .sending
+        let epoch = appState.accountGeneration
         Task {
             do {
                 _ = try await UploadClient().sendFeedback(
@@ -539,6 +404,7 @@ struct HomeView: View {
                     correction: correction,
                     shouldRemember: true
                 )
+                guard epoch == appState.accountGeneration else { return }
                 feedbackStatus[note.id] = .sent(qualityScore)
                 ProductAnalytics.track(
                     "feedback_submitted",
@@ -548,18 +414,16 @@ struct HomeView: View {
                     ]
                 )
             } catch {
+                guard epoch == appState.accountGeneration else { return }
                 feedbackStatus[note.id] = .failed
             }
         }
     }
 
     private func saveEdits(for note: ThroughlineNote, draft: NoteEditDraft) async throws -> ThroughlineNote {
-        let recording = try await UploadClient().updateRecording(
-            recordingID: note.id,
-            draft: draft,
-            expectedRevisionID: note.currentRevisionID
-        )
-        let updatedNote = recording.displayNote()
+        let epoch = appState.accountGeneration
+        let updatedNote = try await appState.runningList.saveEditor(draft)
+        guard epoch == appState.accountGeneration else { throw CancellationError() }
         appState.addUploadedNote(updatedNote)
         if selectedNote?.id == updatedNote.id {
             selectedNote = updatedNote
@@ -575,13 +439,16 @@ struct HomeView: View {
             return
         }
 
+        let epoch = appState.accountGeneration
         Task {
             do {
                 try await UploadClient().deleteRecording(id: note.id)
+                guard epoch == appState.accountGeneration else { return }
                 appState.removeNote(id: note.id)
                 ProductAnalytics.track("note_deleted")
                 uploadError = nil
             } catch {
+                guard epoch == appState.accountGeneration else { return }
                 uploadError = error.localizedDescription
             }
         }
@@ -669,135 +536,6 @@ private struct EmptyHomeContent: View {
     }
 }
 
-private struct CarryForwardView: View {
-    let items: [String]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Eyebrow(text: "unfinished from last night")
-            ForEach(items, id: \.self) { item in
-                Text(item)
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.leading, 14)
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(Theme.blue)
-                .frame(width: 1.5)
-        }
-    }
-}
-
-private struct ImportantItem: Identifiable {
-    let id: String
-    let recordingID: String
-    let text: String
-    let noteTitle: String
-    let createdAt: Date
-    let isCompleted: Bool
-}
-
-private struct MostImportantView: View {
-    let items: [ImportantItem]
-    let onToggle: (ImportantItem, Bool) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Eyebrow(text: "most important")
-
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(items) { item in
-                    SwipeCompleteRow(item: item, onToggle: onToggle)
-                }
-            }
-        }
-    }
-}
-
-private struct SwipeCompleteRow: View {
-    let item: ImportantItem
-    let onToggle: (ImportantItem, Bool) -> Void
-    @State private var horizontalOffset: CGFloat = 0
-
-    private let completeThreshold: CGFloat = 76
-    private var isShowingSwipeAction: Bool {
-        horizontalOffset > 0.5
-    }
-
-    var body: some View {
-        ZStack(alignment: .leading) {
-            HStack {
-                Image(systemName: item.isCompleted ? "arrow.uturn.left" : "checkmark")
-                    .font(.system(size: 15, weight: .semibold))
-                Text(item.isCompleted ? "Reopen" : "Done")
-                    .font(.system(size: 13, weight: .medium))
-                Spacer()
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, minHeight: 58)
-            .background(item.isCompleted ? Color.secondary : Theme.blue)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .opacity(isShowingSwipeAction ? 1 : 0)
-
-            HStack(alignment: .top, spacing: 10) {
-                Button {
-                    onToggle(item, !item.isCompleted)
-                } label: {
-                    Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundColor(item.isCompleted ? Theme.blue : Color.secondary)
-                        .frame(width: 26, height: 26)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(item.isCompleted ? "Reopen item" : "Complete item")
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.text)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(item.isCompleted ? Color.secondary : Color.primary)
-                        .strikethrough(item.isCompleted, color: .secondary)
-                        .lineSpacing(3)
-
-                    Text("\(item.noteTitle) · \(item.createdAt.formatted(.dateTime.hour().minute()))")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-            }
-            .padding(.vertical, 9)
-            .padding(.horizontal, 11)
-            .background(.background)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Theme.border, lineWidth: 0.7)
-            }
-            .offset(x: max(0, horizontalOffset))
-            .gesture(
-                DragGesture(minimumDistance: 18)
-                    .onChanged { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                        horizontalOffset = max(0, min(value.translation.width, completeThreshold + 18))
-                    }
-                    .onEnded { value in
-                        let shouldToggle = value.translation.width >= completeThreshold
-                        withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
-                            horizontalOffset = 0
-                        }
-
-                        if shouldToggle {
-                            onToggle(item, !item.isCompleted)
-                        }
-                    }
-            )
-        }
-    }
-}
-
 private struct ImportantActionSection: View {
     let title: String
     let items: [ActionItem]
@@ -809,15 +547,17 @@ private struct ImportantActionSection: View {
 
             ForEach(items) { item in
                 HStack(alignment: .top, spacing: 8) {
-                    Button {
-                        onToggle(item, !item.isCompleted)
-                    } label: {
-                        Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(item.isCompleted ? Theme.blue : Color.secondary)
+                    if item.occurrenceID != nil {
+                        Button { onToggle(item, !item.isCompleted) } label: {
+                            Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(item.isCompleted ? Theme.blue : Color.secondary)
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.leading, -12).padding(.top, -12)
+                        .accessibilityLabel(item.isCompleted ? "Reopen item" : "Complete item")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(item.isCompleted ? "Reopen item" : "Complete item")
 
                     Text(item.text)
                         .font(.system(size: 14))
@@ -871,9 +611,9 @@ private struct CapturedCard: View {
                 ProcessingStatusRow(text: processingText, isActive: note.isProcessing)
             }
 
-            if !note.displayMostImportant.isEmpty {
+            if !note.displayImportantActionItems.isEmpty {
                 ImportantActionSection(
-                    title: "most important",
+                    title: "to-dos",
                     items: Array(note.displayImportantActionItems.prefix(3)),
                     onToggle: onToggleImportant
                 )
@@ -927,6 +667,11 @@ private struct CapturedCard: View {
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                 .stroke(Theme.border, lineWidth: 0.5)
+        }
+        .onAppear {
+            #if DEBUG
+            if RunningListPreview.scenario == "discard" && note.id == "rec_synthetic_running_in" { isConfirmingDelete = true }
+            #endif
         }
         .confirmationDialog("Discard this memory?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
             Button("Discard memory", role: .destructive) {
@@ -1067,6 +812,8 @@ private struct NoteDetailSheet: View {
     let onToggleImportant: (ActionItem, Bool) -> Void
     let onFeedback: (Int, [String], String?) -> Void
     let onSaveEdits: (NoteEditDraft) async throws -> ThroughlineNote
+    let onPrepareEdits: () async throws -> NoteEditDraft
+    let isEditorFrozen: () -> Bool
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var currentNote: ThroughlineNote
@@ -1074,11 +821,14 @@ private struct NoteDetailSheet: View {
     @State private var isEditing = false
     @State private var isSaving = false
     @State private var editError: String?
+    @State private var editConflict = false
 
     init(
         note: ThroughlineNote,
         feedbackStatus: FeedbackStatus?,
         onToggleImportant: @escaping (ActionItem, Bool) -> Void,
+        onPrepareEdits: @escaping () async throws -> NoteEditDraft,
+        isEditorFrozen: @escaping () -> Bool,
         onFeedback: @escaping (Int, [String], String?) -> Void,
         onSaveEdits: @escaping (NoteEditDraft) async throws -> ThroughlineNote,
         onDelete: @escaping () -> Void
@@ -1088,9 +838,18 @@ private struct NoteDetailSheet: View {
         self.onToggleImportant = onToggleImportant
         self.onFeedback = onFeedback
         self.onSaveEdits = onSaveEdits
+        self.onPrepareEdits = onPrepareEdits
+        self.isEditorFrozen = isEditorFrozen
         self.onDelete = onDelete
         _currentNote = State(initialValue: note)
         _draft = State(initialValue: NoteEditDraft(note: note))
+    }
+
+    private var editorIsFrozen: Bool {
+        #if DEBUG
+        if RunningListPreview.scenario == "editor-pending" { return true }
+        #endif
+        return isEditorFrozen()
     }
 
     var body: some View {
@@ -1101,11 +860,13 @@ private struct NoteDetailSheet: View {
                         NoteEditForm(
                             draft: $draft,
                             error: editError,
-                            showsPrivateEvaluationDisclosure: currentNote.currentRevisionID != nil
+                            showsPrivateEvaluationDisclosure: currentNote.currentRevisionID != nil,
+                            fieldsAreFrozen: editorIsFrozen
                         )
-                            .disabled(isSaving)
+                            .disabled(isSaving || editorIsFrozen || editConflict)
                     } else {
                         readOnlyContent
+                        if let editError { Text(editError).font(.footnote).foregroundStyle(.red) }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1116,13 +877,11 @@ private struct NoteDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if currentNote.id.hasPrefix("rec_") {
-                        Button(isEditing ? "Cancel" : "Edit") {
+                        Button(isEditing ? ((editorIsFrozen || editConflict) ? "Close" : "Cancel") : "Edit") {
                             if isEditing {
                                 cancelEditing()
                             } else {
-                                draft = NoteEditDraft(note: currentNote)
-                                editError = nil
-                                isEditing = true
+                                prepareEditing()
                             }
                         }
                         .disabled(isSaving)
@@ -1130,7 +889,7 @@ private struct NoteDetailSheet: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    if isEditing {
+                    if isEditing && !editConflict {
                         Button {
                             saveDraft()
                         } label: {
@@ -1142,13 +901,34 @@ private struct NoteDetailSheet: View {
                             }
                         }
                         .disabled(isSaving || !draft.canSave)
-                    } else {
+                    } else if !isEditing {
                         Button("Done") {
                             dismiss()
                         }
                     }
                 }
             }
+        }
+        .task {
+            #if DEBUG
+            if ["editor", "editor-conflict", "editor-pending"].contains(RunningListPreview.scenario) {
+                do {
+                    draft = try await onPrepareEdits()
+                    if RunningListPreview.scenario == "editor" { draft.todoRows.append(TodoEditRow(newText: "")) }
+                    isEditing = true
+                    if RunningListPreview.scenario == "editor-pending" {
+                        editError = "Couldn't confirm the save. Tap Save to try again."
+                    }
+                    if RunningListPreview.scenario == "editor-conflict" {
+                        editConflict = true
+                        editError = TaskSyncError.conflict.localizedDescription
+                    }
+                } catch { editError = error.localizedDescription }
+            }
+            #endif
+        }
+        .onChange(of: editError) { _, message in
+            if let message, UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: message) }
         }
         .onChange(of: note) { _, newNote in
             currentNote = newNote
@@ -1180,15 +960,15 @@ private struct NoteDetailSheet: View {
             }
 
             if !currentNote.displayMostImportant.isEmpty {
+                ExtractedSection(title: "most important", items: currentNote.displayMostImportant)
+            }
+
+            if !currentNote.displayImportantActionItems.isEmpty {
                 ImportantActionSection(
-                    title: "most important",
+                    title: "to-dos",
                     items: currentNote.displayImportantActionItems,
                     onToggle: onToggleImportant
                 )
-            }
-
-            if !currentNote.todos.isEmpty {
-                ExtractedSection(title: "to-dos", items: currentNote.todos.map(\.text))
             }
 
             if !currentNote.intentions.isEmpty {
@@ -1232,9 +1012,24 @@ private struct NoteDetailSheet: View {
         }
     }
 
+    private func prepareEditing() {
+        guard !isSaving else { return }
+        isSaving = true
+        Task {
+            do {
+                draft = try await onPrepareEdits()
+                editConflict = false
+                editError = editorIsFrozen ? "Couldn't confirm the save. Tap Save to try again." : nil
+                isEditing = true
+            } catch { editError = error.localizedDescription }
+            isSaving = false
+        }
+    }
+
     private func cancelEditing() {
         draft = NoteEditDraft(note: currentNote)
         editError = nil
+        editConflict = false
         isEditing = false
     }
 
@@ -1250,6 +1045,7 @@ private struct NoteDetailSheet: View {
                 draft = NoteEditDraft(note: updatedNote)
                 isEditing = false
             } catch {
+                editConflict = (error as? TaskSyncError) == .conflict
                 editError = error.localizedDescription
             }
             isSaving = false
@@ -1535,29 +1331,25 @@ private struct PrivateEvaluationView: View {
 }
 
 private struct NoteEditForm: View {
-
     @Binding var draft: NoteEditDraft
     let error: String?
     let showsPrivateEvaluationDisclosure: Bool
+    let fieldsAreFrozen: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            EditTextField(title: "title", text: $draft.title)
-            EditTextEditor(title: "summary", text: $draft.summary, minHeight: 110)
-            EditTextEditor(title: "most important", text: $draft.mostImportantText, minHeight: 128)
-            EditTextEditor(title: "to-dos", text: $draft.todosText, minHeight: 112)
-            EditTextEditor(title: "transcript", text: $draft.transcript, minHeight: 220)
-
-            if showsPrivateEvaluationDisclosure {
-                RecordingPrivacyLink()
-            }
-
             if let error {
-                Text(error)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.red)
-                    .lineSpacing(3)
+                Text(error).font(.footnote).foregroundStyle(.red).lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Group {
+                EditTextField(title: "title", text: $draft.title)
+                EditTextEditor(title: "summary", text: $draft.summary, minHeight: 110)
+                EditTextEditor(title: "most important", text: $draft.mostImportantText, minHeight: 128)
+                TodoRowsEditor(rows: $draft.todoRows)
+                EditTextEditor(title: "transcript", text: $draft.transcript, minHeight: 220)
+            }.opacity(fieldsAreFrozen ? 0.55 : 1)
+            if showsPrivateEvaluationDisclosure { RecordingPrivacyLink() }
         }
     }
 }

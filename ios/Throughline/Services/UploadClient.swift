@@ -177,6 +177,7 @@ struct RecordingPayload: Decodable {
     let transcriptRaw: String?
     let structuredNote: StructuredNotePayload?
     var currentRevisionID: String?
+    var captureID: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -186,6 +187,7 @@ struct RecordingPayload: Decodable {
         case transcriptRaw = "transcript_raw"
         case structuredNote = "structured_note"
         case currentRevisionID = "current_revision_id"
+        case captureID = "capture_id"
     }
 
     var throughlineNote: ThroughlineNote? {
@@ -229,7 +231,8 @@ struct RecordingPayload: Decodable {
             tags: structuredNote.tags,
             people: structuredNote.people,
             projects: structuredNote.projects,
-            centersOfBalance: structuredNote.centersOfBalance
+            centersOfBalance: structuredNote.centersOfBalance,
+            captureID: captureID
         )
     }
 
@@ -263,7 +266,8 @@ struct RecordingPayload: Decodable {
             tags: [status],
             people: [],
             projects: [],
-            centersOfBalance: []
+            centersOfBalance: [],
+            captureID: captureID
         )
     }
 
@@ -495,11 +499,13 @@ enum ProductAnalytics {
     ) {
         guard !isPreviewLaunch else { return }
 
+        let ownerID = AuthSessionStore.currentSession?.user.id
         Task {
             await ProductEventQueue.shared.enqueue(
                 eventName: eventName,
                 properties: properties,
-                recordingID: recordingID
+                recordingID: recordingID,
+                ownerID: ownerID
             )
         }
     }
@@ -535,91 +541,55 @@ enum ProductAnalytics {
 
 private actor ProductEventQueue {
     static let shared = ProductEventQueue()
-
-    private static let storageKey = "throughline.pendingProductEvents"
+    private struct OwnedEvent: Codable {
+        let ownerID: String?
+        let event: ProductEvent
+    }
+    private static let storageKey = "throughline.pendingOwnedProductEvents"
     private static let sessionID = UUID().uuidString.lowercased()
-    private var pendingEvents: [ProductEvent]
-    private var distributionChannel: ProductEventDistributionChannel?
+    private var pendingEvents: [OwnedEvent]
     private var isFlushing = false
 
     init() {
-        if let data = UserDefaults.standard.data(forKey: Self.storageKey),
-           let events = try? JSONDecoder().decode([ProductEvent].self, from: data) {
-            pendingEvents = events
-        } else {
-            pendingEvents = []
-        }
+        let data = UserDefaults.standard.data(forKey: Self.storageKey)
+        pendingEvents = data.flatMap { try? JSONDecoder().decode([OwnedEvent].self, from: $0) } ?? []
+        // The legacy queue had no owner binding. Never adopt recording references under today's account.
+        // Leave unbound legacy storage preserved; it cannot safely be sent under a new owner.
     }
 
-    func enqueue(
-        eventName: String,
-        properties: [String: String],
-        recordingID: String?
-    ) async {
-        let eventDistributionChannel: ProductEventDistributionChannel
-        if let distributionChannel {
-            eventDistributionChannel = distributionChannel
-        } else {
-            let detectedChannel = await ProductEventAttribution.currentDistributionChannel()
-            distributionChannel = detectedChannel
-            eventDistributionChannel = detectedChannel
-        }
-
-        pendingEvents.append(
-            ProductEvent(
-                id: "evt_\(UUID().uuidString.lowercased())",
-                eventName: eventName,
-                sessionID: Self.sessionID,
-                occurredAt: Self.timestamp(),
-                appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
-                buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
-                schemaVersion: 2,
-                distributionChannel: eventDistributionChannel,
-                recordingID: recordingID,
-                properties: properties
-            )
-        )
-
-        if pendingEvents.count > 200 {
-            pendingEvents.removeFirst(pendingEvents.count - 200)
-        }
+    func enqueue(eventName: String, properties: [String: String], recordingID: String?, ownerID: String?) async {
+        let channel = await ProductEventAttribution.currentDistributionChannel()
+        let event = ProductEvent(id: "evt_" + UUID().uuidString.lowercased(), eventName: eventName,
+            sessionID: Self.sessionID, occurredAt: ISO8601DateFormatter().string(from: Date()),
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+            buildNumber: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+            distributionChannel: channel, recordingID: recordingID, properties: properties)
+        pendingEvents.append(OwnedEvent(ownerID: ownerID, event: event))
         persist()
         await flush()
     }
 
     func flush() async {
-        guard !isFlushing, !pendingEvents.isEmpty else { return }
+        guard !isFlushing else { return }
         isFlushing = true
         defer { isFlushing = false }
-
-        while !pendingEvents.isEmpty {
-            let batch = Array(pendingEvents.prefix(25))
+        let owner = AuthSessionStore.currentSession?.user.id
+        // A singleton send isolates permanent 403 ownership loss without sacrificing adjacent events.
+        for pending in pendingEvents where pending.ownerID == owner {
+            guard AuthSessionStore.currentSession?.user.id == owner else { return }
             do {
-                try await UploadClient().sendProductEvents(batch)
-                let sentIDs = Set(batch.map(\.id))
-                pendingEvents.removeAll { sentIDs.contains($0.id) }
-                persist()
-            } catch let UploadClientError.serverError(status, _)
-                where (400..<500).contains(status) && ![401, 403, 429].contains(status) {
-                // A malformed or obsolete event should not block newer events forever.
-                let rejectedIDs = Set(batch.map(\.id))
-                pendingEvents.removeAll { rejectedIDs.contains($0.id) }
-                persist()
-            } catch {
-                return
-            }
+                try await UploadClient().sendProductEvents([pending.event], ownerID: owner, anonymousOnly: owner == nil)
+            } catch let UploadClientError.serverError(status, _) where (400..<500).contains(status) && status != 401 && status != 429 {
+                // Permanent rejection: retire only this event and continue.
+            } catch { return }
+            pendingEvents.removeAll { $0.event.id == pending.event.id }
+            persist()
         }
     }
 
     private func persist() {
         guard let data = try? JSONEncoder().encode(pendingEvents) else { return }
         UserDefaults.standard.set(data, forKey: Self.storageKey)
-    }
-
-    private static func timestamp() -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.string(from: Date())
     }
 }
 
@@ -690,8 +660,15 @@ struct UploadClient {
         return try JSONDecoder().decode(UploadResponse.self, from: data)
     }
 
-    func saveDemoNote(_ note: ThroughlineNote, duration: Int) async throws -> UploadResponse {
-        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("recordings"))
+    @MainActor
+    func saveDemoNote(_ note: ThroughlineNote, duration: Int, expectedOwnerID: String,
+                      beforeDispatch: () throws -> Void = {}) async throws -> UploadResponse {
+        try beforeDispatch()
+        guard let auth = try await AuthSessionRefresher.shared.validSession(),
+              auth.user.id == expectedOwnerID,
+              AuthSessionStore.currentSession?.user.id == expectedOwnerID else { throw CancellationError() }
+        var request = URLRequest(url: baseURL.appendingPathComponent("recordings"))
+        request.setValue("Bearer \(auth.accessToken)", forHTTPHeaderField: "Authorization")
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(
@@ -704,6 +681,8 @@ struct UploadClient {
             )
         )
 
+        try Task.checkCancellation()
+        try beforeDispatch()
         let (data, response) = try await aiPermission.data(for: request, session: session)
         try validate(response: response, data: data)
         return try JSONDecoder().decode(UploadResponse.self, from: data)
@@ -871,10 +850,21 @@ struct UploadClient {
         return try JSONDecoder().decode(FeedbackResponse.self, from: data)
     }
 
-    func sendProductEvents(_ events: [ProductEvent]) async throws {
+    func sendProductEvents(_ events: [ProductEvent], ownerID: String? = nil, anonymousOnly: Bool = false) async throws {
         guard !events.isEmpty else { return }
 
-        var request = try await authorizedRequest(url: baseURL.appendingPathComponent("events"))
+        var request: URLRequest
+        if let ownerID {
+            guard let auth = try await AuthSessionRefresher.shared.validSession(), auth.user.id == ownerID,
+                  AuthSessionStore.currentSession?.user.id == ownerID else { throw CancellationError() }
+            request = URLRequest(url: baseURL.appendingPathComponent("events"))
+            request.setValue("Bearer " + auth.accessToken, forHTTPHeaderField: "Authorization")
+        } else if anonymousOnly {
+            guard AuthSessionStore.currentSession == nil else { throw CancellationError() }
+            request = URLRequest(url: baseURL.appendingPathComponent("events"))
+        } else {
+            request = try await authorizedRequest(url: baseURL.appendingPathComponent("events"))
+        }
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(ProductEventBatchRequest(events: events))

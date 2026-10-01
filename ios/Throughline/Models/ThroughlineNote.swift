@@ -31,7 +31,7 @@ enum Mood: String, Codable {
 }
 
 struct Todo: Identifiable, Codable, Hashable {
-    var id = UUID().uuidString
+    var id = ""
     var text: String
     var status: String?
     var priority: String?
@@ -73,7 +73,7 @@ struct Todo: Identifiable, Codable, Hashable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
         text = try container.decode(String.self, forKey: .text)
         status = try container.decodeIfPresent(String.self, forKey: .status)
         priority = try container.decodeIfPresent(String.self, forKey: .priority)
@@ -89,6 +89,7 @@ struct ActionItem: Identifiable, Codable, Hashable {
     var text: String
     var status: String
     var source: String?
+    var occurrenceID: String?
     var completedAt: String?
 
     enum CodingKeys: String, CodingKey {
@@ -96,6 +97,7 @@ struct ActionItem: Identifiable, Codable, Hashable {
         case text
         case status
         case source
+        case occurrenceID = "occurrence_id"
         case completedAt = "completed_at"
     }
 
@@ -104,12 +106,14 @@ struct ActionItem: Identifiable, Codable, Hashable {
         text: String,
         status: String = "open",
         source: String? = nil,
-        completedAt: String? = nil
+        completedAt: String? = nil,
+        occurrenceID: String? = nil
     ) {
         self.id = id
         self.text = text
         self.status = status
         self.source = source
+        self.occurrenceID = occurrenceID
         self.completedAt = completedAt
     }
 
@@ -119,6 +123,7 @@ struct ActionItem: Identifiable, Codable, Hashable {
         id = try container.decodeIfPresent(String.self, forKey: .id) ?? Self.stableID(for: text)
         status = try container.decodeIfPresent(String.self, forKey: .status) ?? "open"
         source = try container.decodeIfPresent(String.self, forKey: .source)
+        occurrenceID = try container.decodeIfPresent(String.self, forKey: .occurrenceID)
         completedAt = try container.decodeIfPresent(String.self, forKey: .completedAt)
     }
 
@@ -142,6 +147,9 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
     var type: RecordingType
     var processingStatus: String?
     var currentRevisionID: String?
+    var captureID: String?
+    var taskContractVersion: Int?
+    var taskRevision: Int64?
     var title: String
     var summary: String
     var transcript: String
@@ -164,6 +172,9 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         case type
         case processingStatus
         case currentRevisionID
+        case captureID
+        case taskContractVersion
+        case taskRevision
         case title
         case summary
         case transcript
@@ -201,13 +212,15 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         tags: [String],
         people: [String],
         projects: [String],
-        centersOfBalance: [String]
+        centersOfBalance: [String],
+        captureID: String? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
         self.type = type
         self.processingStatus = processingStatus
         self.currentRevisionID = currentRevisionID
+        self.captureID = captureID
         self.title = title
         self.summary = summary
         self.transcript = transcript
@@ -232,6 +245,9 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
         type = try container.decodeIfPresent(RecordingType.self, forKey: .type) ?? .freeform
         processingStatus = try container.decodeIfPresent(String.self, forKey: .processingStatus)
         currentRevisionID = try container.decodeIfPresent(String.self, forKey: .currentRevisionID)
+        captureID = try container.decodeIfPresent(String.self, forKey: .captureID)
+        taskContractVersion = try container.decodeIfPresent(Int.self, forKey: .taskContractVersion)
+        taskRevision = try container.decodeIfPresent(Int64.self, forKey: .taskRevision)
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? "voice note"
         summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
         transcript = try container.decodeIfPresent(String.self, forKey: .transcript) ?? ""
@@ -301,17 +317,12 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
     }
 
     var displayImportantActionItems: [ActionItem] {
-        var statusByText: [String: ActionItem] = [:]
-        for item in actionItems {
-            statusByText[Self.normalizedText(item.text)] = item
-        }
-
-        return todos.map { todo in
-            if let item = statusByText[Self.normalizedText(todo.text)] {
-                return item
-            }
-
-            return ActionItem(id: Self.stableActionID(for: todo.text), text: todo.text, source: "todo")
+        // Only actual to-dos are actionable. Prose and repeated text never supply identity.
+        todos.enumerated().map { index, todo in
+            let occurrence = taskContractVersion == 1 && !todo.id.isEmpty ? todo.id : nil
+            return ActionItem(id: occurrence ?? "display-\(id)-\(index)", text: todo.text,
+                status: todo.status ?? "open", source: "todo", completedAt: todo.completedAt,
+                occurrenceID: occurrence)
         }
     }
 
@@ -370,71 +381,77 @@ struct ThroughlineNote: Identifiable, Codable, Hashable {
     )
 }
 
-struct NoteEditDraft: Equatable {
+struct TodoEditRow: Codable, Equatable, Identifiable {
+    var id: String
+    var occurrenceID: String?
+    var clientItemID: String?
+    var text: String
+    var isCompleted: Bool
+
+    init(newText: String = "") {
+        let uuid = UUID().uuidString.lowercased()
+        id = "new-" + uuid
+        occurrenceID = nil
+        clientItemID = uuid
+        text = newText
+        isCompleted = false
+    }
+    init(id: String, occurrenceID: String?, text: String, isCompleted: Bool) {
+        self.id = id
+        self.occurrenceID = occurrenceID
+        clientItemID = nil
+        self.text = text
+        self.isCompleted = isCompleted
+    }
+}
+
+struct NoteEditDraft: Codable, Equatable {
+    var recordingID: String?
+    var expectedTaskRevision: Int64?
     var title: String
     var summary: String
     var transcript: String
     var mostImportantText: String
-    var todosText: String
+    var todoRows: [TodoEditRow]
 
-    init(
-        title: String = "",
-        summary: String = "",
-        transcript: String = "",
-        mostImportantText: String = "",
-        todosText: String = ""
-    ) {
+    init(title: String = "", summary: String = "", transcript: String = "",
+         mostImportantText: String = "", todosText: String = "") {
         self.title = title
         self.summary = summary
         self.transcript = transcript
         self.mostImportantText = mostImportantText
-        self.todosText = todosText
+        todoRows = todosText.components(separatedBy: .newlines).filter { !$0.isEmpty }.map { TodoEditRow(newText: $0) }
     }
-
     init(note: ThroughlineNote) {
+        recordingID = note.id
+        expectedTaskRevision = note.taskRevision
         title = note.title
         summary = note.summary
         transcript = note.transcript
         mostImportantText = note.displayMostImportant.joined(separator: "\n")
-        todosText = note.todos.map(\.text).joined(separator: "\n")
+        todoRows = note.todos.enumerated().map { index, todo in
+            let occurrence = note.taskContractVersion == 1 && !todo.id.isEmpty ? todo.id : nil
+            return TodoEditRow(id: occurrence ?? "unknown-\(index)", occurrenceID: occurrence,
+                text: todo.text, isCompleted: todo.status == "completed" || todo.status == "done")
+        }
     }
-
-    var trimmedTitle: String {
-        title.trimmingCharacters(in: .whitespacesAndNewlines)
+    var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedSummary: String { summary.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedTranscript: String { transcript.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var mostImportant: [String] { Self.lines(from: mostImportantText) }
+    var todos: [String] { todoRows.map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } }
+    // Compatibility accessor for the old form while UI integration replaces that field.
+    var todosText: String {
+        get { todoRows.map(\.text).joined(separator: "\n") }
+        set { todoRows = newValue.components(separatedBy: .newlines).map { TodoEditRow(newText: $0) } }
     }
-
-    var trimmedSummary: String {
-        summary.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var trimmedTranscript: String {
-        transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var mostImportant: [String] {
-        Self.lines(from: mostImportantText)
-    }
-
-    var todos: [String] {
-        Self.lines(from: todosText)
-    }
-
-    var canSave: Bool {
-        !trimmedTitle.isEmpty
-    }
-
+    var canSave: Bool { !trimmedTitle.isEmpty }
     private static func lines(from text: String) -> [String] {
         var seen = Set<String>()
-        var values: [String] = []
-
-        for line in text.components(separatedBy: .newlines) {
+        return text.components(separatedBy: .newlines).compactMap { line in
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            let key = trimmed.lowercased()
-            guard !trimmed.isEmpty, !seen.contains(key) else { continue }
-            seen.insert(key)
-            values.append(trimmed)
+            guard !trimmed.isEmpty, seen.insert(trimmed.lowercased()).inserted else { return nil }
+            return trimmed
         }
-
-        return values
     }
 }

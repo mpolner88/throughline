@@ -1,4 +1,6 @@
+import CryptoKit
 import Foundation
+import Combine
 
 @MainActor
 final class AppState: ObservableObject {
@@ -14,6 +16,11 @@ final class AppState: ObservableObject {
     @Published var hasConnectedAgent = false
     @Published var notes: [ThroughlineNote]
     @Published private(set) var session: AuthSession?
+    private(set) var accountGeneration = UUID()
+    let captureQueue = CaptureQueue()
+    let runningList = TaskCoordinator()
+    private var taskObservation: AnyCancellable?
+    private var deletionObservation: AnyCancellable?
 
     var isSignedIn: Bool {
         session != nil
@@ -32,13 +39,18 @@ final class AppState: ObservableObject {
     }
 
     var latestNotes: [ThroughlineNote] {
-        notes.sorted { $0.createdAt > $1.createdAt }
+        notes.map { runningList.decorated($0) }.sorted { $0.createdAt > $1.createdAt }
     }
 
     init() {
-        notes = Self.loadCachedNotes()
+        notes = []
 
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--throughline-preview-onboarding") {
+            session = nil
+            route = .onboarding
+            return
+        }
         if ProcessInfo.processInfo.arguments.contains("--throughline-preview-home") {
             if ProcessInfo.processInfo.arguments.contains("--throughline-preview-populated-home") {
                 notes = [.sample]
@@ -52,19 +64,61 @@ final class AppState: ObservableObject {
                 user: AuthUser(id: "preview", email: "preview@throughline.app")
             )
             route = .home
+            bindCaptureQueue()
+            if RunningListPreview.isActive {
+                notes = RunningListPreview.notes
+                runningList.seedPreview(tasks: RunningListPreview.tasks, notes: notes,
+                    offline: ProcessInfo.processInfo.arguments.contains("--throughline-preview-running=offline"),
+                    now: RunningListPreview.currentDate)
+            }
+            let arguments = ProcessInfo.processInfo.arguments
+            if let flag = arguments.first(where: { $0.hasPrefix("--throughline-preview-capture=") }),
+               let state = CaptureState(rawValue: String(flag.split(separator: "=", maxSplits: 1).last!)) {
+                captureQueue.seedPreview(state: state,
+                    count: arguments.contains("--throughline-preview-capture-many") ? 5 : 1,
+                    unknown: arguments.contains("--throughline-preview-capture-unknown"),
+                    offline: arguments.contains("--throughline-preview-capture-offline"),
+                    held: arguments.contains("--throughline-preview-capture-held"),
+                    otherAccount: arguments.contains("--throughline-preview-capture-other"),
+                    mixed: arguments.contains("--throughline-preview-capture-mixed"))
+            }
             return
         }
         #endif
 
         let restoredSession = AuthSessionStore.currentSession
         session = restoredSession
+        notes = Self.loadCachedNotes(ownerID: restoredSession?.user.id)
+        // Preserve the unbound legacy cache untouched; never assign it to an inferred owner.
         let hasFinishedOnboarding = UserDefaults.standard.bool(forKey: Self.hasFinishedOnboardingKey)
         route = restoredSession != nil && hasFinishedOnboarding ? .home : .onboarding
+        bindCaptureQueue()
+    }
+
+    private func bindCaptureQueue() {
+        runningList.onNote = { [weak self] note in self?.addUploadedNote(note) }
+        taskObservation = runningList.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        deletionObservation = captureQueue.$deletionPending.sink { [weak self] pending in
+            self?.runningList.setAccountDeletionPending(pending)
+        }
+        runningList.configure(ownerID: session?.user.id, accountGeneration: accountGeneration)
+        captureQueue.onNote = { [weak self] note in self?.addUploadedNote(note) }
+        captureQueue.onAccountDeleted = { [weak self] in self?.finishAccountDeletion() }
+        captureQueue.onSessionRefreshed = { [weak self] refreshed in
+            guard self?.session?.user.id == refreshed.user.id else { return }
+            self?.session = refreshed
+        }
+        captureQueue.configure(session: session)
     }
 
     func setSession(_ session: AuthSession) {
+        let changedOwner = self.session?.user.id != session.user.id
+        accountGeneration = UUID()
         self.session = session
         AuthSessionStore.save(session)
+        if changedOwner { notes = Self.loadCachedNotes(ownerID: session.user.id) }
+        runningList.configure(ownerID: session.user.id, accountGeneration: accountGeneration)
+        captureQueue.configure(session: session)
     }
 
     func finishOnboarding(with note: ThroughlineNote? = nil) {
@@ -76,23 +130,36 @@ final class AppState: ObservableObject {
         route = .home
     }
 
-    func signOut() {
+    func signOut() throws {
+        try captureQueue.prepareSignOut()
+        clearSession()
+    }
+
+    private func clearSession() {
+        accountGeneration = UUID()
         session = nil
         AuthSessionStore.clear()
         notes = []
-        UserDefaults.standard.removeObject(forKey: Self.notesStorageKey)
+        // Owner-bound and legacy caches are preserved; unsigned views never load them.
         UserDefaults.standard.set(false, forKey: Self.hasFinishedOnboardingKey)
+        runningList.configure(ownerID: nil, accountGeneration: accountGeneration)
+        captureQueue.configure(session: nil)
         route = .onboarding
     }
 
     func finishAccountDeletion() {
-        signOut()
+        if let ownerID = session?.user.id {
+            try? runningList.accountDeleted(ownerID: ownerID)
+            UserDefaults.standard.removeObject(forKey: Self.cacheKey(ownerID: ownerID))
+        }
+        clearSession()
     }
 
     func addUploadedNote(_ note: ThroughlineNote) {
         notes.removeAll { $0.id == note.id }
         notes.insert(note, at: 0)
         persistNotes()
+        runningList.requestRefresh()
     }
 
     func replaceNotes(_ notes: [ThroughlineNote]) {
@@ -104,17 +171,23 @@ final class AppState: ObservableObject {
     }
 
     func removeNote(id: String) {
+        try? runningList.recordingDeleted(id)
         notes.removeAll { $0.id == id }
         persistNotes()
     }
 
     private func persistNotes() {
-        guard let data = try? JSONEncoder().encode(notes) else { return }
-        UserDefaults.standard.set(data, forKey: Self.notesStorageKey)
+        guard let ownerID = session?.user.id, let data = try? JSONEncoder().encode(notes) else { return }
+        UserDefaults.standard.set(data, forKey: Self.cacheKey(ownerID: ownerID))
     }
 
-    private static func loadCachedNotes() -> [ThroughlineNote] {
-        guard let data = UserDefaults.standard.data(forKey: notesStorageKey),
+    private static func cacheKey(ownerID: String) -> String {
+        let digest = SHA256.hash(data: Data(ownerID.utf8)).map { String(format: "%02x", $0) }.joined()
+        return "throughline.cachedNotes.owner.\(digest)"
+    }
+
+    private static func loadCachedNotes(ownerID: String?) -> [ThroughlineNote] {
+        guard let ownerID, let data = UserDefaults.standard.data(forKey: cacheKey(ownerID: ownerID)),
               let notes = try? JSONDecoder().decode([ThroughlineNote].self, from: data)
         else {
             return []

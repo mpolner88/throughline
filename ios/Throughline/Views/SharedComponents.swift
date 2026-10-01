@@ -70,101 +70,38 @@ struct SecondaryButton: View {
     }
 }
 
-struct AIProcessingConsentView: View {
-    enum Context { case recording, demoSave, settings }
-    var context: Context = .recording
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage(AIProcessingPermission.storageKey) private var isAllowed = false
-
+// Shown beside the first recorder action, never as a separate acceptance screen.
+struct AIProcessingDisclosure: View {
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    Eyebrow(text: "your choice")
-                    Text("AI voice processing").font(.throughlineHeading)
-                        .accessibilityAddTraits(.isHeader)
-                    Text("Choose whether Throughline may send your voice notes for AI processing.")
-                    disclosure("What is sent", "The audio you record, plus the transcript and text derived from it, so Throughline can create your transcript, summary and tasks. Saving a demo note sends its transcript again.")
-                    disclosure("Who processes it", "Supabase hosts Throughline’s backend and storage. Groq provides the third-party AI transcription and extraction.")
-                    disclosure("Your control", controlText)
-                    Link("read the privacy policy", destination: AIProcessingPermission.privacyURL)
-                    if context != .settings {
-                        Text(context == .demoSave
-                             ? "After allowing, tap save demo note to try again."
-                             : "After allowing, tap the recorder when you’re ready.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .font(.body)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
-            }
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 10) {
-                    choiceButton(isAllowed ? "keep AI processing allowed" : "allow AI processing", allowed: true)
-                    choiceButton(isAllowed ? "withdraw permission" : "not now", allowed: false)
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(.background)
-            }
-            .navigationTitle("privacy")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("close") { dismiss() }
-                }
+        VStack(spacing: 4) {
+            Text("Groq processes your audio and text into notes and tasks. Supabase hosts them.")
+                .fixedSize(horizontal: false, vertical: true)
+            Link(destination: AIProcessingPermission.privacyURL) {
+                Text("How it works")
+                    .foregroundStyle(Theme.blue)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
         }
-    }
-
-    private var controlText: String {
-        "This choice applies to Throughline on this device. "
-        + (context == .settings ? "" : "You can withdraw it later in Settings. ")
-        + "Withdrawing stops future submissions; it does not recall recordings or text already sent."
-    }
-
-    // Match the existing full-width brand buttons, allowing text and targets to grow.
-    private func choiceButton(_ title: String, allowed: Bool) -> some View {
-        Button {
-            AIProcessingPermission.shared.setAllowed(allowed)
-            dismiss()
-        } label: {
-            Text(title)
-                .font(.body.weight(.medium))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .foregroundStyle(allowed ? Color.white : Color.primary)
-                .background(allowed ? Theme.blue : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: Theme.cardRadius)
-                        .stroke(allowed ? Color.clear : Theme.border, lineWidth: 0.5)
-                }
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func disclosure(_ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline).accessibilityAddTraits(.isHeader)
-            Text(text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
     }
 }
 
 struct AccountSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var captureQueue: CaptureQueue
     @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
-    @State private var showingAIProcessingConsent = false
     @State private var showingBackendSettings = false
     @State private var showingAgentConnection = false
     @State private var showingProductFeedback = false
     @State private var isConfirmingDelete = false
+    @State private var isConfirmingSignOut = false
+    @State private var deletionUncertain = false
+    @State private var deletionRefused = false
     @State private var isDeleting = false
     @State private var deleteError: String?
 
@@ -182,13 +119,19 @@ struct AccountSettingsView: View {
                     }
 
                     Button("sign out") {
-                        appState.signOut()
-                        dismiss()
+                        Task {
+                            await captureQueue.interruptRecording()
+                            if captureQueue.unsavedCount > 0 { isConfirmingSignOut = true }
+                            else { signOut() }
+                        }
                     }
                     .disabled(isDeleting)
 
                     Button(isDeleting ? "deleting" : "delete account", role: .destructive) {
-                        isConfirmingDelete = true
+                        Task {
+                            await captureQueue.interruptRecording()
+                            isConfirmingDelete = true
+                        }
                     }
                     .disabled(!appState.isSignedIn || isDeleting)
 
@@ -199,11 +142,28 @@ struct AccountSettingsView: View {
                     }
                 }
 
-                Section("AI processing") {
-                    LabeledContent("permission", value: hasAIProcessingPermission ? "allowed" : "not allowed")
-                    Button("review AI processing") { showingAIProcessingConsent = true }
-                    Text(hasAIProcessingPermission ? "Review what is sent and withdraw permission for future submissions." : "Review what is sent and allow AI processing.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                Section {
+                    Toggle("AI voice notes", isOn: Binding(
+                        get: { hasAIProcessingPermission },
+                        set: { allowed in
+                            AIProcessingPermission.shared.setAllowed(allowed)
+                            Task {
+                                if allowed { await captureQueue.resume() }
+                                else { await captureQueue.interruptRecording() }
+                            }
+                        }
+                    ))
+                    DisclosureGroup("How it works") {
+                        Text("Groq turns your recordings and text into transcripts, notes and tasks. Supabase hosts and stores them. This setting applies to this device. Turning it off stops new submissions and keeps saved notes available; it doesn’t recall anything already sent. Turning it back on also resumes captures waiting on this phone.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Link("Privacy policy", destination: AIProcessingPermission.privacyURL)
+                    }
+                } header: {
+                    Text("voice notes")
+                } footer: {
+                    Text(hasAIProcessingPermission
+                         ? "Groq processes your recordings and text. Supabase hosts your notes."
+                         : "AI is off. New recording and processing are paused; saved notes stay readable.")
                 }
 
                 Section("agent") {
@@ -270,10 +230,25 @@ struct AccountSettingsView: View {
                 }
             }
         } message: {
-            Text("This removes your Throughline account, memories, recordings, and agent tokens.")
+            Text("This removes your Throughline account, memories, recordings, and agent tokens." +
+                 (captureQueue.unsavedCount > 0 ? " \(captureQueue.unsavedCount) \(captureQueue.unsavedCount == 1 ? "capture that hasn't" : "captures that haven't") been confirmed as saved will also be deleted from this phone." : ""))
         }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(context: .settings)
+        .confirmationDialog("Sign out?", isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
+            Button("Sign out and delete", role: .destructive) { signOut() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("\(captureQueue.unsavedCount) \(captureQueue.unsavedCount == 1 ? "capture hasn't" : "captures haven't") been confirmed as saved to your account. Signing out deletes them from this phone.")
+        }
+        .alert("Account deletion not confirmed", isPresented: $deletionUncertain) {
+            Button("Try again") { Task { await deleteAccount() } }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Throughline couldn't confirm that your account was deleted. Captures on this phone are kept and won't be sent. Try again when you're connected.")
+        }
+        .alert("Couldn't delete your account", isPresented: $deletionRefused) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "Nothing was deleted. Try again in a moment.")
         }
         .sheet(isPresented: $showingBackendSettings) {
             BackendSettingsView()
@@ -286,18 +261,24 @@ struct AccountSettingsView: View {
         }
     }
 
+    private func signOut() {
+        do { try appState.signOut(); dismiss() }
+        catch { deleteError = "Couldn't sign out. Captures on this phone are kept. Try again in a moment." }
+    }
+
     private func deleteAccount() async {
         guard appState.isSignedIn else { return }
-
+        guard !isDeleting else { return }
+        deleteError = nil
         isDeleting = true
         defer { isDeleting = false }
-
-        do {
-            try await UploadClient().deleteAccount()
-            appState.finishAccountDeletion()
-            dismiss()
-        } catch {
-            deleteError = error.localizedDescription
+        let result = await captureQueue.deleteAccount()
+        switch result {
+        case .deleted: dismiss()
+        case .refused:
+            deleteError = nil
+            deletionRefused = true
+        case .uncertain: deletionUncertain = true
         }
     }
 }

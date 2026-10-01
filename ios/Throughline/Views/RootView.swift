@@ -6,7 +6,9 @@ struct RootView: View {
     var body: some View {
         Group {
             #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("--throughline-preview-feedback") {
+            if ProcessInfo.processInfo.arguments.contains("--throughline-preview-ai-settings") {
+                AccountSettingsView()
+            } else if ProcessInfo.processInfo.arguments.contains("--throughline-preview-feedback") {
                 ProductFeedbackView()
             } else {
                 routedContent
@@ -16,7 +18,12 @@ struct RootView: View {
             #endif
         }
         .environmentObject(appState)
+        .environmentObject(appState.captureQueue)
+        .environmentObject(appState.captureQueue.recorder)
         .task {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--throughline-preview-") }) { return }
+            #endif
             let route = appState.route == .home ? "home" : "onboarding"
             ProductAnalytics.trackFirstOpen(route: route)
             ProductAnalytics.track(

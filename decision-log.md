@@ -694,3 +694,72 @@ Each decision should explain the call that was made, the alternatives considered
 **Authority:** The existing PR #3 branch-only publication authorization remains the integration boundary. No main merge, feature implementation, migration execution, deployment, behavior flag, automation, provider/model/data-use/pricing/limit/onboarding or Apple action follows. A completed handoff records design and feasibility readiness; Mike retains build entry.
 
 **Completion evidence:** [Revision-3 handoff readiness](docs/evidence/2026-09-29-capture-handoff-ready.md) records the exact contract, mutual review, resolved findings and verification limits.
+
+## 2026-09-29 — Build capture recovery and deliver internally
+
+**Decision:** After the ready revision-3 handoff, Mike said, “Great, build - put it in the app testflight.” This selects TL-CAP-001 for implementation and internal TestFlight delivery to the existing Internal QA group. Claude’s selected Candidate B contract remains frozen at SHA-256 `eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50`. Codex owns implementation and engineering verification; Claude reviews the implemented design.
+
+**Scope:** Durable local capture and tray, duplicate-safe acceptance and deletion, account isolation, recovery events and their R7/R10/R11 dependencies. The agent will prepare and verify the compatible additive backend required by this app build, then deliver the verified signed internal build. Public App Store submission, external testers, main merge, running list, Private Evaluation, providers/models, pricing/limits/onboarding and policy work remain outside this slice. The implementation uses local branch `codex/capture-tray` from `ee2e791`; PR #3 is preserved.
+
+**Execution record:** [Capture recovery slice](docs/slices/capture-recovery.md). Runtime results and exact delivery identity will be recorded after verification, not inferred from this approval.
+
+## 2026-09-29 — Deploy capture backend and complete internal delivery
+
+**Decision:** In response to the exact candidate packet and approval question, Mike said “Go for it.” This approves the reviewed capture-recovery migration, API update, daily expired-confirmation cleanup and synthetic save/retry/delete verification, followed by the previously approved internal-only TestFlight delivery.
+
+**Execution boundary:** Only the capture SQL/API candidate and existing Internal QA group. The synthetic check uses a disposable, internally classified Auth fixture and generated tone, then removes its exact recording/audio, synthetic events and fixture. No real user note or account is used. No main merge, feature-branch push, new tester population, public submission, provider/model change or evaluation enablement.
+
+**Evidence:** [Capture backend rollout](docs/evidence/2026-09-29-capture-production-rollout.md). The hosted migration service assigned version `20260929192508`; the local migration filename is aligned to that version with approved SQL bytes unchanged.
+
+
+## 2026-09-29 — Capture device feedback, quiet AI controls and running list next
+
+**Decision owner:** Mike. **Evidence:** [owner feedback and follow-up](docs/evidence/2026-09-29-capture-owner-feedback.md).
+
+Mike reports the capture TestFlight looks good and requests a practical device test list; this is initial feedback, not completed recovery acceptance. He explicitly requests removal of the large ordinary-AI permission experience, a subtle acceptance only if necessary, AI remaining enabled during normal use, a simple Settings off switch, and deeper explanation available on demand. This request reopens only that bounded UI/control adjustment; approved policy text is not edited. Codex implements a brief affirmative first-use action because Apple requires permission before third-party AI sharing, preserves existing opt-out choices, and keeps normal capture free of repeat prompts once accepted. Claude presentation review remains required before another internal delivery.
+
+Mike also identifies persistent unfinished-from-last-night behavior and requests the running list next. Start the [running-list brief](docs/slices/running-list.md) from the prior Today/This week/Later design, preserving the capture tray, with date/completion truth and occurrence identity required. Do not import PR #2 wholesale. Claude owns the refreshed design; Codex owns feasibility, implementation and verification.
+
+The learning-loop question authorizes inspection, not activation. Read-only checks confirm stored legacy ratings without an operating improvement loop. Private Evaluation remains deferred pending repairs and a refreshed source-bound canary; no provider/model/data-use changes, flags, policies, main merge or public release are authorized by this entry.
+
+
+## 2026-09-29 — One-tap AI recording acceptance and internal follow-up
+
+**Decision owner:** Mike, confirmed through his direction with Claude. Place **Agree and record** once at onboarding's recording step before demo audio leaves the phone, and on the first Home recording for users who have never accepted. There is no large sheet or second recording action. Preserve explicit acceptance and existing off choices. Settings retains a native **AI voice notes** switch, concise off explanation and readable saved notes. Privacy-policy work stays aside.
+
+Codex implements and verifies the bounded adjustment, then delivers the next build to existing Internal QA after Claude reviews actual simulator images. Running-list implementation does not start: Claude's Candidate A prototype/design work stays separate. This continues the previously approved internal release lane; no public submission, main merge, provider/model change or evaluation activation follows.
+
+**Candidate evidence:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-candidate.md).
+
+**Delivery evidence for the one-tap follow-up:** [1.0.5 (2026092902)](docs/releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), exact app source `7719237`, verified in existing Internal QA after Claude resolved A1. Running-list implementation and evaluation activation remain separate.
+
+
+## 2026-09-30 — Build Candidate A running list, then categories/search, then Private Evaluation
+
+**Decision:** Mike selected Candidate A's Today / This week / Later running list and decided D1: tasks with no time said go to Today on the day they were said. Mike approved build entry and internal TestFlight delivery before any subsequent product work. Codex first reviews List rules 1–12 and F1–F7; Claude resolves the findings and marks its handoff ready. After implementation and engineering checks, Claude reviews exact-source simulator evidence before delivery to the existing Internal QA group. Build entry does not need another approval once those gates pass.
+
+**Next priority:** Categories and search (`TL-KNOW-001`) follow that internal delivery. Categories should be assigned automatically from what was said; search should find both notes and tasks. Private Evaluation (`TL-EVAL-001`) follows categories/search and remains deferred, with no activation or learning-loop work in this slice. This selects the subsequent direction and order, not an unreviewed design or provider/data-use change.
+
+**Boundaries:** Preserve the capture tray, recorder and shipped AI controls. Use occurrence identity, no merging by task text, no age-driven movement and no extraction prompt/schema change for undated someday/next-week language. Preserve older clients' compatibility subject to resolution of the explicitly documented missing-identity conflict. No main merge, PR comments, public App Store submission, policy edit, provider/model change or Private Evaluation work is authorized.
+
+**Evidence and open feasibility decisions:** [Codex feasibility review](docs/evidence/2026-09-30-running-list-feasibility.md) identifies exact source `3d5c3acebb9f447b3bf5086283ed11715ff5ac6b`, handoff SHA-256 `57ff7e1dc4ba12380b0714bd0c389baba8a3cfde95b1c57c6248c2d1fe11c881`, and the verified asset manifest. RL1 (safe limits on old-client task writes) awaits Mike's explicit disposition; it is not decided by this entry. Claude owns resolution of the handoff's remaining identity/editor, calendar, move/Undo, copy and accessibility findings.
+
+
+## 2026-09-30 — Use readable project names and continue the running list
+
+**Decision:** Mike asked for a named project/epic and a meaningful PR instead of long commit strings, asked for simpler terminology, restored the Claude session, and said “Continue.” Use **Running List — Today, This Week, Later** as the working project and PR title. Keep full source/checksum IDs in technical evidence and retain the existing backlog IDs for automation. Do not create a second roadmap or rewrite Git history.
+
+**Continuation:** This follows Codex's explicit recommendation to preserve old-app recording, reading and safe completion while requiring the update for task edits that cannot identify a safe target or current version. Codex is proceeding with that recommended behavior and explained it again in plain language. Unsafe requests fail as a whole; no silent partial edits, duplicate targeting or deleted-task resurrection. Claude resolves the remaining design details before implementation. The existing internal-TestFlight approval and review requirements remain in effect.
+
+**PR scope:** Prepare the named running-list draft PR on top of the published reconciliation branch. Its prerequisite capture-recovery and one-tap recording controls are already internally delivered but were not previously pushed from the local implementation branch. Disclose those prerequisites in the PR instead of presenting them as new running-list features. Review the exact outgoing files before publication; no main merge, unrelated branch update, PR comment, policy change or public App Store action follows.
+
+## 2026-09-30 — Approve the exact Running List hosted verification
+
+**Decision owner:** Mike. After the automatic approval review blocked hosted synthetic testing, Mike explicitly said “go for it” to creating two disposable internal test accounts, testing synthetic tasks and one two-second generated tone through the existing processing service, then deleting and verifying all test data. This resolves that execution-specific approval block and continues the already approved internal TestFlight delivery after the test passes. It does not authorize real user fixtures, provider/model changes, Private Evaluation, public release or a new tester population.
+
+**Result:** [Hosted verification](docs/evidence/2026-09-30-running-list-production-rollout.md) passed with cleanup confirmed; [internal delivery](docs/releases/2026-09-30-ios-1.0.5-2026093001-delivery.md) records Apple's processing and existing Internal QA availability.
+
+
+## 2026-09-30 — Repair Running List responsiveness and put older unfinished tasks in Today
+
+**Decision owner:** Mike. After using internal build 2026093001, Mike reported severe delays switching task tabs and requested that unfinished tasks from earlier notes appear directly in Today automatically. This supersedes the earlier collapsed group under Later. Preserve completed state and explicit manual moves; no merging by text, invented tasks, extraction change or automatic reprocessing. Codex fixes and measures the defect, Claude reviews the changed behavior, and the corrected build follows the existing Internal QA delivery lane before categories/search. [Diagnosis and verification](docs/evidence/2026-09-30-running-list-responsiveness.md).

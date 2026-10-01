@@ -1,4 +1,18 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
+import {
+  encodeTaskPage,
+  parseTaskPage,
+  TaskContractError,
+  taskResult,
+  validateTaskEdit,
+  validateTaskMutation,
+} from "./tasks.ts";
+import {
+  captureAnswer,
+  captureUpload,
+  isMissingStorageObject,
+  validCaptureUUID,
+} from "./capture.ts";
 
 import {
   normalizeExtraction as normalizeContractExtraction,
@@ -144,22 +158,28 @@ if (import.meta.main) {
 
 export function handleRequestResponse(req: Request) {
   return handleRequest(req).catch((error) => {
-    const status = error instanceof HttpError ? error.status : 500;
-    const message = error instanceof Error
-      ? error.message
-      : "Unknown server error";
+    const status =
+      error instanceof HttpError || error instanceof TaskContractError
+        ? error.status
+        : 500;
+    const message =
+      error instanceof HttpError || error instanceof TaskContractError
+        ? error.message
+        : "Server request could not be completed";
     console.error(JSON.stringify({
       event: "api_request_failed",
       method: req.method,
       path: safeApiLogPath(new URL(req.url).pathname),
       status,
-      error_type: error instanceof HttpError
-        ? "http_error"
-        : "unexpected_error",
+      error_type:
+        error instanceof HttpError || error instanceof TaskContractError
+          ? "http_error"
+          : "unexpected_error",
     }));
     return jsonResponse(status, {
       error: message,
-      ...(error instanceof HttpError && error.code
+      ...((error instanceof HttpError || error instanceof TaskContractError) &&
+          error.code
         ? { error_code: error.code }
         : {}),
     });
@@ -169,6 +189,8 @@ export function handleRequestResponse(req: Request) {
 function safeApiLogPath(pathname: string) {
   return pathname
     .replace(/\/recordings\/[^/]+/gu, "/recordings/:recording_id")
+    .replace(/\/captures\/[^/]+/gu, "/captures/:capture_id")
+    .replace(/\/tasks\/[^/]+/gu, "/tasks/:task_id")
     .replace(/\/feedback\/[^/]+/gu, "/feedback/:feedback_id")
     .replace(/\/agent\/tokens\/[^/]+/gu, "/agent/tokens/:token_id");
 }
@@ -210,11 +232,66 @@ export async function handleRequest(req: Request) {
     return handlePostProductEvents(req, await requestContext(req));
   }
 
+  if (req.method === "GET" && pathname === "/account/deletion-status") {
+    const token = req.headers.get("x-throughline-deletion-token");
+    if (!validCaptureUUID(token)) {
+      return jsonResponse(400, { deletion_outcome: "unknown" });
+    }
+    try {
+      const result = await captureRpc(
+        "throughline_account_deletion_status_v1",
+        { p_token_sha256: await sha256Hex(token.toLowerCase()) },
+      );
+      return jsonResponse(200, result);
+    } catch {
+      return jsonResponse(503, { deletion_outcome: "unknown" });
+    }
+  }
+
   const context = await requestContext(req);
   if (!context) {
     return jsonResponse(401, { error: "Unauthorized" });
   }
   await requireEvaluationCompatibilitySafety();
+
+  if (req.method === "GET" && pathname === "/tasks") {
+    if (lineageWritesEnabled() || evaluationWritesEnabled()) {
+      throw new TaskContractError(
+        409,
+        "evaluation_task_conflict",
+        "Task enrollment is unavailable for this processing mode.",
+      );
+    }
+    return jsonResponse(
+      200,
+      encodeTaskPage(
+        await ordinaryTaskRpc(
+          requireAuthUser(context),
+          "list",
+          null,
+          parseTaskPage(url),
+        ),
+      ),
+    );
+  }
+  const taskMatch = pathname.match(/^\/tasks\/([^/]+)$/);
+  if (req.method === "PATCH" && taskMatch) {
+    if (!validCaptureUUID(taskMatch[1])) {
+      throw new TaskContractError(
+        400,
+        "invalid_task_request",
+        "The task change is invalid.",
+      );
+    }
+    const body = validateTaskMutation(await parseJsonRequest(req));
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(requireAuthUser(context), "mutation", null, {
+        task_id: taskMatch[1],
+        body,
+      }),
+    );
+  }
 
   if (req.method === "POST" && pathname === "/maintenance/audio-retention") {
     requireServiceContext(context);
@@ -364,7 +441,23 @@ export async function handleRequest(req: Request) {
   }
 
   if (req.method === "DELETE" && pathname === "/account") {
-    return handleDeleteAccount(context);
+    return handleDeleteAccount(context, req);
+  }
+
+  const captureMatch = pathname.match(/^\/captures\/([^/]+)$/);
+  if (req.method === "GET" && captureMatch) {
+    const owner = requireAuthUser(context);
+    const capture = captureMatch[1].toLowerCase();
+    if (!validCaptureUUID(capture)) {
+      return jsonResponse(400, { error_code: "capture_invalid_id" });
+    }
+    const result = captureAnswer(
+      await captureRpc("throughline_capture_status_v1", {
+        p_owner: owner,
+        p_capture: capture,
+      }),
+    );
+    return jsonResponse(result.status, result.body);
   }
 
   const feedbackMatch = pathname.match(/^\/feedback\/([^/]+)$/);
@@ -386,6 +479,12 @@ export async function handleRequest(req: Request) {
 
   if (req.method === "GET" && recordingMatch) {
     const id = decodeURIComponent(recordingMatch[1]);
+    if (context.authUserId) {
+      return jsonResponse(
+        200,
+        await ordinaryTaskRpc(context.authUserId, "detail", id),
+      );
+    }
     return jsonResponse(200, {
       recording: await readRecording(id, context),
       current_revision_id: await readCurrentRevisionID(id, context),
@@ -612,12 +711,22 @@ async function handlePostRecording(req: Request, context: RequestContext) {
     throw new HttpError(413, `Request body exceeds ${MAX_BODY_BYTES} bytes`);
   }
 
+  if (req.headers.has("x-throughline-capture-id")) {
+    const result = await captureUpload(req, bytes, context, {
+      rpc: captureRpc,
+      storage: captureStorageRequest,
+      process: processAndPersistRecording,
+      enqueue: (promise) => EdgeRuntime.waitUntil(promise),
+    });
+    return jsonResponse(result.status, result.body);
+  }
+
   const contentType = req.headers.get("content-type") || "";
   const { recording, audioBytes } = contentType.includes("application/json")
     ? await createRecordingFromJson(parseJsonBytes(bytes), context)
     : await createRecordingFromRaw(req, bytes, context);
 
-  await persistRecording(recording);
+  await persistRecording(recording, false);
 
   if (processingMode(req) === "async") {
     EdgeRuntime.waitUntil(processAndPersistRecording(recording, audioBytes));
@@ -711,6 +820,16 @@ async function handleExtractRecording(
   id: string,
 ) {
   const recording = await readRecording(id, context);
+  if (recording.capture_id) {
+    throw new HttpError(
+      409,
+      "This saved capture has already claimed processing",
+      "capture_processing_already_claimed",
+    );
+  }
+  if (context.authUserId) {
+    await ordinaryTaskRpc(context.authUserId, "assert_reextract", id);
+  }
   const body = await parseJsonRequest(req);
 
   recording.transcript_raw = nullableString(body.transcript_raw) ??
@@ -1091,6 +1210,7 @@ async function handlePatchActionItem(
     throw new HttpError(400, "Recording does not have an extracted note yet");
   }
 
+  const beforeTaskChange = structuredClone(recording);
   updateActionItemCompletion(recording.structured_note, text, completed);
   if (evaluationWritesEnabled()) {
     const authUserId = requireEvaluationOwner(context);
@@ -1161,8 +1281,18 @@ async function handlePatchActionItem(
       });
     }
   }
+  if (context.authUserId) {
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(context.authUserId, "legacy", recordingId, {
+        before: beforeTaskChange,
+        after: recording,
+        body,
+        kind: "completion",
+      }),
+    );
+  }
   await persistRecording(recording);
-
   return jsonResponse(200, { recording });
 }
 
@@ -1171,8 +1301,19 @@ async function handlePatchRecording(
   context: RequestContext,
   recordingId: string,
 ) {
-  const recording = await readRecording(recordingId, context);
   const body = await parseJsonRequest(req);
+  if (body.task_contract_version === 1) {
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(
+        requireAuthUser(context),
+        "edit",
+        recordingId,
+        validateTaskEdit(body),
+      ),
+    );
+  }
+  const recording = await readRecording(recordingId, context);
 
   if (isCurrentEvaluationMutation(body)) {
     const authUserId = requireEvaluationOwner(context);
@@ -1256,64 +1397,160 @@ async function handlePatchRecording(
     });
   }
 
+  const beforeTaskChange = structuredClone(recording);
   applyRecordingEdits(recording, body);
+  if (context.authUserId) {
+    return jsonResponse(
+      200,
+      await ordinaryTaskRpc(context.authUserId, "legacy", recordingId, {
+        before: beforeTaskChange,
+        after: recording,
+        body,
+        kind: "edit",
+      }),
+    );
+  }
   await persistRecording(recording);
-
   return jsonResponse(200, { recording });
 }
 
-async function handleDeleteAccount(context: RequestContext) {
+async function handleDeleteAccount(context: RequestContext, req: Request) {
   const authUserId = requireAuthUser(context);
-  const recordings = await listFullRecordings(context);
+  const token = req.headers.get("x-throughline-deletion-token") ||
+    crypto.randomUUID();
+  if (!validCaptureUUID(token)) {
+    return jsonResponse(400, { deleted: false, deletion_outcome: "refused" });
+  }
   const captureConfig = postHogCaptureConfig();
-
-  if (hasPostHogCaptureConfig(captureConfig)) {
-    const deletionConfig = postHogDeletionConfig();
-    if (!hasPostHogDeletionConfig(deletionConfig)) {
-      throw new HttpError(503, "Account deletion is temporarily unavailable");
+  const deletionConfig = postHogDeletionConfig();
+  // This is the only refusal path: no cleanup or hold has been started by this
+  // request. If an earlier deletion already started, retain its pending state.
+  if (
+    hasPostHogCaptureConfig(captureConfig) &&
+    !hasPostHogDeletionConfig(deletionConfig)
+  ) {
+    const holds = await restRequest(
+      `/throughline_account_deletion_holds?owner_id=eq.${
+        encodeURIComponent(authUserId)
+      }&select=owner_id&limit=1`,
+    );
+    return jsonResponse(503, {
+      deleted: false,
+      deletion_outcome: Array.isArray(holds) && holds.length
+        ? "uncertain"
+        : "refused",
+    });
+  }
+  let recordingsDeleted = 0;
+  try {
+    const begin = await captureRpc("throughline_begin_account_deletion_v1", {
+      p_owner: authUserId,
+      p_token_sha256: await sha256Hex(token.toLowerCase()),
+    });
+    if (begin.deletion_outcome !== "pending") {
+      return jsonResponse(409, {
+        deleted: false,
+        deletion_outcome: "uncertain",
+      });
     }
-
-    try {
+    if (hasPostHogCaptureConfig(captureConfig)) {
       await deleteProductAnalyticsUserFromPostHog(authUserId, deletionConfig);
-    } catch (error) {
-      console.error(
-        "PostHog account deletion failed",
-        error instanceof Error ? error.message : String(error),
-      );
-      throw new HttpError(503, "Account deletion is temporarily unavailable");
     }
+    // The hold prevents any new acceptance. Drain every page; one page alone
+    // would miss owners with more than 1,000 saved notes.
+    for (;;) {
+      const recordings = await listFullRecordings(context);
+      if (!recordings.length) break;
+      for (const recording of recordings) {
+        await deleteRecording(recording.id, context, "account_deleted");
+        recordingsDeleted++;
+      }
+    }
+    // Incomplete reservations can already have an object but no recording row.
+    // Storage's insertion trigger shares the owner lock with the hold, so a
+    // delayed upload cannot create another object after this cleanup.
+    for (;;) {
+      const pending = await restRequest(
+        `/throughline_capture_reservations?owner_id=eq.${
+          encodeURIComponent(authUserId)
+        }&select=capture_id,object_token&limit=1000`,
+      );
+      if (!Array.isArray(pending) || !pending.length) break;
+      for (const capture of pending) {
+        await deleteStoredAudioObject({
+          storage: "supabase",
+          bucket: "throughline-audio",
+          object_path: `captures/${capture.object_token}`,
+        });
+        await deleteRows(
+          "throughline_capture_reservations",
+          `owner_id=eq.${encodeURIComponent(authUserId)}&capture_id=eq.${
+            encodeURIComponent(capture.capture_id)
+          }`,
+        );
+      }
+    }
+    // A public legacy upload can have committed an object before its row, then
+    // crashed. The same storage guard now quiesces its owner UUID namespace.
+    for (;;) {
+      const objects = await storageRequest(`/object/list/${audioBucket()}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prefix: `${authUserId}/`,
+          limit: 1000,
+          offset: 0,
+        }),
+      });
+      if (!Array.isArray(objects)) throw new Error("Invalid storage listing");
+      if (!objects.length) break;
+      for (const object of objects) {
+        if (
+          !object.id || typeof object.name !== "string" ||
+          object.name.includes("/")
+        ) throw new Error("Unexpected owner audio object");
+        await deleteStoredAudioObject({
+          storage: "supabase",
+          bucket: audioBucket(),
+          object_path: `${authUserId}/${object.name}`,
+        });
+      }
+    }
+    for (
+      const table of [
+        "throughline_feedback",
+        "throughline_product_feedback",
+        "throughline_product_events",
+      ]
+    ) {
+      await deleteRows(
+        table,
+        `auth_user_id=eq.${encodeURIComponent(authUserId)}`,
+      );
+    }
+    await deleteRows(
+      "throughline_mcp_tokens",
+      `user_id=eq.${encodeURIComponent(authUserId)}`,
+    );
+    await deleteRows(
+      "throughline_profiles",
+      `id=eq.${encodeURIComponent(authUserId)}`,
+    );
+    // The auth-user DELETE transaction also marks all hashed receipt tokens
+    // deleted, strips owner links, and cascades holds/reservations/tombstones.
+    await deleteAuthUser(authUserId);
+    return jsonResponse(200, {
+      deleted: true,
+      deletion_outcome: "deleted",
+      recordings_deleted: recordingsDeleted,
+    });
+  } catch {
+    return jsonResponse(503, {
+      deleted: false,
+      deletion_outcome: "uncertain",
+      error_code: "account_deletion_unconfirmed",
+    });
   }
-
-  for (const recording of recordings) {
-    await deleteRecording(recording.id, context, "account_deleted");
-  }
-
-  await deleteRows(
-    "throughline_feedback",
-    `auth_user_id=eq.${encodeURIComponent(authUserId)}`,
-  );
-  await deleteRows(
-    "throughline_product_feedback",
-    `auth_user_id=eq.${encodeURIComponent(authUserId)}`,
-  );
-  await deleteRows(
-    "throughline_product_events",
-    `auth_user_id=eq.${encodeURIComponent(authUserId)}`,
-  );
-  await deleteRows(
-    "throughline_mcp_tokens",
-    `user_id=eq.${encodeURIComponent(authUserId)}`,
-  );
-  await deleteRows(
-    "throughline_profiles",
-    `id=eq.${encodeURIComponent(authUserId)}`,
-  );
-  await deleteAuthUser(authUserId);
-
-  return jsonResponse(200, {
-    deleted: true,
-    recordings_deleted: recordings.length,
-  });
 }
 
 async function createRecordingFromJson(
@@ -1454,7 +1691,7 @@ async function processAndPersistRecording(
     };
   }
 
-  await persistRecording(recording);
+  await persistRecording(recording, true);
   logRecordingHealth("processing_finished", recording, audioBytes, startedAt);
   return recording;
 }
@@ -2219,11 +2456,22 @@ async function storeAudio(
   };
 }
 
-async function persistRecording(recording: any) {
-  await upsert("throughline_recordings", {
+async function persistRecording(recording: any, existingOnly = true) {
+  if (recording.auth_user_id) {
+    const result = await ordinaryTaskRpc(
+      recording.auth_user_id,
+      existingOnly ? "processing" : "insert",
+      recording.id,
+      { recording },
+    );
+    if (result.recording) Object.assign(recording, result.recording);
+    return;
+  }
+  const payload = {
     id: recording.id,
     user_id: recording.user_id || userId(),
     auth_user_id: recording.auth_user_id ?? null,
+    capture_id: recording.capture_id ?? null,
     created_at: recording.created_at,
     user_local_time: recording.user_local_time,
     timezone: recording.timezone,
@@ -2235,7 +2483,22 @@ async function persistRecording(recording: any) {
     structured_note: recording.structured_note ?? null,
     audio: recording.audio ?? null,
     recording,
-  });
+  };
+  if (existingOnly) {
+    // Processing completion must never resurrect a concurrently deleted row.
+    await restRequest(
+      `/throughline_recordings?id=eq.${encodeURIComponent(recording.id)}${
+        recording.auth_user_id
+          ? `&auth_user_id=eq.${encodeURIComponent(recording.auth_user_id)}`
+          : ""
+      }`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  } else await upsert("throughline_recordings", payload);
 }
 
 async function persistFeedback(feedback: any) {
@@ -2364,14 +2627,18 @@ async function deleteRecording(
     await purgeEvaluationArtifactsForRecording(id, authUserId, reason);
   }
 
-  await restRequest(
-    [
-      "/throughline_recordings",
-      `?id=eq.${encodeURIComponent(id)}`,
-      recordingScopeQuery(context),
-    ].join(""),
-    { method: "DELETE" },
-  );
+  if (recording.auth_user_id && reason !== "account_deleted") {
+    await ordinaryTaskRpc(recording.auth_user_id, "delete", id);
+  } else {
+    await restRequest(
+      [
+        "/throughline_recordings",
+        `?id=eq.${encodeURIComponent(id)}`,
+        recordingScopeQuery(context),
+      ].join(""),
+      { method: "DELETE" },
+    );
+  }
 }
 
 async function purgeEvaluationArtifactsForRecording(
@@ -2445,7 +2712,7 @@ async function expireStoredAudio() {
   const rows = await restRequest(
     [
       "/throughline_recordings",
-      "?select=id,created_at,audio,recording",
+      "?select=id,auth_user_id,created_at,audio,recording",
       `&created_at=lt.${encodeURIComponent(cutoff)}`,
       "&order=created_at.asc",
       `&limit=${batchLimit}`,
@@ -2786,20 +3053,18 @@ function evaluationRetentionEligibleSince() {
 }
 
 async function deleteStoredAudioObject(audio: any) {
-  try {
-    await storageRequest(
-      `/object/${
-        encodeURIComponent(audio.bucket || audioBucket())
-      }/${audio.object_path}`,
-      { method: "DELETE" },
-    );
-  } catch (error) {
-    if (
-      !String(error instanceof Error ? error.message : error).includes("(404)")
-    ) {
-      throw error;
-    }
-  }
+  const response = await captureStorageRequest(
+    `/object/${
+      encodeURIComponent(audio.bucket || audioBucket())
+    }/${audio.object_path}`,
+    { method: "DELETE" },
+  );
+  if (response.ok || await isMissingStorageObject(response)) return;
+  throw new HttpError(
+    503,
+    "Audio cleanup is retryable",
+    "audio_deletion_retryable",
+  );
 }
 
 async function markRecordingAudioExpired(
@@ -2827,6 +3092,14 @@ async function markRecordingAudioExpired(
     retention_days: retentionDays,
   };
 
+  const retentionOwner = row.auth_user_id ?? recording.auth_user_id;
+  if (retentionOwner) {
+    await ordinaryTaskRpc(retentionOwner, "audio", row.id, {
+      audio: expiredAudio,
+      audio_retention: recording.audio_retention,
+    });
+    return;
+  }
   await restRequest(
     `/throughline_recordings?id=eq.${encodeURIComponent(row.id)}`,
     {
@@ -2871,7 +3144,7 @@ async function listRecordings(context?: RequestContext) {
   const rows = await restRequest(
     [
       "/throughline_recordings",
-      "?select=id,created_at,user_local_time,duration_seconds,type,processing_status,transcript_raw,structured_note,audio",
+      "?select=id,capture_id,created_at,user_local_time,duration_seconds,type,processing_status,transcript_raw,structured_note,audio",
       recordingScopeQuery(context),
       "&order=created_at.desc",
       "&limit=1000",
@@ -2881,6 +3154,7 @@ async function listRecordings(context?: RequestContext) {
   if (!Array.isArray(rows)) return [];
   return rows.map((recording) => ({
     id: recording.id,
+    capture_id: recording.capture_id ?? null,
     created_at: recording.created_at,
     user_local_time: recording.user_local_time,
     duration_seconds: recording.duration_seconds,
@@ -3026,6 +3300,45 @@ async function insertManyIgnoringDuplicates(
     },
     body: JSON.stringify(payloads),
   });
+}
+
+async function captureRpc(name: string, body: Record<string, unknown>) {
+  return await restRequest(`/rpc/${name}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+async function captureStorageRequest(path: string, options: RequestInit = {}) {
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  return await fetch(`${supabaseUrl()}/storage/v1${path}`, {
+    ...options,
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      ...options.headers,
+    },
+  });
+}
+
+async function ordinaryTaskRpc(
+  owner: string,
+  operation: string,
+  recordingID: string | null = null,
+  payload: unknown = {},
+) {
+  return taskResult(
+    await restRequest("/rpc/throughline_tasks_v1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        p_owner: owner,
+        p_operation: operation,
+        p_recording_id: recordingID,
+        p_payload: payload,
+      }),
+    }),
+  );
 }
 
 async function restRequest(pathname: string, options: RequestInit = {}) {
@@ -3828,6 +4141,11 @@ function corsHeaders() {
       "X-Throughline-Timezone",
       "X-Throughline-Recording-Type",
       "X-Throughline-Processing-Mode",
+      "X-Throughline-Capture-Id",
+      "X-Throughline-Audio-Sha256",
+      "X-Throughline-Audio-Bytes",
+      "X-Throughline-Captured-At",
+      "X-Throughline-Deletion-Token",
       "apikey",
     ].join(", "),
     "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",

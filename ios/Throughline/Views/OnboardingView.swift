@@ -4,9 +4,11 @@ import UIKit
 
 struct OnboardingView: View {
     @EnvironmentObject private var appState: AppState
+    private let signInOnly: Bool
+    private let onSignInComplete: (() -> Void)?
     @StateObject private var recorder = AudioRecorder()
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showingAIProcessingConsent = false
+    @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var isVisible = false
     @State private var step: Int
     @State private var capturedNote: ThroughlineNote?
@@ -26,30 +28,37 @@ struct OnboardingView: View {
     @State private var isResendingConfirmation = false
     @State private var showingEmailAuth = false
     @State private var appleRawNonce: String?
+    @State private var signInGeneration: UUID?
     @State private var googleAuthSession: ASWebAuthenticationSession?
     @State private var providerAvailability = AuthProviderAvailability()
     #if DEBUG
     private let debugStep: Int?
     #endif
 
-    init() {
+    init(signInOnly: Bool = false, onSignInComplete: (() -> Void)? = nil) {
+        self.signInOnly = signInOnly
+        self.onSignInComplete = onSignInComplete
         #if DEBUG
-        let debugStep = Self.debugInitialStep
+        let debugStep = signInOnly ? 3 : Self.debugInitialStep
         _step = State(initialValue: debugStep)
-        _capturedNote = State(initialValue: debugStep >= 2 ? .sample : nil)
-        _authMode = State(initialValue: Self.debugInitialAuthMode)
-        _showingEmailAuth = State(initialValue: Self.debugShowsEmailAuth)
+        _capturedNote = State(initialValue: !signInOnly && debugStep >= 2 ? .sample : nil)
+        _authMode = State(initialValue: signInOnly ? .signIn : Self.debugInitialAuthMode)
+        _showingEmailAuth = State(initialValue: !signInOnly && Self.debugShowsEmailAuth)
         self.debugStep = debugStep
         #else
-        _step = State(initialValue: 0)
+        _step = State(initialValue: signInOnly ? 3 : 0)
+        _authMode = State(initialValue: signInOnly ? .signIn : .createAccount)
         _capturedNote = State(initialValue: nil)
         #endif
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
+            if !signInOnly { topBar }
 
+            if signInOnly {
+                signInScreen
+            } else {
             TabView(selection: $step) {
                 heroScreen.tag(0)
                 recordScreen.tag(1)
@@ -57,6 +66,7 @@ struct OnboardingView: View {
                 signInScreen.tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            }
         }
         .task {
             #if DEBUG
@@ -64,16 +74,13 @@ struct OnboardingView: View {
                 step = debugStep
             }
             #endif
-            trackOnboardingStep(step)
+            if !signInOnly { trackOnboardingStep(step) }
         }
         .onChange(of: step) { _, newStep in
-            trackOnboardingStep(newStep)
+            if !signInOnly { trackOnboardingStep(newStep) }
         }
-        .onAppear { isVisible = true }
+        .onAppear { isVisible = true; signInGeneration = appState.accountGeneration }
         .onDisappear { isVisible = false }
-        .sheet(isPresented: $showingAIProcessingConsent) {
-            AIProcessingConsentView(context: appState.isSignedIn && capturedNote != nil ? .demoSave : .recording)
-        }
         .onChange(of: recorder.elapsedSeconds) { _, elapsedSeconds in
             if recorder.isRecording && elapsedSeconds >= 30 {
                 stopAndUploadRecording()
@@ -131,45 +138,55 @@ struct OnboardingView: View {
     }
 
     private var recordScreen: some View {
-        VStack(spacing: 28) {
-            VStack(alignment: .leading, spacing: 12) {
-                Eyebrow(text: "30-second demo")
-                Text("Talk through today\nor the week.")
-                    .font(.throughlineHeading)
-                Text("Say your priorities, errands, and follow-ups naturally.")
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(4)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 28) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Eyebrow(text: "30-second demo")
+                        Text("Talk through today\nor the week.")
+                            .font(.throughlineHeading)
+                        Text("Say your priorities, errands, and follow-ups naturally.")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
+                    Spacer()
 
-            VStack(spacing: 14) {
-                OnboardingRecordButton(phase: recordButtonPhase) {
-                    handleRecordTap()
+                    VStack(spacing: 14) {
+                        if !hasAIProcessingPermission && !recorder.isRecording {
+                            AIProcessingDisclosure()
+                        }
+                        OnboardingRecordButton(phase: recordButtonPhase,
+                                               idleTitle: hasAIProcessingPermission ? "Start demo recording" : "Agree and record") {
+                            handleRecordTap()
+                        }
+                        .disabled(isUploading || isFinishingRecording || isPreparingRecording)
+
+                        Text("\(recorder.elapsedText) / 0:30")
+                            .font(.system(size: 36, weight: .regular, design: .monospaced))
+                            .monospacedDigit()
+
+                        Text(recordingStatusText)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+
+                        if let uploadError {
+                            Text(uploadError)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+
+                    Spacer()
                 }
-                .disabled(isUploading || isFinishingRecording || isPreparingRecording)
-
-                Text("\(recorder.elapsedText) / 0:30")
-                    .font(.system(size: 36, weight: .regular, design: .monospaced))
-                    .monospacedDigit()
-
-                Text(recordingStatusText)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-
-                if let uploadError {
-                    Text(uploadError)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                }
+                .padding(24)
+                .frame(minHeight: geometry.size.height)
             }
-
-            Spacer()
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .padding(24)
     }
 
     @ViewBuilder
@@ -267,14 +284,20 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                if appState.isSignedIn {
+                if appState.isSignedIn && !signInOnly {
                     if let authNotice {
                         AuthMessage(text: authNotice, tone: .notice)
                     }
                     if let authError {
                         AuthMessage(text: authError, tone: .error)
                     }
-                    PrimaryButton(title: isSavingDemoNote ? "saving" : (capturedNote == nil ? "continue" : "save demo note")) {
+                    if capturedNote != nil && !hasAIProcessingPermission {
+                        AIProcessingDisclosure()
+                    }
+                    PrimaryButton(title: isSavingDemoNote ? "saving" : (capturedNote == nil ? "continue" : hasAIProcessingPermission ? "save demo note" : "Agree and save note")) {
+                        if capturedNote != nil && !hasAIProcessingPermission {
+                            AIProcessingPermission.shared.setAllowed(true)
+                        }
                         finishOnboarding()
                     }
                     .disabled(isSavingDemoNote)
@@ -422,20 +445,20 @@ struct OnboardingView: View {
     }
 
     private func handleRecordTap() {
+        guard isVisible, scenePhase == .active, step == 1,
+              !isUploading, !isFinishingRecording, !isPreparingRecording else { return }
         if recorder.isRecording {
             stopAndUploadRecording()
         } else {
-            guard AIProcessingPermission.shared.isAllowed else {
-                showingAIProcessingConsent = true
-                return
-            }
+            // This affirmative action is the first recording tap itself.
+            if !hasAIProcessingPermission { AIProcessingPermission.shared.setAllowed(true) }
             startRecording()
         }
     }
 
     private func startRecording() {
         guard !isPreparingRecording, !recorder.isRecording, AIProcessingPermission.shared.isAllowed else { return }
-        let startingAccountID = appState.session?.user.id
+        let startingGeneration = appState.accountGeneration
 
         Task {
             isPreparingRecording = true
@@ -443,7 +466,7 @@ struct OnboardingView: View {
 
             await recorder.requestPermissionIfNeeded()
             guard isVisible, scenePhase == .active, AIProcessingPermission.shared.isAllowed,
-                  appState.session?.user.id == startingAccountID, step == 1 else { return }
+                  appState.accountGeneration == startingGeneration, step == 1 else { return }
             do {
                 try recorder.start(limitSeconds: nil)
                 ProductAnalytics.track("demo_recording_started")
@@ -567,37 +590,53 @@ struct OnboardingView: View {
     }
 
     private func finishOnboarding() {
+        if signInOnly {
+            onSignInComplete?()
+            return
+        }
         guard !isSavingDemoNote else { return }
 
+        let startingGeneration = appState.accountGeneration
+        let startingOwner = appState.session?.user.id
         Task {
+            guard isVisible, appState.accountGeneration == startingGeneration else { return }
             isSavingDemoNote = true
             authNotice = nil
             authError = nil
             defer { isSavingDemoNote = false }
 
             do {
-                let noteToSave = try await persistDemoNoteIfNeeded()
+                let noteToSave = try await persistDemoNoteIfNeeded(ownerID: startingOwner, generation: startingGeneration)
+                guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 appState.finishOnboarding(with: noteToSave)
             } catch is AIProcessingPermissionError {
+                guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 // Keep the demo on this screen; never present it as an account save.
                 authError = nil
-                authNotice = "Your demo has not been saved to your account. Allow AI processing, then try saving again."
-                showingAIProcessingConsent = true
+                authNotice = "Your demo is still here. Turn on AI voice notes to save it to your account."
             } catch {
+                guard isVisible, appState.accountGeneration == startingGeneration else { return }
                 authError = error.localizedDescription
             }
         }
     }
 
-    private func persistDemoNoteIfNeeded() async throws -> ThroughlineNote? {
-        guard appState.isSignedIn, let capturedNote else { return capturedNote }
+    private func persistDemoNoteIfNeeded(ownerID: String?, generation: UUID) async throws -> ThroughlineNote? {
+        guard appState.accountGeneration == generation else { throw CancellationError() }
+        guard let ownerID, let capturedNote else { return capturedNote }
 
         var durableRecordingID: String?
         do {
             let response = try await UploadClient().saveDemoNote(
                 capturedNote,
-                duration: capturedRecordingDuration
+                duration: capturedRecordingDuration,
+                expectedOwnerID: ownerID,
+                beforeDispatch: {
+                    guard isVisible, scenePhase == .active,
+                          appState.accountGeneration == generation else { throw CancellationError() }
+                }
             )
+            guard isVisible, appState.accountGeneration == generation else { throw CancellationError() }
             durableRecordingID = response.id
             guard response.processingStatus == "processed", response.hasNote else {
                 throw UploadClientError.processingFailed(response.processingStatus)
@@ -623,6 +662,8 @@ struct OnboardingView: View {
             return savedNote
         } catch let error as AIProcessingPermissionError {
             throw error
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             ProductAnalytics.track(
                 "recording_failed",
@@ -781,6 +822,7 @@ struct OnboardingView: View {
     }
 
     private func completeSocialAuthentication(_ session: AuthSession, mode: String) {
+        guard !signInOnly || (isVisible && signInGeneration == appState.accountGeneration) else { return }
         appState.setSession(session)
         authError = nil
         authNotice = nil
@@ -829,6 +871,7 @@ struct OnboardingView: View {
                 } else {
                     session = try await client.signIn(email: email, password: authPassword)
                 }
+                guard !signInOnly || (isVisible && signInGeneration == appState.accountGeneration) else { return }
                 appState.setSession(session)
                 authError = nil
                 authNotice = nil
@@ -1235,6 +1278,7 @@ private enum OnboardingRecordButtonPhase: Equatable {
 
 private struct OnboardingRecordButton: View {
     var phase: OnboardingRecordButtonPhase
+    var idleTitle: String = "Start demo recording"
     let action: () -> Void
 
     @State private var morphProgress: CGFloat = 0
@@ -1290,7 +1334,7 @@ private struct OnboardingRecordButton: View {
             return "stop recording"
         }
 
-        return "Start demo recording"
+        return idleTitle
     }
 
     private func syncAnimation(with phase: OnboardingRecordButtonPhase, animated: Bool) {

@@ -82,6 +82,19 @@ The first two levels are the decision KPIs. Workflow and agent events explain wh
 - Decision: determines whether Throughline is becoming a repeated workflow after first value.
 - Caveat: the measure should remain hidden as “collecting baseline” until five mature users exist.
 
+### Seven-day extracted-task value
+
+**Definition date:** 2026-09-30, TL-TASK-001. **Status:** defined, not instrumented or measured by this review. [Feasibility receipt](../docs/evidence/2026-09-30-running-list-feasibility.md). Existing `note_opened` and text-based `action_item_toggled` events are insufficient evidence.
+
+- Activation anchor: the user's first eligible Home `recording_processed` within 24 hours of instrumented `auth_succeeded`, using the activation definition above. Demo promotion is excluded. The observation window starts at that server timestamp and ends exactly seven elapsed days later, exclusively.
+- Denominator: distinct newly activated users whose entire seven-day window has elapsed, within one verified distribution cohort and measurement window. Users with no extracted tasks remain in the denominator; report task availability separately, rather than improving the rate by silently excluding them.
+- Numerator: denominator users with at least one qualifying occurrence action during that window: (a) a server-accepted transition from open to completed on an extracted task, or (b) deliberately opening its source note from that task's running-list row during a later foreground visit after its initial delivery. Automatic display, refresh, landing animation, a same-visit passive impression, unrelated note opens, failed mutations and raw gesture events do not qualify.
+- Occurrence qualification: owner, source note and stable task occurrence must be validated at the authorized application/server boundary. A task already removed at action time, an unknown legacy text selector or an unrelated manually created task does not qualify. Validate existence when accepting the action; later note deletion is not evidence that the earlier action was invalid. Existing deletion/retention controls still apply: report their effect on available coverage rather than retaining deleted content or reconstructing deleted identities for this metric. Duplicate wording remains separate occurrences; users count once. Opening a source note is a task revisit proxy, not proof that the task was accomplished.
+- Time and retries: completion uses server acceptance time; a retry of the same mutation cannot add another action. Offline actions still pending at the cutoff are not successes. Report pending/rejected/late acknowledgements and unmeasured offline revisits as coverage limitations; do not trust a client clock to backdate numerator membership.
+- Required coverage alongside the rate: eligible/mature users by cohort, eligible users with at least one extracted task, supported-client share, occurrence-validation coverage for candidate actions, and unresolved offline/conflict share. If occurrence validation or cohort reconciliation is missing, show unavailable/collecting baseline, never a healthy zero.
+- Privacy: no task/recording IDs, task text, note text, transcript or source labels in analytics payloads or tracked reports. Any necessary identity validation remains inside the existing owner-authorized application data boundary; only content-free qualified action categories and aggregate results may leave that boundary. This definition does not authorize additional private data collection or evaluation activation.
+- Interpretation: internal dogfood and internal/external TestFlight stay separate from external App Store outcomes. Five mature users is only a diagnostic floor; 20 with verified coverage is the minimum decision floor, not proof of statistical significance or improvement. Report capture/task loss, duplicate occurrences, failed writes and correction rate alongside task value. No uplift claim follows from simulator or internal acceptance checks.
+
 ## Driver metrics
 
 - Unique-session funnel: `app_opened` → `onboarding_started` → `demo_recording_completed` → `auth_succeeded` → `home_viewed` → `recording_started` → `recording_uploaded` → `recording_processed`.
@@ -139,3 +152,18 @@ These thresholds are provisional until Throughline has a stable baseline:
 - Retention is interpretable at five mature activated users and decision-grade at 20.
 - A single explicit product problem is evidence, not a trend. Three independent reports of the same problem promote it for mock exploration.
 - Any credible data-loss, privacy, account-access, or recording-processing failure can bypass the frequency threshold.
+
+## Capture recovery
+
+Defined for TL-CAP-001 on 2026-09-29. The existing session funnel cannot measure a capture that is saved after relaunch in another session. The capture store maintains private stable random milestone identities; these are not capture IDs and never go to PostHog.
+
+- Population: durable, finalized Home captures whose audio passed validation. Demo recordings are excluded. Keep the five distribution cohorts separate.
+- Saved: an owner/capture/payload-bound accepted receipt was validated and durably stored on the phone, including receipt recovery after relaunch. Count each capture once.
+- Deliberately discarded: explicit confirmed local discard, sign-out or account deletion before accepted receipt. A result-unknown discard remains remote-save-unknown and must not imply the server stored nothing.
+- Confirmed unusable: finalized audio independently validated as empty/corrupt. Temporary file protection or I/O failure is pending, never loss.
+- Pending: usable audio retained without an accepted receipt or confirmed terminal action at the observation cutoff.
+- Unobserved: a locally tracked capture whose outcome cannot be reconciled within the observation window; uninstall/offline event loss cannot be presumed saved, discarded or lost.
+- Recovery observation window: seven days after durable capture finalization. Report mature captures separately from newer pending captures; list coverage and unreconciled totals.
+- Saved share: saved divided by all observed finalized usable captures in the mature population, with deliberate discard, remote-save-unknown, pending and unobserved counts shown alongside. Do not exclude inconvenient unresolved outcomes to improve the rate.
+- Upload/processing separation: transport/auth/retry failures are capture outcomes, not `recording_failed`. That event remains a terminal processing outcome linked to a durable recording; polling exhaustion has no terminal event.
+- Readiness: report counts only until the private lifecycle can be reconciled and coverage is established. No capture recovery rate is claimed from client events alone or a synthetic canary.

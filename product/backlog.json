@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "updated_at": "2026-09-29",
-  "ordering": "Mike selected capture recovery (TL-CAP-001) before the running list (TL-TASK-001) on 2026-09-28; other portfolio positions are preserved. Dependencies name enabling relationships but do not automatically require a dependency to be closed. Array position never authorizes work or waives a selection, design, policy, provider, pricing, limit, onboarding, or release gate.",
+  "updated_at": "2026-09-30",
+  "ordering": "Mike's September 30 order: deliver Candidate A running list (TL-TASK-001) to internal TestFlight first; categories and search (TL-KNOW-001) next; Private Evaluation (TL-EVAL-001) after that. Delivered capture recovery is preserved. Other portfolio positions remain historical and array position never authorizes work or waives a design, provider, policy, pricing, limit, onboarding or public-release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
     "build_entry_owner": "Mike",
@@ -9,18 +9,20 @@
     "next_action_rule": "Each item names one bounded next action or decision and the authority required for it."
   },
   "next_portfolio_decision": {
-    "as_of": "2026-09-29",
+    "as_of": "2026-09-30",
     "owner": "Mike",
     "status": "selected",
-    "question": "Capture recovery first, then running list. Candidate B revision 3 has passed exact-file feasibility review and Claude has set handoff_ready; Mike decides build entry.",
+    "question": "Candidate A and D1 are selected and running-list build entry is approved; categories/search follow internal delivery, then Private Evaluation.",
     "selected_order": [
-      "TL-CAP-001",
-      "TL-TASK-001"
+      "TL-TASK-001",
+      "TL-KNOW-001",
+      "TL-EVAL-001"
     ],
-    "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
-    "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-    "next_gate": "Mike approves the bounded capture-recovery implementation slice against the committed ready handoff. Codex then owns implementation and verification; Claude reviews the result. Main merge and release remain separately gated.",
-    "review": "docs/evidence/2026-09-29-capture-handoff-ready.md"
+    "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
+    "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
+    "next_gate": "Running List internal delivery is complete. Claude prepares categories/search designs; Mike selects the bounded design before implementation. Private Evaluation follows.",
+    "review": "docs/evidence/2026-09-30-running-list-ready.md",
+    "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
   "states": [
     "collecting_evidence",
@@ -75,7 +77,9 @@
       "guardrail": "no raw content or identifiers; keep internal and public cohorts separate; do not infer unavailable attribution or first-tool-use data",
       "approval_required": false,
       "authority": "Mike selected the reversible owned discovery build and deployment on 2026-08-27. Spend, outreach, account posting, third-party submissions, App Store changes, and live product changes remain exact-action gates.",
-      "dependencies": ["TL-DATA-001"],
+      "dependencies": [
+        "TL-DATA-001"
+      ],
       "next_action": "Establish the first aggregate owned-page and App Store attribution baseline without treating unavailable account-side data as zero; keep outreach, posting, submissions, spend, and provider generation behind exact-action review."
     },
     {
@@ -134,7 +138,13 @@
         "ios_verification": "docs/evidence/2026-08-23-evaluation-ios-privacy-controls.md",
         "reentry_as_of": "2026-09-28",
         "reentry_status": "Private Evaluation remains deferred by Mike. R1–R6 and R16 need resolution before enablement/quality claims; old owner-canary package bindings cannot be presumed valid after approved policy changes. Historical approved_for_build records foundation work, not current rollout authority.",
-        "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md"
+        "reentry_review": "docs/evidence/2026-09-28-codex-capture-rereview.md",
+        "followup_as_of": "2026-09-29",
+        "followup_status": "14 legacy feedback rows; zero immutable operations, revisions, owner evaluations and corpus cases in fresh aggregate reads. Feedback is stored but no feedback-to-improvement loop is operating. R1–R6/R16 remain enablement blockers; flags were not directly re-attested and were unchanged in the capture rollout.",
+        "followup_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
+        "priority_as_of": "2026-09-30",
+        "product_order": "Deferred until after running-list internal TestFlight and categories/search (TL-KNOW-001).",
+        "priority_verification": "docs/evidence/2026-09-30-running-list-feasibility.md"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Independent predictions and immutable lineage will make quality, reliability, latency, cost, canary, and rollback gates auditable.",
@@ -145,7 +155,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Keep Private Evaluation deferred. When Mike separately returns to the learning loop after capture/list work, prepare a bounded R1–R6/R16 remediation and current-source canary/disclosure review before requesting any enablement action; do not execute the August owner-canary sequence."
+      "next_action": "After running-list delivery and categories/search, return to the bounded Private Evaluation decision: repair and verify R1–R6/R16 and regenerate the source-bound owner canary before requesting activation. No flag-on action follows from stored ratings or this priority decision."
     },
     {
       "id": "TL-TRNS-001",
@@ -166,7 +176,9 @@
       "guardrail": "critical transcription errors, processing reliability, latency, cost, and no exposure of corpus content",
       "approval_required": true,
       "authority": "Agents may run the offline comparison after TL-EVAL-001; any production base-model or provider change requires Mike's explicit approval.",
-      "dependencies": ["TL-EVAL-001"],
+      "dependencies": [
+        "TL-EVAL-001"
+      ],
       "next_action": "Run Groq whisper-large-v3 against Groq whisper-large-v3-turbo on the honest audio-to-task corpus; record the result without changing production."
     },
     {
@@ -186,7 +198,10 @@
       "guardrail": "schema validity, critical meaning errors, latency, cost, and no content in tracked artifacts",
       "approval_required": false,
       "authority": "Agents may define and evaluate prompt, schema, and normalizer candidates within an approved reversible slice; any base-model change requires Mike's explicit approval.",
-      "dependencies": ["TL-EVAL-001", "TL-TRNS-001"],
+      "dependencies": [
+        "TL-EVAL-001",
+        "TL-TRNS-001"
+      ],
       "next_action": "Publish the versioned contract and independent scorer, then baseline missed and unsupported actions against the declared control."
     },
     {
@@ -207,7 +222,10 @@
       "guardrail": "quarantine ambiguous labels; no raw feedback or user content in artifacts; no blind online self-training",
       "approval_required": false,
       "authority": "Agents may implement routine reversible learning controls within an approved slice; a data-use-policy, provider, or base-model change requires Mike's explicit approval.",
-      "dependencies": ["TL-EVAL-001", "TL-EXTRACT-001"],
+      "dependencies": [
+        "TL-EVAL-001",
+        "TL-EXTRACT-001"
+      ],
       "next_action": "Instrument aggregate validation, deduplication, classification, quarantine, and candidate-lineage outcomes before any promotion path is enabled."
     },
     {
@@ -231,7 +249,9 @@
       "guardrail": "auth failure rate and demo recording completion rate",
       "approval_required": true,
       "authority": "Mike approval is required for product/design direction; agents may measure the shipped flow.",
-      "dependencies": ["TL-DATA-001"],
+      "dependencies": [
+        "TL-DATA-001"
+      ],
       "next_action": "Measure auth_started, auth_succeeded, and auth_failed by provider as new signed-in traffic arrives."
     },
     {
@@ -252,91 +272,127 @@
       "guardrail": "Google and Apple callback success rate",
       "approval_required": true,
       "authority": "Mike approval is required because this changes provider-facing authentication configuration and product trust surface.",
-      "dependencies": ["TL-DATA-001"],
+      "dependencies": [
+        "TL-DATA-001"
+      ],
       "next_action": "Choose a Throughline-owned domain, configure a Supabase custom auth domain such as auth.throughline.example, and update Google and Apple callback registrations before changing the app base URL."
     },
     {
       "id": "TL-CAP-001",
       "title": "Make every recording recoverable",
       "type": "reliability",
-      "state": "awaiting_mock_approval",
+      "state": "approved_for_build",
       "problem": "Recordings are created in temporary storage and the current app has no durable outbox or retry control after an upload failure.",
       "evidence": {
         "as_of": "2026-09-29",
         "source": "Exact-file revision-3 Codex review against base 3faf0f2, resolved C1–C6 and follow-up F1–F6, and Claude readiness confirmation. Source inspection and synthetic references, not implementation/device/runtime proof.",
-        "implementation_observation": "A failed upload surfaces an error, but the user cannot replay or retry the captured file from the UI.",
+        "implementation_observation": "Internal follow-up 1.0.5 (2026092902), app source 7719237, verified VALID / IN_BETA_TESTING in existing Internal QA after exact-source Claude review. Prior backend v31 capture/replay/deletion evidence remains valid for its dated scope; no backend change in this UI follow-up. Physical iPhone acceptance remains pending.",
         "selection": "Capture tray, Candidate B: The recorder holds it. Selected first, before TL-TASK-001.",
         "handoff": "docs/handoffs/2026-09-28-home-capture-recovery.md",
         "handoff_sha256": "eb4456ecda2912a9be3ef59797eb5be7a70584689dfba780e1bc98f70729dd50",
-        "tandem_stage": "handoff_ready",
+        "tandem_stage": "owner_testing",
         "verification": "docs/evidence/2026-09-29-capture-handoff-ready.md",
         "product_decisions": "D1 neutral other-account row and local-only discard; D2 stop/keep on call, lock or leaving: accepted by Mike on 2026-09-28.",
         "capture_dependencies": "R7 before capture events ship; R10 isolated migration replay and relevant pgTAP before capture migration verification; R11 guarded processing finalization under contract item 4.",
-        "handoff_commit": "4c7cea1060f55438a0fd0c8deee97019376d1d9b"
+        "handoff_commit": "4c7cea1060f55438a0fd0c8deee97019376d1d9b",
+        "slice": "docs/slices/capture-recovery.md",
+        "implementation_verification": "docs/evidence/2026-09-29-capture-implementation.md",
+        "release_candidate": "docs/releases/2026-09-29-ios-1.0.5-2026092902-candidate.md",
+        "claude_implementation_review": "docs/evidence/2026-09-29-claude-capture-implementation-review.md",
+        "internal_delivery": "docs/releases/2026-09-29-ios-1.0.5-2026092902-delivery.md",
+        "backend_rollout": "docs/evidence/2026-09-29-capture-production-rollout.md",
+        "owner_feedback": "Initial positive capture TestFlight report on September 29; full device recovery checks remain open. Simplified one-tap ordinary-AI controls were reviewed by Claude and delivered in build 2026092902.",
+        "owner_feedback_verification": "docs/evidence/2026-09-29-capture-owner-feedback.md",
+        "capture_internal_delivery": "docs/releases/2026-09-29-ios-1.0.5-2026092901-delivery.md",
+        "claude_ai_controls_review": "docs/evidence/2026-09-29-claude-ai-controls-review.md"
       },
       "funnel_step": "recording_started -> recording_uploaded",
       "hypothesis": "Persisting recordings locally until confirmed and exposing an automatic/manual retry path will reduce lost-thought failures and increase trust.",
-      "primary_metric": "recording_started sessions that reach recording_uploaded",
+      "primary_metric": "Seven-day capture saved share with explicit discard, pending and unobserved coverage; counts only until lifecycle reconciliation is ready.",
       "guardrail": "local storage growth and duplicate upload rate",
       "approval_required": true,
-      "authority": "Mike selected Candidate B and D1/D2 and authorized handoff completion. Claude set readiness after exact Codex review. This handoff integration authorizes no feature build, migration execution, deployment or release; Mike retains build entry.",
+      "authority": "Mike approved the ready capture tray build and internal TestFlight delivery on 2026-09-29. Codex implements/verifies and Claude reviews the result; public release and unrelated product changes remain outside scope.",
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Mike approves the bounded capture-recovery implementation slice against revision 3. Codex then writes the implementation plan and builds, including R7/R10/R11 dependencies; Claude reviews the implemented design before delivery.",
-      "slice_phase": "selected"
+      "next_action": "Mike installs build 2026092902, tests first recording and Settings off/on, and continues the capture recovery device checklist.",
+      "slice_phase": "canary"
     },
     {
       "id": "TL-TASK-001",
-      "title": "Turn extracted todos into a dependable task home",
+      "title": "Running List — Today, This Week, Later",
       "type": "retention",
-      "state": "ready_for_mock",
-      "problem": "Throughline extracts task dates, priorities, context and completion state, but the app does not yet present a task inbox, Today/Upcoming/Completed views, reminders, or clear source-note traceability.",
+      "state": "shipped",
+      "problem": "Tasks from several voice notes do not form one dependable list; repeated wording can collide and the old carry-over section uses inaccurate dates.",
       "evidence": {
-        "as_of": "2026-08-28",
+        "as_of": "2026-09-30",
         "source": "outside-in product study, current iOS implementation, owner review, and fresh internal TestFlight rollback evidence",
         "market_pattern": "Successful task products organize work by time and status; voice-workflow users ask for dated tasks that route into daily systems.",
         "sample_size_warning": "The rejected implementation and its rollback were available to one internal tester; internal use is not a public-product outcome and does not establish lift.",
-        "implementation_selection": "On 2026-08-26 Mike selected and design-approved the presentation-first Home slice. On 2026-08-28 owner review rejected that presentation and selected restoration of the preceding Home UI while preserving backend, evaluation, and privacy work. No later Home candidate is approved for build.",
-        "implementation_delivery": "The selected slice reached internal build 2026082601. On 2026-08-28 the source and internal canary were rolled back through build 2026082801, which Apple processed to VALID and which was freshly verified in the one-tester Internal QA group.",
+        "implementation_selection": "The August Home design was rolled back. On September 30 Mike selected the new Candidate A and approved its bounded running-list build; the old PR remains a reference only.",
+        "implementation_delivery": "Responsiveness repair is available as internal-only 1.0.5 (2026093002), VALID and IN_BETA_TESTING in existing Internal QA after exact-source Claude review, focused regression checks, synthetic benchmark and isolated signed package verification.",
         "verification": "docs/evidence/2026-08-28-home-ui-rollback.md",
         "reconciliation_as_of": "2026-09-28",
-        "product_order": "Mike selected the running list after capture recovery; PR #2 is a deferred implementation source, not a compatible replacement for the August foundation.",
+        "product_order": "Running-list internal TestFlight first; categories/search next; Private Evaluation after.",
         "reconciliation_verification": "docs/evidence/2026-09-28-reconciliation-plan.md",
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
-        "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery."
+        "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
+        "current_request": "Repair tab responsiveness and place earlier unfinished tasks in Today automatically; preserve completed state and manual moves.",
+        "current_bug": "Repeated main-thread tab calculation and collapsed older unfinished tasks are repaired in internal build 2026093002. Physical-device performance and scrolling acceptance remain pending.",
+        "current_verification": "docs/releases/2026-09-30-ios-1.0.5-2026093002-delivery.md",
+        "slice": "docs/slices/running-list.md",
+        "tandem_stage": "internal_testflight",
+        "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
+        "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
+        "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
+        "feasibility_status": "Reviewed repair follows Mike's direction to put older unfinished tasks in Today, with completed state and explicit moves intact. No backend or extraction change.",
+        "display_progress": "In TestFlight: responsiveness repair ready to retest",
+        "review_pr_status": "Draft PR #4 is open; no merge is authorized.",
+        "review_pr": "https://github.com/mpolner88/throughline/pull/4",
+        "implementation_candidate": "docs/releases/2026-09-30-ios-1.0.5-2026093002-candidate.md",
+        "implementation_review_request": "docs/evidence/2026-09-30-running-list-responsiveness.md",
+        "implementation_review": "docs/evidence/2026-09-30-claude-running-list-responsiveness-review.md",
+        "implementation_followups": "P3-2 through P3-12 from the initial review remain follow-ups; P3-13 is resolved by earlier tasks in Today. The responsiveness review records optional ordering/date recommendations, unreachable earlier UI cleanup and remaining initial-Notes/durable-write costs. None blocks this internal repair.",
+        "implementation_review_sha256": "3abc670f592913c9ce0a69f7e3602d0415f500ed7b2b630589d354c7abe9f283",
+        "hosted_rollout": "API v32 and migration 20260930231946 verified; 12 hosted task check groups and synthetic capture processing/recovery passed. Two fixture accounts and all test data cleaned up; evaluation-linked recordings remain zero."
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
-      "primary_metric": "new activated users who revisit or complete an extracted task within 7 days",
-      "guardrail": "task extraction correction rate and reminder opt-out rate",
+      "primary_metric": "seven-day extracted-task value as defined in product/metrics.md; unavailable until occurrence validation and coverage are verified",
+      "guardrail": "no capture loss, duplicated/lost task occurrences, cross-owner writes, stale resurrection, invented dates or text-based merging; track correction rate separately",
       "approval_required": true,
-      "authority": "Mike selected running-list priority after capture recovery. That order does not approve importing PR #2 wholesale or its design for build. Posting its GitHub review and contacting Claude for a design review each require separate approval.",
+      "authority": "Mike selected Candidate A, decided undated tasks go to Today, and approved build entry/internal TestFlight on September 30. Feasibility resolution, Claude handoff readiness and exact-source implementation review precede delivery. Preserve capture and AI controls; no extraction change, wholesale PR #2 import, PR comment, main merge, policy/provider/model change, Private Evaluation or public App Store action.",
       "dependencies": [
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "After capture recovery, prepare a bounded running-list rework from the reviewed base that preserves lineage, consent, retention, API compatibility and occurrence-level task identity; obtain the separately authorized reviews before build entry."
+      "next_action": "Mike updates to 2026093002 and retests tab response, scrolling, older unfinished tasks in Today, completion/Undo/moves across relaunch and offline behavior. Categories/search follow; Private Evaluation remains deferred.",
+      "slice_phase": "canary"
     },
     {
       "id": "TL-KNOW-001",
-      "title": "Expose the voice knowledge layer",
+      "title": "Categories and search across notes and tasks",
       "type": "retention",
       "state": "collecting_evidence",
-      "problem": "Throughline extracts tags, people and projects, but the iOS surface is chronological and does not expose library search, entity pages, related notes or backlinks.",
+      "problem": "People need automatic categories grounded in what they said and a search that finds both notes and tasks; the current chronological library does not provide that combined retrieval.",
       "evidence": {
-        "as_of": "2026-08-07",
+        "as_of": "2026-09-30",
         "source": "outside-in product study and current iOS implementation",
-        "market_pattern": "Obsidian and Reflect establish search, structured properties and links as the durable knowledge-system layer."
+        "market_pattern": "Obsidian and Reflect establish search, structured properties and links as the durable knowledge-system layer.",
+        "priority_decision": "Mike: categories assigned automatically from what was said; search finds both notes and tasks; after running-list internal TestFlight and before Private Evaluation.",
+        "decision": "decision-log.md",
+        "verification": "docs/evidence/2026-09-30-running-list-feasibility.md"
       },
       "funnel_step": "note saved -> note retrieved -> note reused",
       "hypothesis": "Search and entity-based retrieval will make old voice memories useful after the day they were captured.",
       "primary_metric": "activated users who retrieve and open a note older than 7 days",
       "guardrail": "search abandonment rate and manual metadata correction rate",
       "approval_required": true,
-      "authority": "Mike approval is required for product/design direction before implementation.",
-      "dependencies": ["TL-DATA-001"],
-      "next_action": "Gather direct retrieval jobs from the first activated users, then mock Library search and one entity page before choosing backlinks or graph UI."
+      "authority": "Mike selected this direction and priority after running-list internal TestFlight on September 30. Claude design and the bounded engineering contract precede build entry; no implementation or extraction/provider change is included in the current running-list slice.",
+      "dependencies": [
+        "TL-DATA-001"
+      ],
+      "next_action": "Claude prepares categories and search designs now that Running List internal build 2026093001 is delivered: automatic categories from what was said, and search over both notes and tasks. Return a bounded contract for Codex feasibility review and Mike's selection before implementation."
     },
     {
       "id": "TL-AGENT-001",
@@ -355,7 +411,9 @@
       "guardrail": "token revocation rate and unauthorized-action reports",
       "approval_required": true,
       "authority": "Mike approval is required for product/design direction and any new agent write capability.",
-      "dependencies": ["TL-DATA-001"],
+      "dependencies": [
+        "TL-DATA-001"
+      ],
       "next_action": "Interview early MCP users about their first desired write action, then define scopes and mock the authorization flow."
     },
     {
@@ -403,7 +461,9 @@
       "guardrail": "feedback_submit_failed rate and no feedback text in analytics",
       "approval_required": false,
       "authority": "Agents may verify and measure the implemented feedback flow; changes to data-use policy remain Mike-approved.",
-      "dependencies": ["TL-DATA-001"],
+      "dependencies": [
+        "TL-DATA-001"
+      ],
       "next_action": "Include the completed feedback flow in the next app release and confirm the first real submission appears in the private product report."
     },
     {
@@ -424,7 +484,10 @@
       "guardrail": "no recordings, transcripts, prompts, note content, or provider keys in analytics",
       "approval_required": false,
       "authority": "Agents may build measurement within an approved slice; provider and pricing changes remain Mike-approved.",
-      "dependencies": ["TL-DATA-001", "TL-EVAL-001"],
+      "dependencies": [
+        "TL-DATA-001",
+        "TL-EVAL-001"
+      ],
       "next_action": "Persist model, stage, audio duration, input/output tokens, retry count, latency, and estimated USD cost; report totals and p50/p95 cost per successful recording."
     },
     {
@@ -445,7 +508,10 @@
       "guardrail": "free activation, recording completion, refund rate, and AI cost per premium recording",
       "approval_required": true,
       "authority": "Mike's explicit approval is required for pricing, recording limits, subscriptions, and implementation.",
-      "dependencies": ["TL-COST-001", "TL-DATA-001"],
+      "dependencies": [
+        "TL-COST-001",
+        "TL-DATA-001"
+      ],
       "next_action": "Keep premium duration, pricing, and entitlement design in evidence/backlog only; revisit only after cost, activation, and retention baselines are decision-grade."
     },
     {
@@ -465,7 +531,11 @@
       "guardrail": "no implementation, no credit accounting, no raw evaluation content, and no reward tied to sentiment or score",
       "approval_required": true,
       "authority": "Mike's explicit approval is required for pricing, recording limits, credits, and implementation.",
-      "dependencies": ["TL-EVAL-001", "TL-COST-001", "TL-LEARN-001"],
+      "dependencies": [
+        "TL-EVAL-001",
+        "TL-COST-001",
+        "TL-LEARN-001"
+      ],
       "next_action": "Keep credits in evidence/backlog state until evaluation integrity, quality, cost, and abuse controls have decision-grade evidence."
     },
     {
@@ -486,7 +556,10 @@
       "guardrail": "no raw content or identifiers in tracked artifacts; no hidden profile, cross-user learning, or unconsented promotion",
       "approval_required": true,
       "authority": "Agents may gather privacy-safe evidence and draft a candidate contract. Mike's explicit approval is required for product direction and any data-use-policy or live personalization change.",
-      "dependencies": ["TL-EVAL-001", "TL-LEARN-001"],
+      "dependencies": [
+        "TL-EVAL-001",
+        "TL-LEARN-001"
+      ],
       "next_action": "Keep personalization unselected until direct recurring-user evidence identifies one bounded preference job; then draft its consent, inspection, correction, and removal contract for Mike's review."
     }
   ]

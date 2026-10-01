@@ -45,7 +45,7 @@ final class AIProcessingPermission: @unchecked Sendable {
 enum AIProcessingPermissionError: LocalizedError {
     case required
     var errorDescription: String? {
-        "AI processing is not allowed. Review your choice before sending a recording or saving a demo note."
+        "AI voice notes are off. Turn them on in Settings to record and save new notes."
     }
 }
 

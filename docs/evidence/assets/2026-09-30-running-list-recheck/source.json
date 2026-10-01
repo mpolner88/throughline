@@ -1,0 +1,45 @@
+{
+  "recorded_on": "2026-09-30",
+  "app_source": "a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068",
+  "previous_review_source": "7d41c6a2e34c9923b741f58f2a0efd0e42e88163",
+  "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
+  "runtime": "iOS 26.3.1 (23D8133)",
+  "device": "iPhone 13, 390 x 844 points; 1170 x 2532 pixels",
+  "appearance": "light",
+  "content_size": "large",
+  "fixture": "RunningListPreview; synthetic content only",
+  "source_file_sha256": {
+    "ios/Tests/TaskCoordinatorTests.swift": "be72def8908e9fe01ccf414a973f0c8b245dd482977aef42185a31caba4a4229",
+    "ios/Throughline/Models/RunningListPreview.swift": "36e1f2477cefaf5c29c9f8d145ba46045585e67a0e467ebad79631dff8650ee0",
+    "ios/Throughline/Models/RunningListProjection.swift": "09f90016362b578b0f27f20785d0df5c0ef2ece0ad76c3516bdbbdb5c7917182",
+    "ios/Throughline/Views/RunningListView.swift": "8bba2c12170ecdf70db18031bf3cd98b7e72290b977e140f01f1932db80fa1e2",
+    "supabase/functions/api/tasks.ts": "c8a8debd6d27247fb38b4766d1088268453068a0a2c99be77ed52b9a93fdaad5",
+    "supabase/functions/api/tasks_routes_test.ts": "e6c2b8da4815ce57a9880e14c3355b47b1d05b92e36b9d93ae4ef0f1c2acfa79"
+  },
+  "frames": [
+    {
+      "file": "moved-light-390x844.png",
+      "sha256": "68eca3ec193c3ea6a2ad12056920b7bd67167a4cf67b6dd90e71fb83b5b67184",
+      "app_source": "a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "offline-light-390x844.png",
+      "sha256": "b34f9b0d69838b5504705b3f3499e019e8d6673cb74a2fcff3175a58b3d159d3",
+      "app_source": "a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "saturday-week-light-390x844.png",
+      "sha256": "9e0dc8f1145cac456a0f0dabd0befa0254b6452034cee294eb00ef35539b65aa",
+      "app_source": "a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068",
+      "evidence": "synthetic native scenario; static viewport"
+    },
+    {
+      "file": "week-light-390x844.png",
+      "sha256": "8df9361d67fc24056da7eaf2492258d32f91793a8fbedd4f69d50bb9f0593293",
+      "app_source": "a59d68ddf1bafdb0bfb8cc5fe31f605bb1d2e068",
+      "evidence": "synthetic native scenario; static viewport"
+    }
+  ]
+}

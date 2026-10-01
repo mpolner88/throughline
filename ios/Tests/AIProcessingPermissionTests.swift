@@ -2,12 +2,16 @@
 // This executable deliberately substitutes AuthSessionRefresher to pause authentication.
 import Foundation
 
-struct AuthSession { let accessToken = "synthetic" }
+struct AuthUser { let id: String; init(id: String = "synthetic") { self.id = id } }
+struct AuthSession { let accessToken = "synthetic"; let user: AuthUser; init(ownerID: String = "synthetic") { user = AuthUser(id: ownerID) } }
+enum AuthSessionStore { static var currentSession: AuthSession? { AuthSession() } }
 actor AuthSessionRefresher {
   static let shared = AuthSessionRefresher()
   var gate: CheckedContinuation<Void, Never>?
   var shouldPause = false
   var entered = false
+  var ownerID = "synthetic"
+  func setOwner(_ value: String) { ownerID = value }
   func pause() {
     shouldPause = true
     entered = false
@@ -22,7 +26,7 @@ actor AuthSessionRefresher {
       entered = true
       await withCheckedContinuation { gate = $0 }
     }
-    return AuthSession()
+    return AuthSession(ownerID: ownerID)
   }
 }
 final class Mock: URLProtocol {
@@ -52,6 +56,7 @@ final class Mock: URLProtocol {
   override func stopLoading() {}
   static var calls: Int { lock.withLock { count } }
 }
+@MainActor final class TestEpoch { var changed = false; func invalidate() { changed = true } }
 @main struct Tests {
   static func main() async throws {
     let suite = "throughline.r8.synthetic.\(UUID().uuidString)"
@@ -79,7 +84,7 @@ final class Mock: URLProtocol {
       switch kind {
       case 0: _ = try await client.uploadDemoRecording(fileURL: audio, duration: 1, type: .freeform)
       case 1: _ = try await client.uploadRecording(fileURL: audio, duration: 1, type: .freeform)
-      default: _ = try await client.saveDemoNote(note, duration: 1)
+      default: _ = try await client.saveDemoNote(note, duration: 1, expectedOwnerID: "synthetic")
       }
     }
     for kind in 0...2 {
@@ -143,5 +148,33 @@ final class Mock: URLProtocol {
     } catch {}
     precondition(Mock.calls == 6)
     print("PASS cancellation during auth await sends no request")
+
+    permission.setAllowed(true)
+    await AuthSessionRefresher.shared.pause()
+    let switchedOwner = Task { try await submit(2) }
+    while !(await AuthSessionRefresher.shared.entered) { await Task.yield() }
+    await AuthSessionRefresher.shared.setOwner("another-synthetic-owner")
+    await AuthSessionRefresher.shared.resume()
+    do { try await switchedOwner.value; fatalError("demo crossed accounts") }
+    catch is CancellationError {}
+    precondition(Mock.calls == 6)
+    await AuthSessionRefresher.shared.setOwner("synthetic")
+    print("PASS account switch during authentication prevents demo promotion")
+
+    let epoch = TestEpoch()
+    await AuthSessionRefresher.shared.pause()
+    let changedGeneration = Task { @MainActor in
+      try await client.saveDemoNote(note, duration: 1, expectedOwnerID: "synthetic", beforeDispatch: {
+        guard !epoch.changed else { throw CancellationError() }
+      })
+    }
+    while !(await AuthSessionRefresher.shared.entered) { await Task.yield() }
+    epoch.invalidate()
+    await AuthSessionRefresher.shared.resume()
+    do { _ = try await changedGeneration.value; fatalError("stale demo continuation") }
+    catch is CancellationError {}
+    precondition(Mock.calls == 6)
+    print("PASS same-owner generation change prevents demo promotion")
+
   }
 }

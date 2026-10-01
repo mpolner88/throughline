@@ -1,5 +1,50 @@
 # Throughline current state
 
+## What is happening now
+
+**Verified September 30:** **Running List responsiveness repair is in internal TestFlight, build 1.0.5 (2026093002).** Apple confirms VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA. The repair removes repeated main-thread list calculation and places older unfinished tasks directly in Today, preserving manual moves and completed state. [Delivery and device checks](releases/2026-09-30-ios-1.0.5-2026093002-delivery.md), [measured diagnosis](evidence/2026-09-30-running-list-responsiveness.md), [Claude review](evidence/2026-09-30-claude-running-list-responsiveness-review.md). [Draft PR #4](https://github.com/mpolner88/throughline/pull/4) remains unmerged.
+
+**Next:** Mike updates to **2026093002** and verifies tab response, scrolling, older tasks, completion/moves/Undo across relaunch and offline behavior. Categories/search follow the repair; Private Evaluation stays deferred. API v32 and the twelve-migration backend, extraction, capture/AI controls and policy are unchanged. Mac benchmarks establish the removed computational stall; physical-device performance acceptance remains pending.
+
+The dated records below preserve prior evidence. Their earlier design/build-entry statements are historical where the continuation above supersedes them.
+
+## September 30 running-list design ready; implementation beginning
+
+**Verified:** 2026-09-30. **Scope:** local source/design review and asset integrity. [Codex readiness receipt](evidence/2026-09-30-running-list-ready.md), [Claude corrections](evidence/2026-09-30-claude-running-list-resolution.md).
+
+- **Selected and reviewed:** Candidate A; undated tasks go to Today. Claude marked revision 2 `handoff_ready` after Codex resolved RL1–RL7 and checked the final 32 manifest entries. The receipt contains exact identities.
+- **Current work:** Codex begins occurrence-level task storage/API, durable offline changes and the three-tab Home. The selected editor keeps task identities; older apps keep safe recording/read and unambiguous completion, with unsafe writes rejected atomically.
+- **Next:** Focused engineering verification, isolated app build and simulator matrix, then actual Claude implementation review and internal-only delivery. Mike's build approval is already granted.
+- **Release boundary:** No running-list build or task backend is delivered yet. The September 29 delivery below remains the latest verified internal build. Categories/search follow this delivery, then Private Evaluation.
+
+## September 29 one-tap AI controls internal delivery
+
+**Verified:** 2026-09-29. **Scope:** reviewed app source, isolated signed package, Apple processing and existing Internal QA availability. [Delivery receipt](releases/2026-09-29-ios-1.0.5-2026092902-delivery.md), [candidate](releases/2026-09-29-ios-1.0.5-2026092902-candidate.md), [Claude review](evidence/2026-09-29-claude-ai-controls-review.md).
+
+- **Current internal build:** **1.0.5 (2026092902)** is VALID, not expired, IN_BETA_TESTING and assigned to existing Internal QA. Exact app source `77192374e5f1de339047904c7ee0825e9863b96f`, local `codex/capture-tray`. No public submission, push or main merge.
+- **Experience:** one inline **Agree and record** action at first onboarding/Home recording; no large sheet or second recorder action. Native Settings switch preserves explicit off choices and readable existing notes. Claude's A1 link finding is resolved; no open P1/P2.
+- **Limits:** mocked request-boundary tests, synthetic simulator images and signed delivery do not prove physical-device capture or VoiceOver. Backend v31, approved policy bytes and Private Evaluation are unchanged.
+- **Next:** Mike installs 2026092902 and checks first recording plus Settings off/on, alongside capture recovery. Running-list design remains separate; implementation has not started. The earlier local-only/review-pending statements below are superseded by this delivery.
+
+## September 29 owner feedback and next slice
+
+**Verified:** 2026-09-29. **Scope:** initial owner report, source inspection and read-only hosted aggregates. [Evidence and device checklist](evidence/2026-09-29-capture-owner-feedback.md).
+
+- **Current:** Mike reports the capture TestFlight looks good; recovery/device acceptance is still being exercised. The follow-up controls are now in build 2026092902; see the delivery above.
+- **Evidence:** ratings are stored (14 legacy rows), while immutable processing operations, note revisions, owner evaluations and corpus cases are all zero in fresh aggregate reads. No operating feedback-to-improvement loop or automatic model training is established. Evaluation activation stays deferred pending its known repairs.
+- **Next gate:** Claude completed the AI-control presentation review. Mike tests build 2026092902; the [running-list handoff](slices/running-list.md) remains a separate design/feasibility task before implementation.
+- **Authority:** Mike requested the simpler AI experience and running list next. Preserve minimal affirmative first-use acceptance, existing opt-out choices, the delivered capture behavior and evaluation separation. No policy text, backend, flag, provider/model, main merge or public-release change in this follow-up.
+
+## September 29 capture-tray internal delivery
+
+**Verified:** 2026-09-29. **Scope:** approved backend deployment, synthetic hosted capture, exact signed app upload, Apple processing and existing Internal QA availability. Evidence: [internal delivery](releases/2026-09-29-ios-1.0.5-2026092901-delivery.md), [production rollout](evidence/2026-09-29-capture-production-rollout.md), and [Claude design review](evidence/2026-09-29-claude-capture-implementation-review.md).
+
+- **Internal:** Throughline **1.0.5 (2026092901)** is VALID, not expired, IN_BETA_TESTING and assigned to existing **Internal QA**. The package is internal-testing-only. Exact app source is `c9d2d5c93de44880efbbdff2162535114d797874`; no public submission or main merge occurred.
+- **Backend:** API **v31**, all 13 deployed files matched to the reviewed source, and eleven migrations through `20260929192508_capture_recovery`. Four concurrent synthetic uploads, immutable replay, completed processing, exact deletion and physical audio cleanup passed. Test fixture cleanup is complete; evaluation/provider/model settings are unchanged.
+- **Review:** independent engineering findings and Claude’s blocking source findings were resolved; final Claude design review passed with no P1/P2 blockers. Device and interaction evidence limits remain recorded. No actual-iPhone acceptance or product-metric lift is claimed.
+- **Next owner/action:** Mike installs build 2026092901 and tests capture/recovery on his phone. Product order stays capture recovery, then running list. Private Evaluation stays deferred.
+- **Source location:** active nonsynced `throughline-local`, local branch `codex/capture-tray`. PR #3 remains separate and unmerged. The migration filename was aligned to the hosted-assigned timestamp with approved SQL bytes unchanged. The dated sections below preserve earlier evidence; their old build-entry/delivery gates are superseded here.
+
 ## September 29 capture-tray handoff ready
 
 **Verified:** 2026-09-29. **Scope:** local source and design review, asset integrity, and the existing draft PR #3 identity; no production or release refresh. Evidence: [revision-3 readiness receipt](evidence/2026-09-29-capture-handoff-ready.md).

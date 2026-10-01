@@ -4,6 +4,8 @@ Throughline is where you speak notes for your AI agent.
 
 ## Start here
 
+For a quick orientation, open [what is happening now](docs/CURRENT_STATE.md) and the [simple Claude/Codex working loop](docs/AGENT_TANDEM.md#the-simple-working-loop). The active improvement has a readable name in its feature brief and a review PR; technical IDs stay in the linked evidence.
+
 Returning to the project: read the [September 28 audit](docs/evidence/2026-09-28-return-audit.md) for the local/cloud work map, unfinished work, verified release state, and recovered ideas. Then use the [Claude–Codex operating loop](docs/AGENT_TANDEM.md#daily-working-agreement) for the next bounded assignment. The audit is dated evidence; the canonical sources below remain authoritative.
 
 Before planning or changing the product, follow the repository guide in [AGENTS.md](AGENTS.md). The canonical operating path is:
