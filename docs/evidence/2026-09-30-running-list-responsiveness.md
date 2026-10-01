@@ -1,6 +1,6 @@
 # Running List responsiveness and older-task repair
 
-**Verified:** 2026-09-30. **Baseline:** `aeeb5f6130d5a352fcd76e98199e4b85267d1c02`, internal build 1.0.5 (2026093001). **Repair source:** `4f33feb345781f1c0cd2362a9442ea04854229fa` on `codex/running-list`; exact revision and per-file source hashes accompany the isolated candidate. **Status:** locally verified, signed and passed Claude review; internal delivery pending. No repaired build is delivered yet.
+**Verified:** 2026-09-30. **Baseline:** `aeeb5f6130d5a352fcd76e98199e4b85267d1c02`, internal build 1.0.5 (2026093001). **Repair source:** `4f33feb345781f1c0cd2362a9442ea04854229fa` on `codex/running-list`; exact revision and per-file source hashes accompany the isolated candidate. **Status:** delivered to existing Internal QA as 1.0.5 (2026093002); physical-device acceptance pending.
 
 ## Owner feedback and decision
 
@@ -42,10 +42,10 @@ The committed `bash scripts/test-running-list.sh --benchmark` additionally tests
 
 **Claude review:** [Passed at exact repair source](2026-09-30-claude-running-list-responsiveness-review.md), receipt SHA-256 `3abc670f592913c9ce0a69f7e3602d0415f500ed7b2b630589d354c7abe9f283`. No P1/P2 blockers. Optional Today ordering and future-date recommendations do not change Mike's requested repair.
 
-**Pending:** internal delivery and Mike's real-device responsiveness/scrolling acceptance. Existing correctness tests and screenshots had not measured this performance path before the first delivery; that gap is now covered by the regression benchmark.
+**Delivered:** [2026093002 verified in existing Internal QA](../releases/2026-09-30-ios-1.0.5-2026093002-delivery.md). **Pending:** Mike's real-device responsiveness/scrolling acceptance. Existing correctness tests and screenshots had not measured this performance path before the first delivery; that gap is now covered by the regression benchmark.
 
 ## Rollback and next owner
 
 Rollback is a compatible follow-up app build restoring the prior projection without touching task records, completions, moves or capture storage. No database rollback is required. Restoring 2026093001 would restore the known sluggish behavior and collapsed older tasks, so prefer a forward correction.
 
-Codex finishes the bounded verification and sends exact source/frames to Claude; Claude reviews; Codex delivers within existing Internal QA authority; Mike verifies responsiveness on his phone.
+Codex completed verification and internal delivery after Claude's passing review. Mike now verifies responsiveness and older tasks on his phone.

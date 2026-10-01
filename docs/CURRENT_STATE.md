@@ -2,11 +2,9 @@
 
 ## What is happening now
 
-**Verified September 30:** **Running List — Today, This Week, Later is in internal TestFlight, build 1.0.5 (2026093001).** Apple confirms VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA. Claude passed the corrected implementation; the deployed task backend and all hosted synthetic checks passed, with cleanup confirmed. [Delivery manifest and device checklist](releases/2026-09-30-ios-1.0.5-2026093001-delivery.md), [backend evidence](evidence/2026-09-30-running-list-production-rollout.md), [Claude review](evidence/2026-09-30-claude-running-list-implementation-review.md). [Draft PR #4](https://github.com/mpolner88/throughline/pull/4) remains unmerged.
+**Verified September 30:** **Running List responsiveness repair is in internal TestFlight, build 1.0.5 (2026093002).** Apple confirms VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA. The repair removes repeated main-thread list calculation and places older unfinished tasks directly in Today, preserving manual moves and completed state. [Delivery and device checks](releases/2026-09-30-ios-1.0.5-2026093002-delivery.md), [measured diagnosis](evidence/2026-09-30-running-list-responsiveness.md), [Claude review](evidence/2026-09-30-claude-running-list-responsiveness-review.md). [Draft PR #4](https://github.com/mpolner88/throughline/pull/4) remains unmerged.
 
-**September 30 device feedback:** Mike reports severe tab delays and asks for older unfinished tasks directly in Today. Source benchmarking reproduced seconds of repeated main-thread calculation; the repaired cache/sort path and Today placement pass focused tests locally. [Diagnosis, aggregate coverage and repair evidence](evidence/2026-09-30-running-list-responsiveness.md). Build 2026093001 remains the delivered version until the corrected candidate completes verification and Claude review.
-
-**Next:** Codex finishes the bounded responsiveness repair and verified internal delivery; Mike retests on device. Categories/search follow this repair; Private Evaluation stays deferred. API v32 and the twelve-migration backend are unchanged.
+**Next:** Mike updates to **2026093002** and verifies tab response, scrolling, older tasks, completion/moves/Undo across relaunch and offline behavior. Categories/search follow the repair; Private Evaluation stays deferred. API v32 and the twelve-migration backend, extraction, capture/AI controls and policy are unchanged. Mac benchmarks establish the removed computational stall; physical-device performance acceptance remains pending.
 
 The dated records below preserve prior evidence. Their earlier design/build-entry statements are historical where the continuation above supersedes them.
 

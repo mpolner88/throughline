@@ -1,8 +1,8 @@
 # Running List — Today, This Week, Later
 
-**Progress:** Review and testing — repairing severe tab delays reported on internal build 2026093001.
+**Progress:** In internal TestFlight — responsiveness repair 1.0.5 (2026093002), ready for Mike to retest.
 **What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Codex verifies the [responsiveness and older-task repair](../evidence/2026-09-30-running-list-responsiveness.md), Claude reviews exact source/frames, then Codex delivers a corrected internal build.
+**Next:** Mike retests tab response and earlier unfinished tasks in Today using the [repair delivery checklist](../releases/2026-09-30-ios-1.0.5-2026093002-delivery.md#device-acceptance-and-next-work).
 **Review PR:** [Running List — Today, This Week, Later · #4](https://github.com/mpolner88/throughline/pull/4), open as a draft. It includes the already-delivered capture and recording-control prerequisites and stays unmerged.
 
 ## Technical record
@@ -10,10 +10,10 @@
 **Verified baseline:** 2026-09-30, local source `f6983ed01cd41355cc950dd9bd1226cb9da85294`; last verified internal delivery 1.0.5 (2026092902). [Exact readiness receipt](../evidence/2026-09-30-running-list-ready.md); [last delivery](../releases/2026-09-29-ios-1.0.5-2026092902-delivery.md).
 **Backlog state:** `shipped`
 **Slice phase:** `canary`
-**Tandem stage:** `internal_release_ready`
-**Current:** Verified September 30: build 2026093001 is VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA. Claude passed corrected source `a59d68d`; API v32 and the task migration passed hosted compatibility, capture and cleanup checks. [Delivery evidence](../releases/2026-09-30-ios-1.0.5-2026093001-delivery.md).
+**Tandem stage:** `internal_testflight`
+**Current:** Verified September 30: repair build 2026093002 is VALID, internal-only, IN_BETA_TESTING and assigned to existing Internal QA after Claude review of source `4f33feb`. The API v32/task migration remain unchanged. [Delivery evidence](../releases/2026-09-30-ios-1.0.5-2026093002-delivery.md).
 **Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** Corrected-source simulator/build evidence, Claude review and internal delivery. Mike retests tab responsiveness and older unfinished tasks in Today. His September 30 direction supersedes the collapsed earlier-notes rule in the frozen handoff; completed tasks and manual moves stay intact.
+**Next gate:** Mike's real-device acceptance of responsiveness, scrolling, Today coverage and durable task actions. His September 30 direction supersedes the collapsed earlier-notes rule in the frozen handoff; completed tasks and manual moves stay intact. Categories/search follow.
 **Authority:** Approved running-list implementation and internal-only TestFlight to existing Internal QA. Preserve shipped capture, recorder and AI controls. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or public release. Categories/search follow delivery; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward
