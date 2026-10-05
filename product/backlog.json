@@ -20,7 +20,7 @@
     ],
     "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
     "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
-    "next_gate": "Mike accepted the Running List repair on October 5 and authorized public release. Candidate 2026100502 is uploaded and selected; confirm App Review account access and Claude listing review, then submit. Categories/search remains next, followed by Private Evaluation.",
+    "next_gate": "Mike accepted the Running List repair and authorized public release. Candidate 2026100502 and the Claude-reviewed listing are ready in Apple; verify the in-app reviewer account after email confirmation and submit. Categories/search remains next, then Private Evaluation.",
     "review": "docs/evidence/2026-09-30-running-list-ready.md",
     "owner_feedback": "docs/evidence/2026-09-29-capture-owner-feedback.md"
   },
@@ -337,7 +337,7 @@
         "reconciliation_verification": "docs/evidence/2026-09-28-reconciliation-plan.md",
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
-        "current_request": "Mike accepted swipe and scroll and authorized ASO, upload and public release on October 5. Complete final reviewer-access and listing checks, then submit with automatic release after Apple approval.",
+        "current_request": "Public release remains authorized. Actual Claude listing review passes and reviewed copy/screenshots are applied. Verify the in-app reviewer account after email confirmation, then submit with automatic release after Apple approval.",
         "current_bug": "Reviewed repair integrated, including Codex lifecycle retain-cycle correction accepted by Claude. Focused suites, isolated build and package checks pass. Swipe/circle, settled Undo and post-navigation actions verified. Vertical simulator input inconclusive; timed Undo, rapid completions, interrupted cancellation, spoken VoiceOver remain individual device checks; Mike subsequently accepted the phone experience.",
         "current_verification": "docs/evidence/2026-10-05-app-store-preparation.md",
         "slice": "docs/slices/running-list.md",
@@ -346,7 +346,7 @@
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
         "feasibility_status": "Reviewed repair follows Mike's direction to put older unfinished tasks in Today, with completed state and explicit moves intact. No backend or extraction change.",
-        "display_progress": "Accepted on phone; App Store build uploaded, final access and listing checks pending",
+        "display_progress": "Accepted on phone; App Store build and reviewed listing ready, in-app reviewer email confirmation pending",
         "review_pr_status": "Draft PR #4 was open at the September 30 verification; remote status was not refreshed in this October 5 app-only integration. No merge was performed.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
         "implementation_candidate": "docs/releases/2026-10-05-ios-1.0.5-2026100502-candidate.md",
@@ -359,7 +359,9 @@
         "implementation_delivery_receipt": "docs/releases/2026-10-05-ios-1.0.5-2026100501-delivery.md",
         "public_release_preparation": "docs/evidence/2026-10-05-app-store-preparation.md",
         "owner_acceptance": "October 5: Mike used internal 2026100501, accepted it and requested public release. This lifts the swipe/scroll owner hold; it does not attest to each separate simulator or accessibility check.",
-        "release_configuration": "The public package restores the existing anon sign-in configuration missing from isolated internal 2026100501. Compiled app code is unchanged. Packaged checks pass; the saved review account requires email confirmation."
+        "release_configuration": "The public package restores the existing anon sign-in configuration missing from isolated internal 2026100501. Compiled app code is unchanged. Packaged checks pass; the saved review account requires email confirmation.",
+        "public_listing_review": "docs/evidence/2026-10-05-claude-app-store-listing-review.md",
+        "public_listing_readback": "docs/evidence/assets/2026-10-05-app-store/listing-verified.json"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -371,7 +373,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Confirm the App Review account email and unlock the Mac for Claude’s listing review; Codex verifies access, applies/read-backs the exact ASO packet and submits selected build 2026100502 under existing release authority.",
+      "next_action": "Mike confirms the Throughline reviewer account email or updates its credentials in App Review Information; Codex verifies sign-in and submits selected build 2026100502 with the already-applied, reviewed ASO packet. App Store Connect sign-in is a separate account and is working.",
       "slice_phase": "canary"
     },
     {

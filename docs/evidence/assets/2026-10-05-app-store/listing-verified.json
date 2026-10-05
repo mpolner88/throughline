@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-10-05T22:04:54.907Z",
+  "version": "1.0.5",
+  "build": "2026100502",
+  "buildId": "ce8178aa-69de-4560-b18d-1fd93c9ebbed",
+  "state": "PREPARE_FOR_SUBMISSION",
+  "releaseType": "AFTER_APPROVAL",
+  "metadataExact": true,
+  "reviewNotesExact": true,
+  "reviewCredentialsPresent": true,
+  "screenshotSetId": "d76f71f6-abbb-4ff0-b603-05e89328e947",
+  "screenshots": [
+    {
+      "fileName": "2026100502-01-today.png",
+      "md5": "a43b43821a3c7737ad804c5a6863b414",
+      "sha256": "58e4cf56e65ddb7b29c525f02fbe45d26d56fd9bcbf6c14d05b6a68929d2256a",
+      "state": "COMPLETE"
+    },
+    {
+      "fileName": "2026100502-02-notes.png",
+      "md5": "72640a4e2665b0dbf1b75f979c00e14e",
+      "sha256": "8b0659ec77d0f70e562ad33c87c6164df3b14cdac3c190dbe85a7d9698a32152",
+      "state": "COMPLETE"
+    },
+    {
+      "fileName": "2026100502-03-capture.png",
+      "md5": "30fbb1bcca0fbc49d0f6e1483e4fe415",
+      "sha256": "a75b000ebfcd53ef9712502f4ab5e78b550f83650f0288bded7f28307141b49f",
+      "state": "COMPLETE"
+    },
+    {
+      "fileName": "2026100502-04-this-week.png",
+      "md5": "9a7b56cfe88b12f4951c8efd8179cb8e",
+      "sha256": "b0a7ff90ec7bb83b378f200896c96322a187625ccd1fb5983afd36202994ad53",
+      "state": "COMPLETE"
+    },
+    {
+      "fileName": "2026100502-05-later.png",
+      "md5": "533ad5685ca6159a9ede30f2ca77c126",
+      "sha256": "acedc93ba1cb76b698af5569731b4fdcada91defddcc112879a49620034401f8",
+      "state": "COMPLETE"
+    }
+  ],
+  "otherScreenshotSets": [],
+  "packetSHA256": "898f1adb7bfb680c6a9683556435c13f3d36401d60d91bd2ac8aaa589b61e10b"
+}

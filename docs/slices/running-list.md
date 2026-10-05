@@ -1,8 +1,8 @@
 # Running List — Today, This Week, Later
 
-**Progress:** Accepted on Mike’s phone; public candidate uploaded and selected, awaiting final review access and listing checks.
+**Progress:** Accepted on Mike’s phone; public candidate uploaded and selected, reviewed listing applied; awaiting working App Review access.
 **What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Verify the confirmed App Review account and Claude’s exact listing review, then apply the ASO packet and submit 1.0.5 (2026100502). [Preparation and remaining dependencies](../evidence/2026-10-05-app-store-preparation.md).
+**Next:** Verify the confirmed in-app App Review account, then submit 1.0.5 (2026100502). [Preparation and remaining dependencies](../evidence/2026-10-05-app-store-preparation.md).
 **Review PR:** [Running List — Today, This Week, Later · #4](https://github.com/mpolner88/throughline/pull/4), last verified open as a draft on September 30. It includes capture and recording-control prerequisites. This October 5 app-only delivery did not refresh or mutate the remote PR.
 
 ## Technical record
@@ -13,7 +13,7 @@
 **Tandem stage:** `owner_accepted` (public release authorized; submission checks pending)
 **Current:** Verified October 5: Mike accepted internal 2026100501. Public 1.0.5 (2026100502), source `d7f26769a7c28e0bcfed50b8ae0ba61fb4fd6044`, is uploaded, VALID, APP_STORE_ELIGIBLE and selected. PREPARE_FOR_SUBMISSION with automatic release after approval; not public. Compiled app code matches accepted internal source. The isolated archive now includes the existing anon sign-in configuration omitted from the preceding internal package. [Public candidate](../releases/2026-10-05-ios-1.0.5-2026100502-candidate.md), [configuration and release evidence](../evidence/2026-10-05-app-store-preparation.md).
 **Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** App Review credentials must issue a session (currently email_not_confirmed), and actual Claude must review the prepared listing/images once the Mac is unlocked. Mike's release approval is already granted. Prior simulator limits remain recorded in the [swipe/scroll review](../evidence/2026-10-05-codex-swipe-scroll-review.md); owner acceptance is not a claim that every timed/accessibility case was exercised.
+**Next gate:** the Throughline test credentials saved in App Review Information must issue a session (fresh retry: email_not_confirmed). Claude's exact listing/image review and copy recheck pass; the listing is applied and all five screenshot deliveries are COMPLETE. Mike's App Store Connect login and release approval are established. Prior simulator limits remain recorded in the [swipe/scroll review](../evidence/2026-10-05-codex-swipe-scroll-review.md); owner acceptance is not a claim that every timed/accessibility case was exercised.
 **Authority:** Mike accepted the repair and explicitly authorized accurate ASO, public upload, submission and automatic release on October 5. Preserve shipped capture, recorder and AI behavior. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or unrelated features. Categories/search follows; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward

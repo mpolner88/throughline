@@ -2,7 +2,7 @@
 
 Last updated: October 5, 2026 (public candidate uploaded and selected; not submitted)
 
-**October 5 continuation:** Mike accepted internal 2026100501 and authorized the public release. Candidate 1.0.5 (2026100502) is VALID, APP_STORE_ELIGIBLE and selected; automatic release after approval is configured. The current review account returns email_not_confirmed and actual Claude listing/image review awaits Mac unlock. [Release preparation and exact evidence](evidence/2026-10-05-app-store-preparation.md), [ASO packet](../app-store/releases/1.0.5/README.md). These dated facts supersede the historical release state below.
+**October 5 continuation:** Mike accepted internal 2026100501 and authorized the public release. Candidate 1.0.5 (2026100502) is VALID, APP_STORE_ELIGIBLE and selected; automatic release after approval is configured. The current review account returns email_not_confirmed on the fresh retry. Claude listing/image review and the final copy recheck pass; exact copy and all five COMPLETE screenshots are now applied to the draft. Mike’s App Store Connect browser login is working and is separate from the in-app review account. [Release preparation and exact evidence](evidence/2026-10-05-app-store-preparation.md), [ASO packet](../app-store/releases/1.0.5/README.md). These dated facts supersede the historical release state below.
 
 Before any future upload, run `node scripts/verify-ios-release-config.mjs <packaged-app-path> <build-number>` on both the archive and exported app. It verifies the packaged anon sign-in configuration and rejects service tokens; copying tracked source alone omits ignored release settings.
 
