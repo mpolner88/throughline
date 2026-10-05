@@ -1,0 +1,5 @@
+30a0010ca39e8cc9f6c3354b618c4c1ddaba99a8033c1c804d436b24c6abd91c  baseline-swipe-on-link-opens-note.png
+9f4f893de3ccc64f557e70d54225aed049f736ab75222756aabbb0374bd08118  baseline-task-still-open.png
+e1a506a0d614a255a36219e6c20211e81b0e77395eb71197b03795c4ec6d0672  fix-long-press-after-short-swipe.png
+6ffba2e1e558c9e4f5972156025d6bfeb48662e160705a150dd45d16b650ab64  fix-scroll-from-circle.png
+68ed915f330a17259c6ba1aff5bffafe52db16f4e802a56938b711262b39fb40  fix-swipe-on-link-completes.png

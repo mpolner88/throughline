@@ -29,6 +29,8 @@ struct RunningListView: View {
     @State private var localError: String?
     /// A row completed a moment ago stays at its open position, checked and struck through, before joining done today.
     @State private var settling = RunningListCompletionPresentation()
+    @State private var rowActions = RunningRowActions()
+    @State private var sourceTimes = RunningSourceTimes()
 
     private var snapshot: RunningListSnapshot { coordinator.snapshot(now: displayNow, timeZone: .current) }
     private var displayNow: Date {
@@ -93,6 +95,7 @@ struct RunningListView: View {
             .refreshable { await onRefresh() }
         }
         .onAppear {
+            configureRowActions()
             newIDs.removeAll()
             knownIDs = coordinator.allOccurrenceIDs
             hasBaseline = coordinator.hasLoadedSnapshot
@@ -109,7 +112,7 @@ struct RunningListView: View {
             }
             #endif
         }
-        .onDisappear { settling.clear() }
+        .onDisappear { settling.clear(); rowActions.clear() }
         .onChange(of: allVisibleRows.map(\.id)) { _, ids in
             settling.retain(ids: Set(ids))
             trackArrivals()
@@ -209,12 +212,19 @@ struct RunningListView: View {
             if let count { Text(String(count)).font(.caption).foregroundStyle(.secondary) }
         }
     }
+    private func configureRowActions() {
+        rowActions.toggle = { change($0, completed: !$0.isCompleted) }
+        rowActions.move = { move($0, to: $1) }
+        let openNote = onOpenNote
+        rowActions.open = { openNote($0.recordingID) }
+    }
     private func rows(_ rows: [RunningListRow]) -> some View {
-        LazyVStack(spacing: 0) {
+        configureRowActions()
+        return LazyVStack(spacing: 0) {
             ForEach(rows) { row in
-                RunningTaskRow(row: row, now: displayNow, isNew: newIDs.contains(row.id),
-                    onToggle: { change(row, completed: !row.isCompleted) },
-                    onMove: { move(row, to: $0) }, onOpen: { onOpenNote(row.recordingID) })
+                RunningTaskRow(row: row, sourceTime: sourceTimes.label(row, now: displayNow),
+                               isNew: newIDs.contains(row.id), actions: rowActions)
+                    .equatable()
                 if row.id != rows.last?.id { Divider() }
             }
         }
@@ -297,13 +307,60 @@ struct RunningListView: View {
     }
 }
 
-private struct RunningTaskRow: View {
+/// Rows call back through one object whose closures the list refreshes on every update. A row then compares
+/// equal unless its own content changed, so a list update or the minute clock no longer rebuilds every row.
+@MainActor private final class RunningRowActions {
+    var toggle: (RunningListRow) -> Void = { _ in }
+    var move: (RunningListRow, RunningListTab) -> Void = { _, _ in }
+    var open: (RunningListRow) -> Void = { _ in }
+
+    /// Stored callbacks capture list state; release them when the list leaves Home.
+    func clear() {
+        toggle = { _ in }; move = { _, _ in }; open = { _ in }
+    }
+}
+
+/// "note · time" labels by stored source timestamp. Parsing that timestamp and formatting it was the costliest
+/// part of building a row, and the label only changes with the day, the time zone or the locale.
+@MainActor private final class RunningSourceTimes {
+    private var calendar = Calendar(identifier: .gregorian)
+    private var day: Date?
+    private var locale = Locale.current
+    private var labels: [String: String] = [:]
+
+    func label(_ row: RunningListRow, now: Date) -> String {
+        if calendar.timeZone != .current || locale != .current {
+            calendar.timeZone = .current; locale = .current; labels.removeAll()
+        }
+        let today = calendar.startOfDay(for: now)
+        if today != day { day = today; labels.removeAll() }
+        if let label = labels[row.occurrence.sourceCreatedAt] { return label }
+        let label = format(row.sourceCreatedAt, today: today)
+        labels[row.occurrence.sourceCreatedAt] = label
+        return label
+    }
+    private func format(_ date: Date, today day: Date) -> String {
+        let time = date.formatted(.dateTime.hour().minute())
+        if calendar.isDate(date, inSameDayAs: day) { return time }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: day), calendar.isDate(date, inSameDayAs: yesterday) { return "yesterday \(time)" }
+        if let weekAgo = calendar.date(byAdding: .day, value: -7, to: day), date >= weekAgo, date < day {
+            return "\(date.formatted(.dateTime.weekday(.abbreviated))) \(time)"
+        }
+        return date.formatted(.dateTime.month(.abbreviated).day())
+    }
+}
+
+private struct RunningTaskRow: View, Equatable {
     let row: RunningListRow
-    let now: Date
+    let sourceTime: String
     let isNew: Bool
-    let onToggle: () -> Void
-    let onMove: (RunningListTab) -> Void
-    let onOpen: () -> Void
+    let actions: RunningRowActions
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.row == rhs.row && lhs.sourceTime == rhs.sourceTime && lhs.isNew == rhs.isNew && lhs.actions === rhs.actions
+    }
+    private func onToggle() { actions.toggle(row) }
+    private func onMove(_ tab: RunningListTab) { actions.move(row, tab) }
+    private func onOpen() { actions.open(row) }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     /// Follows the finger, then springs back whether the drag ends or the scroll view cancels it.
@@ -328,12 +385,15 @@ private struct RunningTaskRow: View {
             .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius))
             .opacity(horizontalOffset > 0.5 ? 1 : 0)
 
+            // Tap targets rather than Buttons: a Button still fires on release after a long drag, so a swipe
+            // that began or ended on it opened the note or toggled the task instead of swiping. A tap gesture
+            // gives up as soon as the finger moves, which leaves the row's drag and the list's scroll as they were.
             HStack(alignment: .top, spacing: 1) {
-                Button(action: onToggle) {
-                    Image(systemName: row.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22)).foregroundStyle(row.isCompleted ? Theme.blue : .secondary)
-                        .frame(width: 44, height: 44)
-                }.buttonStyle(.plain).padding(.leading, -11).padding(.top, -9)
+                Image(systemName: row.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22)).foregroundStyle(row.isCompleted ? Theme.blue : .secondary)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
+                    .onTapGesture(perform: onToggle)
+                    .padding(.leading, -11).padding(.top, -9)
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         if isNew { Circle().fill(Theme.blue).frame(width: 6, height: 6).accessibilityHidden(true) }
@@ -348,12 +408,14 @@ private struct RunningTaskRow: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if row.isCompleted {
-                    Button("Undo", action: onToggle).font(.subheadline.weight(.medium)).foregroundStyle(Theme.blue)
-                        .frame(minWidth: 44, minHeight: 44).buttonStyle(.plain)
+                    Text("Undo").font(.subheadline.weight(.medium)).foregroundStyle(Theme.blue)
+                        .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                        .onTapGesture(perform: onToggle)
                 } else {
-                    Button { showingMenu = true } label: {
-                        Image(systemName: "ellipsis").font(.title3).foregroundStyle(.secondary).frame(width: 44, height: 44)
-                    }.buttonStyle(.plain).padding(.trailing, -12)
+                    Image(systemName: "ellipsis").font(.title3).foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                        .onTapGesture { showingMenu = true }
+                        .padding(.trailing, -12)
                 }
             }
             .padding(.vertical, 11).background(.background)
@@ -406,22 +468,10 @@ private struct RunningTaskRow: View {
         }
     }
     private var source: some View {
-        Button(action: onOpen) {
-            Text("\(row.noteTitle) · \(sourceTime)")
-                .font(.caption).foregroundStyle(.secondary).underline(color: Theme.border)
-                .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
-        }.buttonStyle(.plain)
-    }
-    private var sourceTime: String {
-        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = .current
-        let date = row.sourceCreatedAt
-        let day = calendar.startOfDay(for: now)
-        let time = date.formatted(.dateTime.hour().minute())
-        if calendar.isDate(date, inSameDayAs: now) { return time }
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: day), calendar.isDate(date, inSameDayAs: yesterday) { return "yesterday \(time)" }
-        if let weekAgo = calendar.date(byAdding: .day, value: -7, to: day), date >= weekAgo, date < day {
-            return "\(date.formatted(.dateTime.weekday(.abbreviated))) \(time)"
-        }
-        return date.formatted(.dateTime.month(.abbreviated).day())
+        Text("\(row.noteTitle) · \(sourceTime)")
+            .font(.caption).foregroundStyle(.secondary).underline(color: Theme.border)
+            .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onOpen)
     }
 }

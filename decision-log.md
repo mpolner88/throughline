@@ -779,3 +779,8 @@ Codex prepares, verifies and submits; Claude reviews the exact listing/screensho
 The selected behavior keeps the completed row checked and struck through in its open position for 600 ms, then moves it into done today; saving remains immediate. Cancelled drags reset automatically. Codex adds per-completion timer identity, per-tab ordering and full-row Reduce Motion corrections found during review. No haptics, extraction, capture, recorder, AI controls, backend, policy, evaluation or main-merge change belongs to this repair.
 
 **Evidence:** [Swipe repair review and verification](docs/evidence/2026-09-30-running-list-swipe.md). App Store version 1.0.5 was re-read as PREPARE_FOR_SUBMISSION with no build attached; build 2026093003 was not uploaded. Existing App Review-account and browser-sign-in questions remain deferred until public release resumes.
+
+
+## 2026-10-05 — Integrate swipe and scroll repairs for another device check
+
+**Decision owner:** Mike. Review Claude's paired gesture and scrolling repairs, run the Running List and capture/AI suites, integrate on codex/running-list, and cut a new build above 2026093004. Deliver through the existing internal QA lane after verification; keep App Store submission held until Mike accepts swipe and scroll on his phone. The DEBUG-only long-list fixture is synthetic. [Codex review and evidence](docs/evidence/2026-10-05-codex-swipe-scroll-review.md).

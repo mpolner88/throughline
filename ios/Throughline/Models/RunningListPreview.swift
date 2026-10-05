@@ -66,6 +66,15 @@ enum RunningListPreview {
                 result.append(TaskOccurrence(id: String(format:"00000000-0000-4000-8000-%012d",i+101), recordingID: source.id, version: 1, sourceOrder: i, text: text, status: "open", completedAt: nil, due: due, forDate: nil, createdAt: source.date, originLocalDate: "2026-09-29", sourceCreatedAt: source.date, sourceLocalDate: "2026-09-29", sourceTimezone: "America/Los_Angeles", sourceTitle: source.title, isEarlier: false, placementOverride: nil, placementAnchorDate: nil, completedPlacement: nil))
             }
         }
+        // Scroll measurement: about seventy synthetic Today rows.
+        if scenario == "long" {
+            result = (0..<5).flatMap { copy in result.map { task -> TaskOccurrence in
+                var task = task
+                task.id = String(format: "00000000-0000-4000-8001-%012d", copy * 100 + (Int(task.id.suffix(3)) ?? 0))
+                task.due = nil; task.placementOverride = nil; task.placementAnchorDate = nil; task.isEarlier = false
+                return task
+            } }
+        }
         return result
     }
     static var notes: [ThroughlineNote] {
