@@ -1,0 +1,16 @@
+{
+  "revision": "7887d39cabbadd9ee796db3e875cef1a792cf55d",
+  "ios_files_matched": 64,
+  "version": "1.0.5",
+  "build": "2026100501",
+  "archive_signature_valid": true,
+  "export_signature_valid": true,
+  "preview_code_absent": true,
+  "get_task_allow": false,
+  "internal_testing_only": true,
+  "archive_export_machine_code_and_uuid_match": true,
+  "archive_executable_sha256": "02c3eaa926170ef94418af425d1763a382c4c9b34d3cff2adf47c8e76a42b63b",
+  "export_executable_sha256": "544c1441351983b2a4c49ef8dfa68177d2817cdbb6a9191089160d49dad53f16",
+  "machine_code_sha256": "863c473ca94c9d2ad3451a015b05397b88e199ca75eabb324868fc02cc07b453",
+  "ipa_sha256": "3e6df58615b6e79374f49fd9db2cd47877de63284c9d5d560a78ad27f358cc53"
+}

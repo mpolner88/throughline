@@ -1,0 +1,11 @@
+{
+  "verifiedAt": "2026-10-05T21:13:18.738Z",
+  "version": "1.0.5",
+  "state": "PREPARE_FOR_SUBMISSION",
+  "attachedBuild": null,
+  "internalGroup": {
+    "name": "Internal QA",
+    "isInternal": true,
+    "publicLinkEnabled": false
+  }
+}

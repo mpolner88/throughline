@@ -29,3 +29,35 @@ The earlier 600 ms settle/timer safeguards remain in place. The previously docum
 Build 1.0.5 (2026100501) is reserved above the development build 2026093004. A fresh Apple read at 2026-10-05T20:51:36Z confirms it is unused and public 1.0.5 remains PREPARE_FOR_SUBMISSION with no build attached. Isolated build/package and current simulator verification follow this source review; no new delivery is claimed by this initial record.
 
 **Rollback:** compatible app-only forward build preserving task/capture stores. The preceding 2026093002 has known gesture defects and is not accepted swipe/scroll behavior. Public release, main merge, backend, policy, provider/model, evaluation and tester expansion remain out of scope.
+
+
+## Integrated review and verification
+
+**Verified:** 2026-10-05. Exact source `7887d39cabbadd9ee796db3e875cef1a792cf55d`, build **1.0.5 (2026100501)**. Integrated RunningListView SHA-256 `8c55c4938aa271b8a1f7ca88ed6107d38562c0ed2ba1868ace3a35eff3789022`.
+
+[Claude's source recheck](2026-10-05-claude-swipe-scroll-integration-recheck.md) passes with no P1/P2. Preserved report SHA-256 `7a890f3c4d3ff76612bba1bc10262871188eef83294ab19a4069fda9b2178719`. The previously expired CLI login was bypassed by using the already-active desktop session; no authentication changes were made. Independent Codex review also found no remaining blocker after S1. Claude's S3 is a nonblocking lifecycle follow-up if Home later gains a navigation-push path; no such path exists today.
+
+The five focused suites above passed, as did docs verification, policy parity and whitespace checks. Isolated Debug simulator build, signed Release archive, internal-only export and strict package verification passed. All 64 tracked iOS files match the exact source. Release excludes DEBUG previews and has get-task-allow=false. Archive and export retain the same Mach-O UUID and machine code. [Package receipt](assets/2026-10-05-running-list-scroll/package-verification.json), [source manifest](assets/2026-10-05-running-list-scroll/source-hashes.json), [candidate](../releases/2026-10-05-ios-1.0.5-2026100501-candidate.md).
+
+### Current simulator observations
+
+Synthetic content only, iPhone 15 Pro Max simulator, iOS 26.3, exact Debug source above. These are functional observations, not phone smoothness measurements.
+
+| Check | Result |
+| --- | --- |
+| Circle completion after Notes → Home | Passed; open count 68 → 67. |
+| Source link opens its note, dismiss sheet, then complete | Passed; correct source sheet, open count 67 → 66. |
+| Dismiss Settings sheet, then complete | Passed; open count 66 → 65. Resolves Claude S2's requested lifecycle checks. |
+| Full horizontal swipe in short weekly list | Passed; 3 → 2 open, correct task in Done today, no note opened. |
+| Undo after settling | Passed; 2 → 3 open and original task returned. |
+| Subthreshold horizontal release | No completion and row observed back at its origin. This does not prove OS-interrupted gesture cancellation. |
+| Named accessible Complete action | Passed; correct task in Done today with Reopen exposed. Spoken VoiceOver was not exercised. |
+| Reduce Motion | Settings confirmed enabled during the checks above; completion/Undo work. Restored OFF afterward. No frame-by-frame animation assertion. |
+| Long-list vertical scrolling | Inconclusive. The desktop controller repeatedly failed to move the list; unchanged Notes scrolling also did not move. Some calls returned AXError.cannotComplete. Horizontal swipe and taps later worked. Neither a scrolling pass nor an app scrolling failure is established. |
+| Undo inside the 600 ms pause; two rapid completions; externally interrupted drag | Not verified in this runtime pass. Production logic tests cover timer cancellation/order; those do not replace device interaction checks. |
+
+[Completed weekly list frame](assets/2026-10-05-running-list-scroll/week-completed.png) is synthetic. Claude's earlier gesture matrix and scroll counts remain attributed to his report. No on-device Animation Hitches trace, FPS result, smoothness acceptance or public metric improvement is claimed. Node/Deno/backend suites were not rerun: this change is isolated to iOS presentation/support tests and the DEBUG fixture. Capture and AI regression suites were rerun.
+
+The internal build is for Mike's swipe/scroll acceptance under the approved internal-only scope, with the unresolved runtime checks disclosed. App Store submission remains held. No extraction, durable store, backend, policy, provider/model or evaluation changes were introduced.
+
+**Delivery follow-through:** Apple confirmed VALID, INTERNAL_ONLY, IN_BETA_TESTING and existing Internal QA assignment at 21:13:19 UTC. Public 1.0.5 remains PREPARE_FOR_SUBMISSION with no attached build. [Delivery receipt](../releases/2026-10-05-ios-1.0.5-2026100501-delivery.md). Mike’s phone acceptance remains next.
