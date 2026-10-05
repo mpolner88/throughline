@@ -784,3 +784,10 @@ The selected behavior keeps the completed row checked and struck through in its 
 ## 2026-10-05 — Integrate swipe and scroll repairs for another device check
 
 **Decision owner:** Mike. Review Claude's paired gesture and scrolling repairs, run the Running List and capture/AI suites, integrate on codex/running-list, and cut a new build above 2026093004. Deliver through the existing internal QA lane after verification; keep App Store submission held until Mike accepts swipe and scroll on his phone. The DEBUG-only long-list fixture is synthetic. [Codex review and evidence](docs/evidence/2026-10-05-codex-swipe-scroll-review.md).
+
+
+## 2026-10-05 — Accept swipe and scroll; resume public App Store release
+
+**Decision owner:** Mike. After using internal TestFlight 1.0.5 (2026100501), Mike accepted it ("it’s awesome") and explicitly requested building, optimizing ASO, uploading and shipping to the App Store. This lifts the preceding swipe/scroll owner-acceptance hold and authorizes public submission with automatic release after Apple approval plus truthful listing/screenshot improvements. Codex owns the bounded release; Claude reviews the exact listing and synthetic visuals. The accepted behavior remains frozen; the public package uses a new build number, 2026100502, because 2026100501 is internal-testing-only.
+
+No main merge, backend or extraction change, provider/model switch, policy edit, pricing or limit change, unrelated feature work, or Private Evaluation activation is authorized. This is owner acceptance of the actual phone experience, not proof that each named simulator/accessibility check was individually exercised. Read back upload, processing, selection, review and storefront states separately; never call an Apple-pending submission publicly shipped.
