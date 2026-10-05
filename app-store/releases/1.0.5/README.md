@@ -6,7 +6,7 @@
 
 The verified public package is uploaded, VALID, APP_STORE_ELIGIBLE and selected. Claude passed the exact copy and all five screenshots, then rechecked two What's New corrections. The reviewed listing is now applied to the pending 1.0.5 version; all five screenshots are COMPLETE with verified order/checksums, and the obsolete draft screenshot set was removed after a private full-resolution backup. [Listing read-back](../../../docs/evidence/assets/2026-10-05-app-store/listing-verified.json), [Claude review](../../../docs/evidence/2026-10-05-claude-app-store-listing-review.md).
 
-Submission remains pending **one access check**: the Throughline test account saved in App Review Information still returns `email_not_confirmed`. Mike's App Store Connect session is signed in, but that does not confirm the separate in-app reviewer account. Release approval is already granted. [Preparation and remaining action](../../../docs/evidence/2026-10-05-app-store-preparation.md).
+**Submitted October 5 at 22:29 UTC:** 1.0.5 (2026100502) is WAITING_FOR_REVIEW and will release automatically after approval. The designated review account was confirmed under Mike's explicit repair authorization; unchanged credentials pass sign-in and authenticated API checks. [Submission and next action](../../../docs/releases/2026-10-05-ios-1.0.5-2026100502-submission.md). Public availability remains pending.
 
 ## Exact listing
 

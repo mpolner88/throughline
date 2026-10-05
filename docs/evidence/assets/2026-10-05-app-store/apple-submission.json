@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-05T22:29:59.355Z",
+  "appId": "6774304241",
+  "versionId": "1acfba2a-7942-43c4-aad2-9660c2345cfc",
+  "version": "1.0.5",
+  "state": "WAITING_FOR_REVIEW",
+  "releaseType": "AFTER_APPROVAL",
+  "buildId": "ce8178aa-69de-4560-b18d-1fd93c9ebbed",
+  "build": "2026100502",
+  "processingState": "VALID",
+  "submission": {
+    "id": "e5ed2865-be34-468a-a8d2-74868331393d",
+    "state": "WAITING_FOR_REVIEW",
+    "submittedDate": "2026-10-05T22:29:13.193Z"
+  },
+  "source": "d7f26769a7c28e0bcfed50b8ae0ba61fb4fd6044",
+  "listingManifestSha256": "898f1adb7bfb680c6a9683556435c13f3d36401d60d91bd2ac8aaa589b61e10b"
+}
