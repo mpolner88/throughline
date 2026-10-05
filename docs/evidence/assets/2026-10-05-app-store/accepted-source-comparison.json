@@ -1,0 +1,8 @@
+{
+  "acceptedRevision": "7887d39cabbadd9ee796db3e875cef1a792cf55d",
+  "publicRevision": "d7f26769a7c28e0bcfed50b8ae0ba61fb4fd6044",
+  "changedIosFiles": [
+    "ios/Throughline.xcodeproj/project.pbxproj"
+  ],
+  "change": "Only CURRENT_PROJECT_VERSION 2026100501 to 2026100502; product code identical."
+}

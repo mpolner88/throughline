@@ -1,0 +1,10 @@
+{
+  "name": "Throughline: AI Voice Notes",
+  "subtitle": "Turn thoughts into to-do lists",
+  "keywords": "transcription,recorder,dictation,memo,task,planner,checklist,ideas,summary,text,organize,brainstorm",
+  "promotionalText": "Talk through your day. Turn voice notes into structured notes and to-dos, then keep your next steps together in Today, This week, and Later.",
+  "description": "Turn spoken thoughts into structured notes and to-dos. Throughline is for people who think out loud: on a walk, between errands, or while planning the day ahead.\n\nRecord in your own words. Throughline transcribes your voice note and pulls out useful details and next actions, so you can return to what matters.\n\nKEEP YOUR NEXT STEPS TOGETHER\nSee extracted tasks in one Running List, organized into Today, This week, and Later. Move tasks when plans change, mark them complete, and return to the note they came from.\n\nCAPTURE, THEN KEEP GOING\nFollow recordings in the capture tray as they upload and process. If something needs attention, recovery controls help you pick up where you left off.\n\nKEEP THE SOURCE CLOSE\nReview your transcript alongside the structured note. Correct the result and keep your own words within reach.\n\nLET YOUR AGENT READ\nConnect your own AI agent through MCP to read saved notes. You control agent access and can revoke it in Settings.\n\nStart with a guided voice demo and see a spoken thought become a useful note.",
+  "whatsNew": "Your next steps now have one home. The Running List brings tasks from your voice notes together in Today, This week, and Later. Complete a task, undo a change, move it when plans shift, or return to its source note.\n\nA new capture tray shows recording progress and recovery options. This update also adds clearer AI-processing controls and smoother task swipes and scrolling.",
+  "supportUrl": "https://mpolner88.github.io/throughline/support/",
+  "marketingUrl": "https://mpolner88.github.io/throughline/"
+}

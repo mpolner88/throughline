@@ -1,0 +1,33 @@
+--- a/ios/Throughline/Models/RunningListPreview.swift
++++ b/ios/Throughline/Models/RunningListPreview.swift
+@@ -31,18 +31,18 @@
+     }
+     private static var sources: [Source] {
+         var list = [
+-            Source(id: "rec_synthetic_running_drive", title: "drive home", date: "2026-09-28T18:10:00-07:00", summary: "Wrap up the tester thread, plan the trip, think about a gift."),
++            Source(id: "rec_synthetic_running_drive", title: "drive home", date: "2026-09-28T18:10:00-07:00", summary: "Reply about the shelves, plan the October trip, and think about a gift for Dana."),
+             Source(id: detailRecordingID, title: "morning walk", date: "2026-09-29T07:42:00-07:00", summary: "The deck goes to Sam today, the bank about the card, the dentist this week."),
+             Source(id: "rec_synthetic_running_in", title: "drive in", date: "2026-09-29T08:15:00-07:00", summary: "Package, coffee filters, and the Sunday review outline."),
+             Source(id: "rec_synthetic_running_sat", title: "Sat walk", date: "2026-09-26T10:05:00-07:00", summary: "Garage shelves and the pottery course, whenever."),
+-            Source(id: "rec_synthetic_running_earlier", title: "errands", date: "2026-08-21T17:30:00-07:00", summary: "From before the running list: the lease message and the library books.")
++            Source(id: "rec_synthetic_running_earlier", title: "errands", date: "2026-08-21T17:30:00-07:00", summary: "Email the landlord about the lease and return the library books.")
+         ]
+         if scenario == "landed" { list.append(Source(id: landedRecordingID, title: "lunch walk", date: "2026-09-29T12:20:00-07:00", summary: "Call Marcus back, the invoice by Friday, running shoes someday.")) }
+         if scenario == "repeat" { list.append(Source(id: landedRecordingID, title: "drive home", date: "2026-09-29T12:20:00-07:00", summary: "The bank again, and groceries.")) }
+         return list
+     }
+     static var tasks: [TaskOccurrence] {
+-        let texts = ["Reply to the tester about the build", "Send Sam the revised deck", "Call the bank about the new card", "Pick up the package on the way home", "Buy coffee filters", "Renew the car registration", "Book the dentist", "Draft the Sunday review outline", "Plan the October trip", "Clear out the garage shelves", "Look into the pottery course", "Think about a gift for Dana", "Email the landlord about the lease", "Return the library books"]
++        let texts = ["Reply to the builder about the shelves", "Send Sam the revised deck", "Call the bank about the new card", "Pick up the package on the way home", "Buy coffee filters", "Renew the car registration", "Book the dentist", "Draft the Sunday review outline", "Plan the October trip", "Clear out the garage shelves", "Look into the pottery course", "Think about a gift for Dana", "Email the landlord about the lease", "Return the library books"]
+         let sourceIndex = [0,1,1,2,2,1,1,2,0,3,3,0,4,4]
+         let dates: [Int: String] = [1:"2026-09-29",5:"2026-09-30",6:"2026-10-01",7:"2026-10-04",8:"2026-10-05"]
+         var order: [String:Int] = [:]
+@@ -80,7 +80,7 @@
+     static var notes: [ThroughlineNote] {
+         sources.map { source in
+             let occurrences = tasks.filter { $0.recordingID == source.id }.sorted { $0.sourceOrder < $1.sourceOrder }
+-            return ThroughlineNote(id: source.id, createdAt: TaskDates.instant(source.date)!, type: source.id == detailRecordingID ? .morning : .freeform, processingStatus: "processed", title: source.title, summary: source.summary, transcript: "Synthetic transcript for implementation review. No private recording is used.", mostImportant: [source.summary], todos: occurrences.map { Todo(id: $0.id, text: $0.text, status: $0.status, priority: nil, due: $0.due, forDate: $0.forDate, context: nil, completedAt: $0.completedAt) }, priorities: [], intentions: [], accomplishments: [], tomorrowTodos: [], mood: nil, tags: [], people: [], projects: [], centersOfBalance: [])
++            return ThroughlineNote(id: source.id, createdAt: TaskDates.instant(source.date)!, type: source.id == detailRecordingID ? .morning : .freeform, processingStatus: "processed", title: source.title, summary: source.summary, transcript: occurrences.map { $0.text }.joined(separator: ". ") + ".", mostImportant: [source.summary], todos: occurrences.map { Todo(id: $0.id, text: $0.text, status: $0.status, priority: nil, due: $0.due, forDate: $0.forDate, context: nil, completedAt: $0.completedAt) }, priorities: [], intentions: [], accomplishments: [], tomorrowTodos: [], mood: nil, tags: [], people: [], projects: [], centersOfBalance: [])
+         }.sorted { $0.createdAt > $1.createdAt }
+     }
+ }

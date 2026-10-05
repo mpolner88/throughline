@@ -1,8 +1,8 @@
 # Running List — Today, This Week, Later
 
-**Progress:** Internal TestFlight — swipe and scroll repair ready for Mike’s phone check; App Store submission held.
+**Progress:** Accepted on Mike’s phone; public candidate uploaded and selected, awaiting final review access and listing checks.
 **What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Mike checks swipe and scroll in TestFlight 1.0.5 (2026100501). [Delivery and device checklist](../releases/2026-10-05-ios-1.0.5-2026100501-delivery.md).
+**Next:** Verify the confirmed App Review account and Claude’s exact listing review, then apply the ASO packet and submit 1.0.5 (2026100502). [Preparation and remaining dependencies](../evidence/2026-10-05-app-store-preparation.md).
 **Review PR:** [Running List — Today, This Week, Later · #4](https://github.com/mpolner88/throughline/pull/4), last verified open as a draft on September 30. It includes capture and recording-control prerequisites. This October 5 app-only delivery did not refresh or mutate the remote PR.
 
 ## Technical record
@@ -10,11 +10,11 @@
 **Original implementation baseline (historical September 30):** source `f6983ed01cd41355cc950dd9bd1226cb9da85294`, before Running List delivery. [Readiness receipt](../evidence/2026-09-30-running-list-ready.md). Current delivery is recorded below.
 **Backlog state:** `shipped`
 **Slice phase:** `canary`
-**Tandem stage:** `internal_testflight` (reviewed source delivered; device acceptance pending)
-**Current:** Verified October 5: exact source `7887d39cabbadd9ee796db3e875cef1a792cf55d`, internal-only 1.0.5 (2026100501), VALID and IN_BETA_TESTING in existing Internal QA. Claude’s exact-source recheck passed after Codex corrected the lifecycle retain cycle. Focused suites, isolated builds and package checks pass. [Review and runtime limitations](../evidence/2026-10-05-codex-swipe-scroll-review.md), [delivery](../releases/2026-10-05-ios-1.0.5-2026100501-delivery.md). Previous held candidate 2026093004 is superseded for this check.
+**Tandem stage:** `owner_accepted` (public release authorized; submission checks pending)
+**Current:** Verified October 5: Mike accepted internal 2026100501. Public 1.0.5 (2026100502), source `d7f26769a7c28e0bcfed50b8ae0ba61fb4fd6044`, is uploaded, VALID, APP_STORE_ELIGIBLE and selected. PREPARE_FOR_SUBMISSION with automatic release after approval; not public. Compiled app code matches accepted internal source. The isolated archive now includes the existing anon sign-in configuration omitted from the preceding internal package. [Public candidate](../releases/2026-10-05-ios-1.0.5-2026100502-candidate.md), [configuration and release evidence](../evidence/2026-10-05-app-store-preparation.md).
 **Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** Mike accepts swipe and long-list scrolling on his phone before public submission. Current simulator checks passed for swipe/circle, settled Undo, source navigation, named accessible Complete and completion after Notes/sheet returns with Reduce Motion enabled. Vertical controller input was inconclusive, including unchanged Notes. Pause-timed Undo, two rapid completions, interrupted-drag cancellation, spoken VoiceOver and phone smoothness remain device checks; no full runtime-matrix pass is claimed.
-**Authority:** Approved running-list implementation and internal-only TestFlight to existing Internal QA. Preserve shipped capture, recorder and AI controls. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or public release. Categories/search follow delivery; Private Evaluation follows categories/search.
+**Next gate:** App Review credentials must issue a session (currently email_not_confirmed), and actual Claude must review the prepared listing/images once the Mac is unlocked. Mike's release approval is already granted. Prior simulator limits remain recorded in the [swipe/scroll review](../evidence/2026-10-05-codex-swipe-scroll-review.md); owner acceptance is not a claim that every timed/accessibility case was exercised.
+**Authority:** Mike accepted the repair and explicitly authorized accurate ASO, public upload, submission and automatic release on October 5. Preserve shipped capture, recorder and AI behavior. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or unrelated features. Categories/search follows; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward
 

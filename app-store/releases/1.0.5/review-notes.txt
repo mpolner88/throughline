@@ -1,0 +1,12 @@
+Throughline turns personal voice recordings into structured notes and a running list of tasks.
+
+Use the review account entered separately in App Review Information. Choose Sign in, continue with email, and use those credentials. A free account is required to save and sync notes.
+
+Review path:
+1. On first recording, tap Agree and record, then allow microphone access if requested. This is the single explicit acceptance before sending a recording to the AI processor.
+2. Record a short plan, such as calling the dentist tomorrow and picking up groceries today, then stop.
+3. The capture tray shows saving and processing. When the note is ready, its tasks appear in Today, This week or Later.
+4. Complete a task by its circle or a rightward swipe. Undo reopens it. The three-dot menu moves it; its source label opens the original note.
+5. Notes contains saved note cards and full transcripts. Settings contains AI voice-note controls, optional agent access, feedback and account deletion. Existing notes remain readable when AI voice notes is off.
+
+The guided first-use demo is also available before sign-in. This release does not enable Private Evaluation or automatic model training. No purchase is required.

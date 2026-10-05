@@ -1,0 +1,8 @@
+{
+  "keyScope": "anon",
+  "matchesPreviouslyDeliveredBuild": "2026093002",
+  "clientConfigPresent": true,
+  "localConfigSHA256": "a490017003d160b20e621b163116994eef2c59463730d7cb96075ae07b2891e5",
+  "trackedAppSourceUnchanged": true,
+  "backendAPITokenMustBeEmpty": true
+}

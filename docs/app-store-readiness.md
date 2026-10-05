@@ -1,6 +1,10 @@
 # Throughline App Store Readiness
 
-Last updated: September 28, 2026 (source safeguards only; no Apple action)
+Last updated: October 5, 2026 (public candidate uploaded and selected; not submitted)
+
+**October 5 continuation:** Mike accepted internal 2026100501 and authorized the public release. Candidate 1.0.5 (2026100502) is VALID, APP_STORE_ELIGIBLE and selected; automatic release after approval is configured. The current review account returns email_not_confirmed and actual Claude listing/image review awaits Mac unlock. [Release preparation and exact evidence](evidence/2026-10-05-app-store-preparation.md), [ASO packet](../app-store/releases/1.0.5/README.md). These dated facts supersede the historical release state below.
+
+Before any future upload, run `node scripts/verify-ios-release-config.mjs <packaged-app-path> <build-number>` on both the archive and exported app. It verifies the packaged anon sign-in configuration and rejects service tokens; copying tracked source alone omits ignored release settings.
 
 **September 28 candidate:** Mike approved restoring explicit permission before ordinary AI submission, including demo audio, signed-in audio and demo transcript promotion, with a persisted choice and Settings withdrawal. See the [bounded implementation receipt](evidence/2026-09-28-consent-pages-follow-up.md) for checks and limits. This is candidate source, not an installed-build claim; the release history below is unchanged.
 

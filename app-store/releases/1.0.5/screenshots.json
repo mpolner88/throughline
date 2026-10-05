@@ -1,0 +1,40 @@
+{
+  "appSourceRevision": "d7f26769a7c28e0bcfed50b8ae0ba61fb4fd6044",
+  "acceptedAppSourceRevision": "7887d39cabbadd9ee796db3e875cef1a792cf55d",
+  "releaseBuild": "2026100502",
+  "renderedWith": "Debug Simulator iPhone 15 Pro Max iOS 26.3",
+  "content": "Fictional notes only; content-only DEBUG fixture patch, no UI edits. Public release excludes all previews.",
+  "fixturePatchSHA256": "5e2d19276db30fede674e63139edc815b46a4c8fd8b1ce5f931141722f23b24a",
+  "screenshots": [
+    {
+      "path": "screenshots/01-today.png",
+      "sha256": "58e4cf56e65ddb7b29c525f02fbe45d26d56fd9bcbf6c14d05b6a68929d2256a",
+      "width": 1290,
+      "height": 2796
+    },
+    {
+      "path": "screenshots/02-notes.png",
+      "sha256": "8b0659ec77d0f70e562ad33c87c6164df3b14cdac3c190dbe85a7d9698a32152",
+      "width": 1290,
+      "height": 2796
+    },
+    {
+      "path": "screenshots/03-capture.png",
+      "sha256": "a75b000ebfcd53ef9712502f4ab5e78b550f83650f0288bded7f28307141b49f",
+      "width": 1290,
+      "height": 2796
+    },
+    {
+      "path": "screenshots/04-this-week.png",
+      "sha256": "b0a7ff90ec7bb83b378f200896c96322a187625ccd1fb5983afd36202994ad53",
+      "width": 1290,
+      "height": 2796
+    },
+    {
+      "path": "screenshots/05-later.png",
+      "sha256": "acedc93ba1cb76b698af5569731b4fdcada91defddcc112879a49620034401f8",
+      "width": 1290,
+      "height": 2796
+    }
+  ]
+}

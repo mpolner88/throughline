@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-05T21:39:15.826Z",
+  "id": "ce8178aa-69de-4560-b18d-1fd93c9ebbed",
+  "version": "1.0.5",
+  "build": "2026100502",
+  "processingState": "VALID",
+  "expired": false,
+  "buildAudienceType": "APP_STORE_ELIGIBLE",
+  "usesNonExemptEncryption": false,
+  "uploadedDate": "2026-10-05T14:37:01-07:00"
+}
