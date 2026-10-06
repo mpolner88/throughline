@@ -66,8 +66,8 @@ final class RunningRowSwipeRecognizer: UIGestureRecognizer, UIGestureRecognizerD
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         // A touch on a moving list belongs to native stop/re-flick behavior, not task actions.
         // Fail immediately so our direction dependency adds no delay while decelerating.
-        guard !enclosingScrollIsMoving,
-              trackedTouch == nil, touches.count == 1, let touch = touches.first else {
+        guard trackedTouch == nil, touches.count == 1, let touch = touches.first,
+              !enclosingScrollIsMoving(for: touch) else {
             cancelRecognition()
             return
         }
@@ -107,8 +107,10 @@ final class RunningRowSwipeRecognizer: UIGestureRecognizer, UIGestureRecognizerD
         origin = .zero
     }
 
-    private var enclosingScrollIsMoving: Bool {
-        var ancestor = view
+    private func enclosingScrollIsMoving(for touch: UITouch) -> Bool {
+        // SwiftUI attaches this recognizer to the root hosting view. The delivered touch's
+        // view, inspected before recognition, belongs to the actual list/tray hierarchy.
+        var ancestor = touch.view
         while let current = ancestor {
             if let scroll = current as? UIScrollView, scroll.isDecelerating || scroll.isDragging { return true }
             ancestor = current.superview
