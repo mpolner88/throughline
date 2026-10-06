@@ -798,3 +798,12 @@ No main merge, backend or extraction change, provider/model switch, policy edit,
 **Decision owner:** Mike. After learning that the separate Throughline test account saved in App Review Information was unconfirmed, Mike asked “whats the account fix? resolve it.” This authorizes the bounded repair of that existing designated account. Codex matched it to the historical review identity and confirmed only its email, preserving the password and Apple's credentials. Global auth settings and other accounts remained unchanged. Successful sign-in and authenticated API access were verified and the temporary session was closed.
 
 The previously approved public release then proceeded: 1.0.5 (2026100502), with Claude-reviewed ASO and five exact screenshots, was submitted at 22:29 UTC. Apple reports WAITING_FOR_REVIEW with automatic release after approval. This is submission, not public delivery. The requested completion notification is supported by a separate quiet hourly release monitor; the older daily-health automation remains paused. [Submission and repair receipt](docs/releases/2026-10-05-ios-1.0.5-2026100502-submission.md).
+
+
+## 2026-10-06 — Investigate and repair scrolling and tap targets
+
+**Decision owner:** Mike (October 5 local time). Mike reported possible scroll and tap-target bugs and explicitly requested thorough investigation and repair. Codex owns the app-only engineering repair, with independent source checks and Claude review of user-visible behavior. This covers enlarged hit areas without changing onboarding/authentication decisions, direction recognition, and layout defects. It does not authorize a replacement public submission, backend/provider/policy/evaluation changes or categories/search implementation. Internal-only delivery follows the existing verification and peer-review gates.
+
+**Automation:** Mike said the heartbeat is unnecessary. The release monitor is paused; do not resume it. The separate daily-health automation remains unchanged.
+
+**Evidence:** [Interaction repair](docs/evidence/2026-10-06-interaction-repair.md). Focused tests and an isolated Debug build pass. Claude source review is received, its code findings addressed, and final runtime checks and exact-source recheck are pending; the Mac locked during simulator verification. No new delivery or complete touch-matrix result is claimed.

@@ -1,8 +1,9 @@
 # Running List — Today, This Week, Later
 
-**Progress:** Accepted on Mike’s phone; App Store 1.0.5 (2026100502) submitted and Waiting for Review.
-**What you will get:** One dependable task list with Today, This week and Later; each task stays separate and links back to its note. The recorder and capture tray stay as shipped.
-**Next:** Apple review, then automatic release after approval; verify the public storefront. [Submission receipt](../releases/2026-10-05-ios-1.0.5-2026100502-submission.md).
+**Progress:** Follow-up scroll and tap-target repair in verification; public 1.0.5 (2026100502) remains a separate submitted build.
+**What you will get:** Reliable vertical scrolling and intentional swipe completion, easier controls to tap, and usable list/tray/Notes layouts with large text or limited height.
+**Next:** Finish simulator and actual Claude review of the repair, then deliver a fresh internal-only candidate. No repair build is delivered yet. [Repair evidence](../evidence/2026-10-06-interaction-repair.md). The release heartbeat is paused at Mike's request; the dated [submission receipt](../releases/2026-10-05-ios-1.0.5-2026100502-submission.md) remains the separate public-release record.
+
 **Review PR:** [Running List — Today, This Week, Later · #4](https://github.com/mpolner88/throughline/pull/4), last verified open as a draft on September 30. It includes capture and recording-control prerequisites. This October 5 app-only delivery did not refresh or mutate the remote PR.
 
 ## Technical record
@@ -10,10 +11,10 @@
 **Original implementation baseline (historical September 30):** source `f6983ed01cd41355cc950dd9bd1226cb9da85294`, before Running List delivery. [Readiness receipt](../evidence/2026-09-30-running-list-ready.md). Current delivery is recorded below.
 **Backlog state:** `shipped`
 **Slice phase:** `canary`
-**Tandem stage:** `owner_accepted` (public release submitted; Apple review pending)
+**Tandem stage:** `building` (interaction repair under verification; prior accepted public build remains separate)
 **Current:** Verified October 5: Mike accepted internal 2026100501. Public 1.0.5 (2026100502), source `d7f26769a7c28e0bcfed50b8ae0ba61fb4fd6044`, is uploaded, VALID, APP_STORE_ELIGIBLE and selected. WAITING_FOR_REVIEW at 22:29 UTC with automatic release after approval; not public. [Apple receipt](../evidence/assets/2026-10-05-app-store/apple-submission.json). Compiled app code matches accepted internal source. The isolated archive now includes the existing anon sign-in configuration omitted from the preceding internal package. [Public candidate](../releases/2026-10-05-ios-1.0.5-2026100502-candidate.md), [configuration and release evidence](../evidence/2026-10-05-app-store-preparation.md).
 **Evidence:** [handoff](../handoffs/2026-09-29-home-running-list.md), SHA-256 `df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946`; all 32 asset entries verified; [RL1–RL7 disposition](../evidence/2026-09-30-running-list-ready.md), [initial F1–F7 answers](../evidence/2026-09-30-running-list-feasibility.md).
-**Next gate:** Apple approval and independently verified public availability. The designated review account was confirmed under Mike's specific repair authorization; unchanged credentials now pass sign-in and authenticated API checks. Claude's exact listing review passes and all five screenshots are COMPLETE. [Submission and account repair](../releases/2026-10-05-ios-1.0.5-2026100502-submission.md). Prior simulator limits remain recorded in the [swipe/scroll review](../evidence/2026-10-05-codex-swipe-scroll-review.md); owner acceptance is not a claim that every timed/accessibility case was exercised.
+**Next gate:** Repair runtime/Claude review, then internal delivery for device acceptance; see the repair evidence above. Public delivery independently requires Apple approval and verified storefront availability. The designated review account was confirmed under Mike's specific repair authorization; unchanged credentials now pass sign-in and authenticated API checks. Claude's exact listing review passes and all five screenshots are COMPLETE. [Submission and account repair](../releases/2026-10-05-ios-1.0.5-2026100502-submission.md). Prior simulator limits remain recorded in the [swipe/scroll review](../evidence/2026-10-05-codex-swipe-scroll-review.md); owner acceptance is not a claim that every timed/accessibility case was exercised.
 **Authority:** Mike accepted the repair and explicitly authorized accurate ASO, public upload, submission and automatic release on October 5. Preserve shipped capture, recorder and AI behavior. No extraction prompt/schema change, wholesale PR #2 import, PR comment, main merge, provider/model/evaluation activation, policy change or unrelated features. Categories/search follows; Private Evaluation follows categories/search.
 
 ## Problem and selected direction to carry forward

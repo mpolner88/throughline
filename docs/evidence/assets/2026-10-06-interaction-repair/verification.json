@@ -1,0 +1,26 @@
+{
+  "verified_on": "2026-10-06",
+  "content": "Synthetic fixtures only; no production note data",
+  "checks": {
+    "swipe_direction_and_layout": "8 groups passed, including 1,681 direction combinations and short-height fallback",
+    "running_list": "12 groups passed",
+    "row_support": "4 groups passed",
+    "capture_store": "6 groups plus streamed-file and permission checks passed",
+    "capture_queue": "6 groups plus auth/offline/stale-response isolation passed",
+    "ai_controls": "9 groups passed",
+    "isolated_debug_build": "passed before final source-label/moving-scroll guard delta; final Release compile passed",
+    "crowded_tray": "Before/after reproduced on iPhone17Pro iOS26.3; task rows remain visible after repair",
+    "tray_accessibility_scroll": "Scroll Down visibly reached Show all and lower capture actions",
+    "notes_largest_text": "Before/after reproduced; Back and Notes no longer overlap",
+    "gesture_runtime": "pending; controller drag did not move unchanged Notes either",
+    "final_ui_checks": "blocked when Mac locked; user asked to unlock",
+    "claude_review": "source review received; P2-2/P3-2 corrected in source, P2-1 touch verification and final recheck pending",
+    "release_iphone_compile": "passed unsigned, exact candidate; no archive/export/upload"
+  },
+  "not_run": [
+    "Physical phone touch/smoothness and spoken VoiceOver",
+    "New signed release package or upload",
+    "Backend/Node/Deno suites: no backend changes"
+  ],
+  "candidate_revision": "231755e593781786afc72637e195d15c5966eac9"
+}

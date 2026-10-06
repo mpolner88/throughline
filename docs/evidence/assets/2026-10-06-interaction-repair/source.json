@@ -1,0 +1,19 @@
+{
+  "baseline": "6e1768b",
+  "scope": "App interaction repair; synthetic-only verification",
+  "sha256": {
+    "ios/Throughline/Views/RunningRowSwipeGesture.swift": "983dd95578801ec9af4830bc9e2e84a55b46edb07d3399f4e2d59f739e74f631",
+    "ios/Throughline/Views/RunningListView.swift": "4e5b2beb5064386a16c5129081b60c67e2f3b19d8645f11b6194938e85bd3785",
+    "ios/Throughline/Views/HomeView.swift": "1a035f53a319eab882cf8fd9fcd1d4cee9edc9a0661ed09153153fb0d9dd7a85",
+    "ios/Throughline/Views/CaptureTrayView.swift": "5df60a2f33a80d3ae8b5212c2d5f62478f77cdb0734ce0dd99c5339571541b95",
+    "ios/Throughline/Views/TodoRowsEditor.swift": "f75c51224af1e1d80bb1e519e8dbb6abd28bf082b4d28f692c64911f0490e7ca",
+    "ios/Throughline/Views/OnboardingView.swift": "f73559c4f4db749ee58eca36aa8630c3b864b6f5b839ad7ec87012347200d76a",
+    "ios/Throughline/Models/HomeLayoutBudget.swift": "d24a73d9001058365308aa5eeb5b3967b43f7665f8929c4f84a777779d101978",
+    "ios/Throughline.xcodeproj/project.pbxproj": "c78ca3e8ab61df4df8c87f2ff9a12c22d7864ccb2c799dd9120e51ae7089d20d",
+    "ios/Tests/RunningRowSwipeTests.swift": "d1dfb693c4d9c5794be9a0d9c964ab6c9cf69392fed5a8fd8b59451c16589c30",
+    "scripts/test-running-row-swipe.sh": "8da2fde2cb34e6fe1a05e6de63cbad3979bd68cb2296370603db628cdf2d5206"
+  },
+  "candidate_revision": "231755e593781786afc72637e195d15c5966eac9",
+  "review_receipt_sha256": "95021a17418200be4cf417d14e05b5f600062e7175763b4426dc3f864f2ea2c0",
+  "images_stage": "Before final stable-container and source-hit-area correction; not final candidate runtime evidence"
+}
