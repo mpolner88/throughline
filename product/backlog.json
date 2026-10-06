@@ -338,7 +338,7 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike reported further scroll/tap bugs and authorized thorough investigation and repair. Release heartbeat paused at his request. Submitted public build remains separate.",
-        "current_bug": "App-only repair candidate: direction-locking gesture recognizer, 44-point targets inside button labels targets, available-height tray budget with stable short-window scroll overflow, largest-text Notes header. Focused suites, Debug build and final unsigned Release compile pass. Claude code findings corrected; touch matrix and exact-source recheck pending after Mac locked. No new delivery.",
+        "current_bug": "Runtime review found the moving-scroll guard traversed the recognizer root instead of the actual touch ancestry. Corrected in 64ed72c; focused tests and rebuilt Debug app pass. Claude is rerunning touch/layout/accessibility checks; P2-1 stays open. No new internal delivery.",
         "current_verification": "docs/evidence/2026-10-06-interaction-repair.md",
         "slice": "docs/slices/running-list.md",
         "tandem_stage": "building",
@@ -363,7 +363,7 @@
         "public_listing_review": "docs/evidence/2026-10-05-claude-app-store-listing-review.md",
         "public_listing_readback": "docs/evidence/assets/2026-10-05-app-store/listing-verified.json",
         "public_submission_receipt": "docs/releases/2026-10-05-ios-1.0.5-2026100502-submission.md",
-        "interaction_candidate_revision": "231755e593781786afc72637e195d15c5966eac9",
+        "interaction_candidate_revision": "64ed72ccc065377681a5659b8cd1b4cc1259c844",
         "interaction_source_review": "docs/evidence/2026-10-06-claude-interaction-review.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
@@ -376,7 +376,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Codex completes simulator and actual Claude review after the Mac is unlocked, resolves findings, then prepares an internal-only repair candidate under standing authority. Keep the release heartbeat paused; no change to the separate submitted public build.",
+      "next_action": "Complete Claude runtime recheck on corrected 64ed72c, resolve findings, then prepare an internal-only repair candidate under standing authority. Keep release heartbeat paused and the separate public submission unchanged.",
       "slice_phase": "canary"
     },
     {

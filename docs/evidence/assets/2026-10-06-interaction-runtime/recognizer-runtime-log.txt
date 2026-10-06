@@ -1,0 +1,18 @@
+Throughline interaction runtime diagnostic, 2026-10-06 (Claude). Synthetic preview only: --throughline-preview-home --throughline-preview-running=long, UICTContentSizeCategoryL.
+Candidate 231755e593781786afc72637e195d15c5966eac9; app 1.0.5 (2026100502); Throughline.debug.dylib SHA-256 2e23b13034a3d6b34b8284c3513866cdffa1ece9792a3bb2e4e32ffa8e211313; iPhone 17 Pro simulator iOS 26.3, portrait.
+LLDB auto-continue breakpoints; process detached after each run. Lines below are verbatim log output.
+
+[1] gestureRecognizer(_:shouldBeRequiredToFailBy:) calls during one neutral row-text tap (count, other recognizer):
+   2 REQ other=UIKitResponderGestureRecognizer otherView=_UIHostingView<ModifiedContent<AnyView, RootModifier>> isScrollPan=false
+   2 REQ other=UIScrollViewDelayedTouchesBeganGestureRecognizer otherView=HostingScrollView isScrollPan=false
+   2 REQ other=UIScrollViewPanGestureRecognizer otherView=HostingScrollView isScrollPan=true
+   1 REQ other=_UIHomeAffordanceGateGestureRecognizer otherView=UIWindow isScrollPan=false
+   2 REQ other=_UISystemGestureGateGestureRecognizer otherView=UIWindow isScrollPan=false
+
+[2] touchesBegan on one neutral row-text tap: recognizer.view ancestors vs touch.view scroll ancestors:
+CHAIN recognizerViewAncestors=["_UIHostingView<ModifiedContent<AnyView, ", "UIDropShadowView", "UITransitionView", "UIWindow"] touchViewScrollAncestors=["SCROLL:HostingScrollView", "SCROLL:HostingScrollView"] delegateIsSelf=true guardMoving=false
+
+[3] touchesBegan on one neutral row-text tap: full UITouch.view ancestor chain:
+TOUCHCHAIN PlatformGroupContainer > HostingScrollView[SCROLL frameH=430 contentH=4971 scrollEnabled=true bounces=true] > PlatformContainer > PlatformGroupContainer > HostingScrollView[SCROLL frameH=874 contentH=778 scrollEnabled=true bounces=false] > PlatformContainer > _UIHostingView<ModifiedContent<AnyView, RootModi…[RECOGNIZER VIEW] > UIDropShadowView > UITransitionView > UIWindow
+
+[discarded] A fling with a logging breakpoint at touch-down paused the main thread, turning the touch into a press-and-hold (menu opened, list did not move). Not used as evidence.

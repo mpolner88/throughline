@@ -1,0 +1,2 @@
+7708bccc5807a433ac9a322af84f598c4eb96b7f4debb0f931496ffa22544f87  recognizer-runtime-log.txt
+945f8cbdd8384ec2c0bc6da1bfb1c618920b67b4fda7a4210a2bb61de9827902  portrait-long-today-L.jpg

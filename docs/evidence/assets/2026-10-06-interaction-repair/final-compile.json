@@ -1,0 +1,11 @@
+{
+  "verifiedAt": "2026-10-06T14:51:43.970470+00:00",
+  "appSource": "231755e593781786afc72637e195d15c5966eac9",
+  "debugSimulatorBuild": "passed with final source",
+  "unsignedReleaseCompile": "passed with final source",
+  "debugVersion": "1.0.5",
+  "debugBuild": "2026100502",
+  "debugLibrarySha256": "2e23b13034a3d6b34b8284c3513866cdffa1ece9792a3bb2e4e32ffa8e211313",
+  "releaseExecutableSha256": "db55c9555174bfd392da4a0ff1e65b2b69298d8ec1de28faf109279e9dd22d66",
+  "note": "Debug preview retains prior build number. No signed package or upload; any delivery needs a new build number."
+}

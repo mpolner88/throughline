@@ -45,3 +45,21 @@ No main merge, source push, App Store submission/cancellation, metadata/policy c
 **Rollback:** a compatible forward app build restoring presentation files, while retaining durable task/capture data and identity. The old drag arbitration has known risks and is not a smoothness baseline.
 
 **Next owner/action:** After Mike unlocks the Mac, Codex sends Claude this exact candidate and releases the simulator slot for his supported swipe/touch-path checks, resolves findings, then prepares an internal-only candidate under standing authority. No public submission change is authorized by this repair.
+
+
+## October 6 resumed runtime review
+
+Mike unlocked the Mac and asked Codex to continue. The final initial candidate was rebuilt as Debug, with all changed app/project files matching the frozen manifest. [Exact compile identity](assets/2026-10-06-interaction-repair/final-compile.json). Claude received the simulator slot; Codex did not build or interact with the simulator concurrently.
+
+[Claude's diagnostic receipt](2026-10-06-claude-interaction-runtime-review.md) confirms live delegate retention and compact row spacing, but identifies a P2 guard defect: SwiftUI attaches the recognizer to the root hosting view, whose ancestors contain no scroll view. The delivered touch's hit view does have both list and outer Home scroll views as ancestors. A debugger-distorted fling was discarded rather than counted as evidence.
+
+**Correction:** `64ed72ccc065377681a5659b8cd1b4cc1259c844` changes only the recognizer to inspect the single delivered touch's view immediately at touch-down. All scroll ancestors are checked; no cached delegate ordering or global descendant search is assumed. Eight focused groups and the rebuilt Debug simulator app pass. [Corrected source identity](assets/2026-10-06-interaction-repair/source-recheck.json). The Release compile recorded above predates this narrow guard correction; final signed packaging will compile the reviewed source again.
+
+**Current gate:** Claude is rerunning actual gestures and layout/accessibility checks on this exact candidate without debugger timing distortion. P2-1 remains open until behavior is observed. The private internal-only package settings target new build 2026100601; Apple read-only preflight confirms latest build 2026100502 and the existing Internal QA destination. No new archive/export/upload or public-release mutation has occurred.
+
+
+### Interim behavioral results and second lock
+
+Claude reported these actual simulator observations on the corrected build without debugger pauses: vertical drags beginning on row text/circle/source/menu scroll the inner list; an intentional 120-point swipe completes; fling-then-tap on circle/source/menu stops scrolling without a task mutation or navigation; consecutive flicks keep scrolling; vertical-first curves, diagonal starts, short/reversed/vertically-finishing swipes preserve the task count and return rows to their starting position. A captured early-Undo run reopened the completed task; Claude is repeating the timing-sensitive case after an ambiguous initial attempt. These are interim observations, not a completed review receipt. The capture cadence does not establish frame-rate smoothness or exclude a sub-frame hold.
+
+The Mac locked again while the remaining review was running. Codex requested an unlock and is preserving Claude's simulator ownership until explicit handback. Final layout/accessibility checks, written disposition, signed package and internal delivery remain outstanding. No release gate was waived.
