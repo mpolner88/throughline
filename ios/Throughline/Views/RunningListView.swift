@@ -61,7 +61,10 @@ struct RunningListView: View {
                     if coordinator.signInRequired {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Sign in again to save your changes.").font(.footnote).foregroundStyle(.secondary)
-                            Button("Sign in", action: onSignIn).font(.subheadline).frame(minHeight: 44)
+                            Button(action: onSignIn) {
+                                Text("Sign in").font(.subheadline)
+                                    .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                            }
                         }
                     } else if let message = localError ?? coordinator.errorMessage {
                         Text(message).font(.footnote).foregroundStyle(.secondary)
@@ -92,6 +95,7 @@ struct RunningListView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 24)
             }
+            .accessibilityElement(children: .contain).accessibilityLabel("Tasks")
             .refreshable { await onRefresh() }
         }
         .onAppear {
@@ -156,6 +160,7 @@ struct RunningListView: View {
                         .fixedSize(horizontal: true, vertical: false)
                         .padding(.vertical, 13)
                         .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                         .overlay(alignment: .bottom) {
                             if selectedTab == tab { Rectangle().fill(Theme.blue).frame(height: 2) }
                         }
@@ -242,7 +247,7 @@ struct RunningListView: View {
                     }
                     Spacer(minLength: 8)
                     Text(earlierExpanded ? "Hide" : "Show").foregroundStyle(Theme.blue)
-                }.font(.subheadline).frame(minHeight: 44)
+                }.font(.subheadline).frame(minHeight: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel("\(earlierExpanded ? "Hide" : "Show") \(earlierRows.count) tasks from earlier notes")
         }
     }
@@ -363,14 +368,12 @@ private struct RunningTaskRow: View, Equatable {
     private func onOpen() { actions.open(row) }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    /// Follows the finger, then springs back whether the drag ends or the scroll view cancels it.
-    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.24, dampingFraction: 0.82)))
-    private var dragOffset: CGFloat = 0
+    /// Reset on every terminal gesture path, including OS cancellation and row disappearance.
+    @State private var dragOffset: CGFloat = 0
     @State private var previewOffset: CGFloat = 0
     private var horizontalOffset: CGFloat { max(dragOffset, previewOffset) }
     @State private var showingMenu = false
     @ScaledMetric(relativeTo: .body) private var taskFontSize: CGFloat = 16
-    private let completeThreshold: CGFloat = 76
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -421,17 +424,16 @@ private struct RunningTaskRow: View, Equatable {
             .padding(.vertical, 11).background(.background)
             .contentShape(Rectangle())
             .offset(x: horizontalOffset)
-            .gesture(DragGesture(minimumDistance: 18)
-                .updating($dragOffset) { value, offset, _ in
-                    guard value.translation.width > abs(value.translation.height) else { return }
-                    offset = min(value.translation.width, completeThreshold + 18)
+            .gesture(RunningRowSwipeGesture(onChange: { dragOffset = $0 }, onEnd: { completes in
+                withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.82)) {
+                    dragOffset = 0
                 }
-                .onEnded { value in
-                    if value.translation.width >= completeThreshold && value.translation.width > abs(value.translation.height) { onToggle() }
-                })
+                if completes { onToggle() }
+            }))
             .simultaneousGesture(LongPressGesture().onEnded { _ in showingMenu = true })
         }
         .transaction { if reduceMotion { $0.animation = nil } }
+        .onDisappear { dragOffset = 0 }
         .onAppear {
             #if DEBUG
             if RunningListPreview.scenario == "menu" && row.id == RunningListPreview.firstTaskID { showingMenu = true }
@@ -471,7 +473,12 @@ private struct RunningTaskRow: View, Equatable {
         Text("\(row.noteTitle) · \(sourceTime)")
             .font(.caption).foregroundStyle(.secondary).underline(color: Theme.border)
             .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+            .frame(minWidth: 44, alignment: .leading)
+            // Enlarge upward into the noninteractive text, keeping the visible row height and
+            // the lower hit edge inside this row's 11-point bottom padding.
+            .padding(.top, 24).padding(.bottom, 8)
             .contentShape(Rectangle())
             .onTapGesture(perform: onOpen)
+            .padding(.top, -24).padding(.bottom, -8)
     }
 }

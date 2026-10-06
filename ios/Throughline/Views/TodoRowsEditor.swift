@@ -33,7 +33,7 @@ struct TodoRowsEditor: View {
                             rows.removeAll { $0.id == row.id }
                         } label: {
                             Image(systemName: "minus.circle").font(.title3).foregroundStyle(.secondary)
-                                .frame(width: 44, height: 44)
+                                .frame(width: 44, height: 44).contentShape(Rectangle())
                         }.buttonStyle(.plain)
                             .accessibilityLabel("Remove to-do: \(row.text.isEmpty ? "New to-do" : row.text)")
                     }.padding(.leading, 12).padding(.trailing, 2)
@@ -44,7 +44,7 @@ struct TodoRowsEditor: View {
                 } label: {
                     Text("+ Add a to-do").font(.body).foregroundStyle(Theme.blue)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 12).contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
             .overlay { RoundedRectangle(cornerRadius: 8).stroke(Theme.border, lineWidth: 0.5) }

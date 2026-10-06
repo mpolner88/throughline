@@ -4,6 +4,7 @@ import UIKit
 struct CaptureTrayView: View {
     @EnvironmentObject private var queue: CaptureQueue
     var isRecording: Bool = false
+    var maximumHeight: CGFloat = 240
     @EnvironmentObject private var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -37,7 +38,6 @@ struct CaptureTrayView: View {
             return nil
         })
     }
-    private var maximumHeight: CGFloat { UIScreen.main.bounds.height / 2 }
 
     var body: some View {
         Group {

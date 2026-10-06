@@ -22,6 +22,7 @@ struct HomeView: View {
     @State private var showingCaptureSignIn = false
     @State private var microphoneDenied = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var typeSize
     @AppStorage(AIProcessingPermission.storageKey) private var hasAIProcessingPermission = false
     @State private var isVisible = false
     @State private var uploadError: String?
@@ -31,28 +32,21 @@ struct HomeView: View {
     @State private var selectedNote: ThroughlineNote?
     @State private var showingNotes = false
     @State private var selectedTab: RunningListTab = .today
+    @State private var headerHeight: CGFloat = 78
+    @State private var recorderControlsHeight: CGFloat = 126
     private let maxRecordingSeconds = 300
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-
-            if showingNotes {
-                notesContent
-            } else {
-                RunningListView(
-                    coordinator: appState.runningList,
-                    selectedTab: $selectedTab,
-                    hiddenRecordingIDs: hiddenRecordingIDs,
-                    isFirstUse: isHomeEmpty,
-                    emptyContent: AnyView(EmptyHomeContent(isDeemphasized: isShowingRecording || isShowingProcessing)),
-                    onOpenNote: openNote,
-                    onSignIn: { showingCaptureSignIn = true },
-                    onRefresh: refreshFromBackend
-                )
+        GeometryReader { geometry in
+            let minimumHeight = HomeLayoutBudget.minimumHeight(header: headerHeight, recorder: recorderControlsHeight)
+            // Keep one structural identity across rotation, text-size and recorder-height changes.
+            // Normal content exactly fits; short windows can scroll to reach the footer.
+            ScrollView {
+                homeLayout(availableHeight: max(geometry.size.height, minimumHeight))
+                    .frame(height: max(geometry.size.height, minimumHeight))
             }
-
-            bottomRecorder
+            .scrollBounceBehavior(.basedOnSize)
+            .accessibilityElement(children: .contain).accessibilityLabel("Home")
         }
         .task {
             #if DEBUG
@@ -140,30 +134,75 @@ struct HomeView: View {
         }
     }
 
+    private func homeLayout(availableHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            topBar
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
+
+            if showingNotes {
+                notesContent
+            } else {
+                RunningListView(
+                    coordinator: appState.runningList,
+                    selectedTab: $selectedTab,
+                    hiddenRecordingIDs: hiddenRecordingIDs,
+                    isFirstUse: isHomeEmpty,
+                    emptyContent: AnyView(EmptyHomeContent(isDeemphasized: isShowingRecording || isShowingProcessing)),
+                    onOpenNote: openNote,
+                    onSignIn: { showingCaptureSignIn = true },
+                    onRefresh: refreshFromBackend
+                )
+            }
+
+            bottomRecorder(maximumTrayHeight: HomeLayoutBudget.captureTrayHeight(
+                available: availableHeight, header: headerHeight, recorder: recorderControlsHeight))
+        }
+    }
+
+    private var notesBackButton: some View {
+        Button { showingNotes = false } label: {
+            Label("Back", systemImage: "chevron.left")
+                .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+        }
+        .font(.body).foregroundStyle(Theme.blue).buttonStyle(.plain)
+        .accessibilityIdentifier("home.back")
+    }
+
     private var topBar: some View {
         Group {
             if showingNotes {
-                Text("Notes").font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .overlay(alignment: .leading) {
-                        Button { showingNotes = false } label: { Label("Back", systemImage: "chevron.left") }
-                            .font(.body).foregroundStyle(Theme.blue).buttonStyle(.plain).frame(minHeight: 44)
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 4) {
+                        notesBackButton
+                        Text("Notes").font(.headline).frame(maxWidth: .infinity)
                     }
+                } else {
+                    Text("Notes").font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .overlay(alignment: .leading) { notesBackButton }
+                }
             } else {
                 HStack {
                     Wordmark()
                     Spacer()
-                    Button("notes") { showingNotes = true }
-                        .font(.subheadline.weight(.medium)).foregroundStyle(Theme.blue)
-                        .frame(minWidth: 44, minHeight: 44).buttonStyle(.plain)
+                    Button { showingNotes = true } label: {
+                        Text("notes")
+                            .font(.subheadline.weight(.medium)).foregroundStyle(Theme.blue)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("home.notes")
                     Button {
                         ProductAnalytics.track("settings_opened")
                         showingSettings = true
                     } label: {
                         Image(systemName: "gearshape").font(.system(size: 17, weight: .regular))
                             .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).accessibilityLabel("Settings")
+                    .accessibilityIdentifier("home.settings")
                 }
             }
         }
@@ -187,7 +226,9 @@ struct HomeView: View {
                     Text("Your notes will appear here.").font(.subheadline).foregroundStyle(.secondary)
                 }
             }.padding(24)
-        }.refreshable { await refreshFromBackend() }
+        }
+        .accessibilityElement(children: .contain).accessibilityLabel("Notes")
+        .refreshable { await refreshFromBackend() }
     }
 
     private var hiddenRecordingIDs: Set<String> {
@@ -226,10 +267,18 @@ struct HomeView: View {
         }
     }
 
-    private var bottomRecorder: some View {
+    private func bottomRecorder(maximumTrayHeight: CGFloat) -> some View {
         VStack(spacing: 9) {
-            CaptureTrayView(isRecording: isShowingRecording, onSignIn: { showingCaptureSignIn = true })
+            CaptureTrayView(isRecording: isShowingRecording, maximumHeight: maximumTrayHeight,
+                            onSignIn: { showingCaptureSignIn = true })
+            recorderControls
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { recorderControlsHeight = $0 }
+        }
+        .padding(.top, 12).padding(.bottom, 22).background(.background)
+    }
 
+    private var recorderControls: some View {
+        VStack(spacing: 9) {
             if let uploadError, !captureQueue.signInRequired, !captureQueue.deletionPending {
                 Text(uploadError)
                     .font(.footnote).foregroundStyle(.red)
@@ -261,7 +310,6 @@ struct HomeView: View {
                 Text("syncing").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
             }
         }
-        .padding(.top, 12).padding(.bottom, 22).background(.background)
     }
 
     private func recorderNotice(title: String, support: String, actionTitle: String?, action: @escaping () -> Void) -> some View {
@@ -553,6 +601,7 @@ private struct ImportantActionSection: View {
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundColor(item.isCompleted ? Theme.blue : Color.secondary)
                                 .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .padding(.leading, -12).padding(.top, -12)
@@ -601,10 +650,13 @@ private struct CapturedCard: View {
                             Circle()
                                 .stroke(Theme.border, lineWidth: 0.5)
                         )
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel("Discard memory")
+                .accessibilityIdentifier("noteCard.discard")
             }
 
             if let processingText = note.processingText {
@@ -654,9 +706,12 @@ private struct CapturedCard: View {
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundStyle(Theme.blue)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Read full note")
+            .accessibilityIdentifier("noteCard.open")
 
             if note.id.hasPrefix("rec_") {
                 ExtractionGradePrompt(status: feedbackStatus, onGrade: onFeedback)
@@ -758,7 +813,7 @@ private struct ExtractionGradePrompt: View {
                 }
             }
 
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 ForEach(1...5, id: \.self) { score in
                     gradeButton(score)
                 }
@@ -798,11 +853,14 @@ private struct ExtractionGradePrompt: View {
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
                         .stroke(Theme.border, lineWidth: 0.5)
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundColor(status?.savedScore == score ? Color.white : status == .sending ? Color.secondary : Color.primary)
         .disabled(status == .sending)
         .accessibilityLabel("Grade extraction \(score) out of 5")
+        .accessibilityIdentifier("noteCard.grade.\(score)")
     }
 }
 
@@ -1006,8 +1064,11 @@ private struct NoteDetailSheet: View {
             } label: {
                 Label("Discard memory", systemImage: "trash")
                     .font(.system(size: 15, weight: .medium))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("noteDetail.discard")
             .padding(.top, 4)
         }
     }
@@ -1447,10 +1508,13 @@ private struct DetailedExtractionFeedbackView: View {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .stroke(Theme.border, lineWidth: 0.5)
                             }
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(selectedScore == score ? Color.white : Color.primary)
                     .accessibilityLabel("Grade extraction \(score) out of 5")
+                    .accessibilityIdentifier("noteDetail.grade.\(score)")
                 }
             }
 
@@ -1539,8 +1603,11 @@ private struct DetailedExtractionFeedbackView: View {
                         .stroke(isSelected ? Theme.blue : Theme.border, lineWidth: 0.7)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("noteDetail.issue.\(issue.id)")
     }
 }
 

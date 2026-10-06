@@ -122,15 +122,16 @@ struct OnboardingView: View {
                 step = 1
             }
 
-            Button("Sign in") {
+            Button {
                 authMode = .signIn
                 showingEmailAuth = false
                 step = 3
+            } label: {
+                Text("Sign in")
+                    .frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
             }
             .font(.system(size: 15, weight: .medium))
             .foregroundStyle(Theme.blue)
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
             .buttonStyle(.plain)
             .accessibilityHint("Skip the demo and sign in to an existing account")
         }
@@ -354,13 +355,14 @@ struct OnboardingView: View {
                     }
 
                     if pendingConfirmationEmail != nil {
-                        Button(isResendingConfirmation ? "sending confirmation" : "resend confirmation email") {
+                        Button {
                             resendConfirmationEmail()
+                        } label: {
+                            Text(isResendingConfirmation ? "sending confirmation" : "resend confirmation email")
+                                .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
                         }
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Theme.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
                         .disabled(isResendingConfirmation)
                     }
 
@@ -369,23 +371,25 @@ struct OnboardingView: View {
                     }
                     .disabled(isAuthenticating || !canSubmitAuth)
 
-                    Button(authMode.switchTitle) {
+                    Button {
                         switchEmailAuthMode()
+                    } label: {
+                        Text(authMode.switchTitle)
+                            .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
                     }
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 38)
 
-                    Button("← other sign-in options") {
+                    Button {
                         showingEmailAuth = false
                         authError = nil
                         authNotice = nil
+                    } label: {
+                        Text("← other sign-in options")
+                            .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
                     }
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 38)
                 } else {
                     if providerAvailability.google || previewSocialProviders {
                         ConsumerGoogleSignInButton {

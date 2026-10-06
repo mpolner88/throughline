@@ -38,6 +38,8 @@
 		FB0000000000000000000007 /* Views/RunningListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000007 /* Views/RunningListView.swift */; };
 		FB0000000000000000000008 /* Views/TodoRowsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000008 /* Views/TodoRowsEditor.swift */; };
 		FB0000000000000000000009 /* Models/RunningListCompletionPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000009 /* Models/RunningListCompletionPresentation.swift */; };
+		FB0000000000000000000010 /* Views/RunningRowSwipeGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000010 /* Views/RunningRowSwipeGesture.swift */; };
+		FB0000000000000000000011 /* Models/HomeLayoutBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000011 /* Models/HomeLayoutBudget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -76,6 +78,8 @@
 		FA0000000000000000000007 /* Views/RunningListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RunningListView.swift; sourceTree = "<group>"; };
 		FA0000000000000000000008 /* Views/TodoRowsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TodoRowsEditor.swift; sourceTree = "<group>"; };
 		FA0000000000000000000009 /* Models/RunningListCompletionPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RunningListCompletionPresentation.swift; sourceTree = "<group>"; };
+		FA0000000000000000000010 /* Views/RunningRowSwipeGesture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RunningRowSwipeGesture.swift; sourceTree = "<group>"; };
+		FA0000000000000000000011 /* Models/HomeLayoutBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/HomeLayoutBudget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +108,8 @@
 			children = (
 				A00000000000000000000011 /* ThroughlineApp.swift */,
 				FA0000000000000000000008 /* Views/TodoRowsEditor.swift */,
+				FA0000000000000000000011 /* Models/HomeLayoutBudget.swift */,
+				FA0000000000000000000010 /* Views/RunningRowSwipeGesture.swift */,
 				FA0000000000000000000007 /* Views/RunningListView.swift */,
 				FA0000000000000000000006 /* Services/TaskCoordinator.swift */,
 				FA0000000000000000000005 /* Services/TaskTransport.swift */,
@@ -228,6 +234,8 @@
 			files = (
 				A00000000000000000000101 /* ThroughlineApp.swift in Sources */,
 				FB0000000000000000000008 /* Views/TodoRowsEditor.swift in Sources */,
+				FB0000000000000000000011 /* Models/HomeLayoutBudget.swift in Sources */,
+				FB0000000000000000000010 /* Views/RunningRowSwipeGesture.swift in Sources */,
 				FB0000000000000000000007 /* Views/RunningListView.swift in Sources */,
 				FB0000000000000000000006 /* Services/TaskCoordinator.swift in Sources */,
 				FB0000000000000000000005 /* Services/TaskTransport.swift in Sources */,
