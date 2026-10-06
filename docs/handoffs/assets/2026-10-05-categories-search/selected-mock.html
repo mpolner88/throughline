@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Categories and search — selected B</title>
+<!--
+  Frozen selected target for TL-KNOW-001: Candidate B, "An index that writes itself".
+  Selected by Mike on 2026-10-05; pending Codex feasibility review. Design-only. Synthetic content.
+  Derived from mockup/categories-search/candidates.html (B and shared frames) with the clarifications
+  recorded in docs/handoffs/2026-10-05-categories-search.md. The handoff document is the contract.
+  Gallery:          selected-mock.html
+  One frame, bare:  selected-mock.html?only=index
+  Dark appearance:  &theme=dark       Larger text: &ax=1       Other phone: &w=375&h=667
+-->
+<style>
+  :root {
+    --blue: #2563EB; --blue-lifted: #3B82F6;
+    --pill-bg: #EFF6FF; --pill-text: #1E3A8C;
+    --bg: #FFFFFF; --ink: #111114; --sec: #6E6E73;
+    --border: rgba(17,17,20,0.14); --page: #F4F4F6; --danger: #C93A3A;
+    --muted-bg: #F2F2F4; --scrim: rgba(0,0,0,0.34); --kbd: #D1D3D9; --key: #FFFFFF;
+    --s: 1;
+  }
+  [data-theme="dark"] {
+    --blue: #3B82F6;
+    --pill-bg: rgba(59,130,246,0.18); --pill-text: #B9D0FF;
+    --bg: #0E0E10; --ink: #F4F4F5; --sec: #9A9AA1;
+    --border: rgba(244,244,245,0.16); --page: #050506; --danger: #E06C6C;
+    --muted-bg: #1C1C1F; --scrim: rgba(0,0,0,0.5); --kbd: #2B2B2F; --key: #4A4A4F;
+  }
+  body.ax { --s: 1.35; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  body.gallery { padding: 44px 36px 96px; }
+  body.bare { background: var(--bg); overflow: hidden; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  /* gallery chrome */
+  .eyebrow { font-size: calc(11px * var(--s)); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sec); }
+  .masthead { max-width: 940px; margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px; }
+  .masthead h1 { font-size: 32px; font-weight: 500; letter-spacing: -0.01em; }
+  .masthead p, .doc p { font-size: 15px; line-height: 1.55; color: var(--sec); }
+  .doc { max-width: 940px; margin: 0 0 34px; border: 0.7px solid var(--border); border-radius: 8px; background: var(--bg); padding: 18px 22px; display: grid; gap: 10px; }
+  .doc h2 { font-size: 16px; font-weight: 600; }
+  .doc li { font-size: 13.5px; line-height: 1.55; color: var(--sec); margin-left: 18px; }
+  .doc li strong, .doc p strong { color: var(--ink); font-weight: 500; }
+  .doc table { border-collapse: collapse; font-size: 13px; line-height: 1.45; width: 100%; }
+  .doc th, .doc td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 0.7px solid var(--border); }
+  .doc th { font-weight: 600; color: var(--ink); }
+  .doc td { color: var(--sec); }
+  .doc td a, .doc li a { color: var(--blue); text-decoration: none; }
+  .current { display: flex; gap: 20px; flex-wrap: wrap; }
+  .current figure { width: 250px; }
+  .current img { width: 250px; border: 0.7px solid var(--border); border-radius: 22px; display: block; }
+  .current figcaption { font-size: 12.5px; line-height: 1.45; color: var(--sec); margin-top: 8px; }
+  .theme-toggle { position: fixed; top: 18px; right: 22px; z-index: 50; font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .cand { margin-bottom: 60px; }
+  .cand-head { max-width: 940px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .cand-head h2 { font-size: 24px; font-weight: 500; }
+  .cand-head p { font-size: 14px; line-height: 1.55; color: var(--sec); }
+  .cand-head p strong { color: var(--ink); font-weight: 500; }
+  .frames { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .frame { width: 390px; }
+  .anno { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .anno h3 { font-size: 14px; font-weight: 600; }
+  .anno h3 code { font: 500 11.5px ui-monospace, Menlo, monospace; color: var(--sec); margin-left: 6px; }
+  .anno p { font-size: 13px; line-height: 1.5; color: var(--sec); }
+
+  /* phone */
+  .phone { background: var(--bg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .gallery .phone { width: 390px; height: 844px; border: 1px solid var(--border); border-radius: 44px; }
+  .bare .phone { width: var(--w, 390px); height: var(--h, 844px); }
+  .statusbar { height: 52px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 34px 0; font-size: 15px; font-weight: 600; }
+  .statusbar .right { font-size: 12px; letter-spacing: 2px; }
+  .topbar { display: flex; align-items: center; padding: 20px 24px 14px; gap: 2px; flex: none; }
+  .wordmark { font-size: 21px; font-weight: 500; letter-spacing: -0.01em; border-bottom: 3px solid var(--blue); padding-bottom: 3px; line-height: 1.1; }
+  .topbar .sp { flex: 1; }
+  .tb-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); }
+  .tb-link { color: var(--blue); font-size: calc(15px * var(--s)); font-weight: 500; min-height: 44px; padding: 0 8px; }
+  .nav { height: 52px; flex: none; position: relative; display: flex; align-items: center; justify-content: center; padding: 0 16px; }
+  .nav .title { font-size: calc(17px * var(--s)); font-weight: 600; }
+  .nav .back { position: absolute; left: 14px; color: var(--blue); font-size: calc(17px * var(--s)); min-height: 44px; display: flex; align-items: center; gap: 4px; }
+  .nav .right { position: absolute; right: 18px; color: var(--blue); font-size: calc(17px * var(--s)); min-height: 44px; display: flex; align-items: center; }
+  .scroll { flex: 1; overflow: hidden; padding: 0 24px 16px; display: flex; flex-direction: column; }
+  .tabs { display: flex; gap: 22px; padding: 0 24px; border-bottom: 0.5px solid var(--border); flex: none; }
+  .tab { font-size: calc(15px * var(--s)); color: var(--sec); padding: 10px 0 11px; }
+  .tab.on { color: var(--ink); font-weight: 500; box-shadow: inset 0 -2px 0 var(--blue); }
+  .tab small { font-size: calc(12px * var(--s)); color: var(--sec); margin-left: 3px; }
+
+  .search { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; flex: none; }
+  .field { flex: 1; min-height: 40px; border-radius: 10px; background: var(--muted-bg); display: flex; align-items: center; gap: 7px; padding: 0 10px; font-size: calc(16px * var(--s)); color: var(--sec); }
+  .field .q { color: var(--ink); }
+  .field .caret { display: inline-block; width: 1.5px; height: 1.15em; background: var(--blue); vertical-align: -3px; margin-left: 1px; }
+  .field .clear { margin-left: auto; color: var(--sec); width: 44px; height: 40px; display: flex; align-items: center; justify-content: flex-end; }
+  .token { display: inline-flex; align-items: center; gap: 4px; background: var(--pill-bg); color: var(--pill-text); border-radius: 6px; padding: 3px 8px; font-size: calc(14px * var(--s)); font-weight: 500; }
+  .cancel { color: var(--blue); font-size: calc(16px * var(--s)); min-height: 44px; }
+  .banner { display: flex; align-items: center; gap: 8px; font-size: calc(13px * var(--s)); color: var(--sec); margin: -4px 0 14px; line-height: 1.4; }
+  .spin { width: 13px; height: 13px; border-radius: 50%; border: 1.6px solid var(--border); border-top-color: var(--sec); flex: none; }
+
+  .sect { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 0 2px; }
+  .sect .eyebrow b { font-weight: 500; color: var(--sec); margin-left: 4px; letter-spacing: 0.06em; }
+  .sect .more { color: var(--blue); font-size: calc(13px * var(--s)); font-weight: 500; min-height: 36px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 18px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 0.7px solid var(--border); font-size: calc(14px * var(--s)); color: var(--ink); max-width: 100%; text-align: left; }
+  .chip small { color: var(--sec); font-size: calc(12px * var(--s)); }
+  .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .chip.on small { color: rgba(255,255,255,0.8); }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 16px; flex: none; }
+  .seg .chip { flex: none; }
+
+  .trow { display: flex; align-items: flex-start; gap: 6px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .circle { width: 44px; height: 44px; margin: -10px 0 -10px -11px; flex: none; display: flex; align-items: center; justify-content: center; }
+  .circle i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--sec); display: flex; align-items: center; justify-content: center; }
+  .done .circle i { background: var(--blue); border-color: var(--blue); }
+  .tbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+  .ttext { font-size: calc(16px * var(--s)); line-height: 1.32; }
+  .done .ttext { color: var(--sec); text-decoration: line-through; text-decoration-color: var(--border); }
+  .meta .srcl { text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: calc(12.5px * var(--s)); color: var(--sec); line-height: 1.35; }
+  .mpill { background: var(--muted-bg); color: var(--sec); border-radius: 5px; padding: 1px 6px; font-size: calc(11.5px * var(--s)); }
+    .dots { width: 44px; height: 44px; margin: -8px -12px -8px 0; flex: none; color: var(--sec); display: flex; align-items: center; justify-content: center; font-size: 18px; letter-spacing: 1px; }
+
+  .nrow { display: flex; flex-direction: column; gap: 5px; padding: 13px 0; border-bottom: 0.5px solid var(--border); text-align: left; width: 100%; }
+  .nrow .top { display: flex; align-items: baseline; gap: 10px; }
+  .nrow .ntitle { font-size: calc(17px * var(--s)); font-weight: 500; flex: 1; min-width: 0; }
+  .nrow .when { font-size: calc(13px * var(--s)); color: var(--sec); flex: none; }
+  .nrow .ex { font-size: calc(14px * var(--s)); line-height: 1.45; color: var(--sec); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .nrow .ex.said { color: var(--ink); opacity: 0.86; }
+  .nrow .about { font-size: calc(12.5px * var(--s)); color: var(--sec); }
+  .nrow .tcount { font-size: calc(12.5px * var(--s)); color: var(--sec); }
+  mark { background: var(--pill-bg); color: var(--pill-text); border-radius: 3px; padding: 0 1px; font-weight: 500; }
+
+  .irow { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 0.5px solid var(--border); width: 100%; text-align: left; }
+  .irow .lbl { font-size: calc(17px * var(--s)); flex: 1; min-width: 0; }
+  .irow .cnt { font-size: calc(14px * var(--s)); color: var(--sec); }
+  .irow .sub { font-size: calc(12.5px * var(--s)); color: var(--sec); display: block; margin-top: 2px; }
+  .chev { color: var(--sec); flex: none; }
+
+  .ptitle { font-size: calc(28px * var(--s)); font-weight: 500; letter-spacing: -0.01em; line-height: 1.15; margin: 6px 0 6px; }
+  .psub { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.45; margin-bottom: 14px; }
+  .links { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.5; margin: 2px 0 14px; }
+  .links a { color: var(--blue); text-decoration: none; font-weight: 500; }
+  .said-row { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+  .said-row .src { font-size: calc(12.5px * var(--s)); color: var(--blue); font-weight: 500; min-height: 22px; text-align: left; }
+  .said-row q { font-size: calc(15px * var(--s)); line-height: 1.45; quotes: "\201C" "\201D"; }
+
+  .empty { margin: 28px 4px 0; display: flex; flex-direction: column; gap: 10px; }
+  .empty h3 { font-size: calc(20px * var(--s)); font-weight: 500; line-height: 1.25; }
+  .empty p { font-size: calc(15px * var(--s)); color: var(--sec); line-height: 1.5; }
+  .empty .line { width: 34px; height: 3px; background: var(--blue); border-radius: 2px; margin-bottom: 6px; }
+
+  .rec { flex: none; padding: 10px 24px 30px; display: flex; flex-direction: column; gap: 9px; border-top: 0.5px solid var(--border); background: var(--bg); }
+  .rec-btn { width: 100%; height: 64px; border-radius: 8px; color: #fff; background: linear-gradient(150deg, var(--blue-lifted), #2563EB 62%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; font-size: calc(15px * var(--s)); font-weight: 500; }
+  .rec-mark { display: flex; gap: 10px; } .rec-mark i { width: 26px; height: 3px; background: #fff; border-radius: 2px; }
+  .kbd { flex: none; height: 291px; background: var(--kbd); padding: 8px 4px 40px; display: grid; grid-template-rows: repeat(4, 1fr); gap: 11px; }
+  .kbd div { display: flex; gap: 6px; justify-content: center; }
+  .kbd span { background: var(--key); border-radius: 5px; flex: 0 0 32px; box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+  .kbd .wide { flex: 0 0 186px; } .kbd .mid { flex: 0 0 86px; }
+
+  /* sheet */
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .sheet { position: absolute; left: 0; right: 0; top: 58px; bottom: 0; background: var(--bg); border-radius: 14px 14px 0 0; display: flex; flex-direction: column; }
+  .sh-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
+  .sh-head .pillbtn { min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--muted-bg); font-size: calc(15px * var(--s)); }
+  .sh-head .ttl { font-size: calc(16px * var(--s)); font-weight: 600; }
+  .sh-body { flex: 1; overflow: hidden; padding: 6px 24px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .sh-body h2 { font-size: calc(24px * var(--s)); font-weight: 500; line-height: 1.2; }
+  .sh-body .prose { font-size: calc(15px * var(--s)); line-height: 1.5; color: var(--sec); }
+  .aboutrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .aboutrow .chip { min-height: 34px; }
+  .mini { display: flex; gap: 12px; align-items: center; font-size: calc(15px * var(--s)); min-height: 30px; }
+  .mini i { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--sec); flex: none; }
+  .form-sect { display: flex; flex-direction: column; border-top: 0.5px solid var(--border); }
+  .frow { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 0.5px solid var(--border); }
+  .frow .lbl { flex: 1; font-size: calc(16px * var(--s)); }
+  .frow .lbl small { display: block; font-size: calc(12.5px * var(--s)); color: var(--sec); margin-top: 2px; }
+  .frow .act { color: var(--danger); font-size: calc(15px * var(--s)); min-height: 44px; padding: 0 2px; }
+  .frow.removed .lbl { color: var(--sec); }
+  .frow.removed .lbl s { text-decoration-color: var(--sec); }
+  .frow .undo { color: var(--blue); font-size: calc(15px * var(--s)); font-weight: 500; min-height: 44px; }
+  .foot { font-size: calc(13px * var(--s)); color: var(--sec); line-height: 1.45; }
+  .ghost { opacity: 0.45; }
+  .fieldbox { border: 0.7px solid var(--border); border-radius: 8px; padding: 11px 12px; font-size: calc(15px * var(--s)); }
+
+  /* selected-B additions */
+  .said-row q, .said-row .sum { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .said-row .sum { font-size: calc(15px * var(--s)); line-height: 1.45; color: var(--sec); }
+  .morerow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; width: 100%; font-size: calc(14px * var(--s)); color: var(--sec); border-bottom: 0.5px solid var(--border); text-align: left; }
+  .morerow .show { color: var(--blue); }
+  .plain { font-size: calc(15px * var(--s)); color: var(--sec); margin-top: 8px; }
+  .card { display: flex; flex-direction: column; gap: 12px; padding: 12px 0 22px; border-bottom: 0.5px solid var(--border); }
+  .card .head { display: flex; gap: 12px; align-items: flex-start; }
+  .card .head .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .card h4 { font-size: calc(19px * var(--s)); font-weight: 500; line-height: 1.25; }
+  .card .trash { width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border); color: var(--sec); display: flex; align-items: center; justify-content: center; flex: none; }
+  .card .pstatus { display: inline-flex; align-self: flex-start; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; background: var(--muted-bg); font-size: calc(13px * var(--s)); font-weight: 500; color: var(--sec); }
+  .card .pv { font-size: calc(14px * var(--s)); line-height: 1.5; color: var(--sec); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" hidden>Dark</button>
+<div id="root"></div>
+<script>
+const P = new URLSearchParams(location.search);
+const ONLY = P.get('only');
+const AX = P.get('ax') === '1';
+document.documentElement.dataset.theme = P.get('theme') === 'dark' ? 'dark' : 'light';
+if (AX) document.body.classList.add('ax');
+if (P.get('w')) document.documentElement.style.setProperty('--w', P.get('w') + 'px');
+if (P.get('h')) document.documentElement.style.setProperty('--h', P.get('h') + 'px');
+
+/* ---------- synthetic data (no real notes) ---------- */
+// "Now" is Monday, October 5, 9:41 AM. Labels are what extraction already returns: people, projects and
+// topic tags. `src` is the shipped running-list source time; `day` is the day-level form used for
+// "last said" and page spans.
+const NOTES = [
+  { id: 'n1', title: 'drive in', type: 'freeform', at: '2026-10-05T08:15', src: '8:15 AM', day: 'today', full: 'Mon, Oct 5 at 8:15 AM',
+    summary: 'Pricing page copy before the launch email goes out. Ask Sam about the annual plan.',
+    said: 'get the pricing page copy done before the launch email goes out, and ask Sam about the annual plan',
+    people: ['Sam'], projects: ['pricing page', 'launch email'], tags: ['pricing'],
+    todos: [{ t: 'Draft the pricing page copy', p: 'today' }, { t: 'Ask Sam about the annual plan', p: 'today' }] },
+  { id: 'n2', title: 'morning walk', type: 'morning', at: '2026-10-05T07:42', src: '7:42 AM', day: 'today', full: 'Mon, Oct 5 at 7:42 AM',
+    summary: 'The dentist this week, call Mom about Sunday dinner, a slower start.',
+    said: 'I need to call Mom about Sunday dinner, and get the dentist booked this week',
+    people: ['Mom'], projects: ['Sunday dinner'], tags: ['dentist', 'health', 'family'],
+    todos: [{ t: 'Book the dentist', p: 'this week' }, { t: 'Call Mom about Sunday dinner', p: 'today' }] },
+  { id: 'n3', title: 'drive home', type: 'evening', at: '2026-10-02T18:10', src: 'Fri 6:10 PM', day: 'Fri', full: 'Fri, Oct 2 at 6:10 PM',
+    summary: 'The launch email is close. Marcus wants the numbers by Wednesday.',
+    said: 'the launch email is close, one more read, and Marcus wants the numbers by Wednesday',
+    people: ['Marcus'], projects: ['launch email', 'metrics doc'], tags: ['numbers'],
+    todos: [{ t: 'Send Marcus the metrics doc', p: 'done', done: true }, { t: 'Final read of the launch email', p: 'today' }] },
+  { id: 'n4', title: 'Sat walk', type: 'freeform', at: '2026-09-26T10:05', src: 'Sep 26', day: 'Sep 26', full: 'Sat, Sep 26 at 10:05 AM',
+    summary: 'Garage shelves and the pottery course, whenever.',
+    said: 'at some point the garage shelves, and look at that pottery course',
+    people: [], projects: ['garage shelves', 'pottery course'], tags: ['home'],
+    todos: [{ t: 'Measure the garage wall', p: 'later' }, { t: 'Look up the pottery course', p: 'later' }] },
+  { id: 'n5', title: 'lunch walk', type: 'freeform', at: '2026-09-24T12:20', src: 'Sep 24', day: 'Sep 24', full: 'Thu, Sep 24 at 12:20 PM',
+    summary: 'The pricing tiers feel wrong; three is too many. Keep the free plan.',
+    said: 'the pricing tiers feel wrong, three is too many, but keep the free plan',
+    people: [], projects: ['pricing page'], tags: ['pricing', 'free plan'],
+    todos: [{ t: 'Sketch a two-tier pricing page', p: 'today' }] },
+  { id: 'n6', title: 'evening', type: 'evening', at: '2026-09-22T21:02', src: 'Sep 22', day: 'Sep 22', full: 'Tue, Sep 22 at 9:02 PM',
+    summary: 'Ran 5k and the knee felt fine. Physical therapy on Thursday.',
+    said: 'ran the 5k, knee felt fine, physical therapy is Thursday',
+    people: [], projects: ['physical therapy'], tags: ['running', 'health'],
+    todos: [{ t: 'Confirm physical therapy Thursday', p: 'done', done: true }] },
+  { id: 'n7', title: 'drive in', type: 'morning', at: '2026-09-18T08:20', src: 'Sep 18', day: 'Sep 18', full: 'Fri, Sep 18 at 8:20 AM',
+    summary: 'Sam needs the deck by Friday. Boston in October.',
+    said: 'Sam needs the deck by Friday, and Boston is in October',
+    people: ['Sam'], projects: ['deck', 'Boston trip'], tags: ['travel'],
+    todos: [{ t: 'Send Sam the revised deck', p: 'done', done: true }, { t: 'Book the Boston train', p: 'later' }] },
+  { id: 'n8', title: 'weekly review', type: 'weekly review', at: '2026-09-13T19:30', src: 'Sep 13', day: 'Sep 13', full: 'Sun, Sep 13 at 7:30 PM',
+    summary: 'A good week for writing. Too many meetings. Protect the mornings.',
+    said: 'good week for writing, too many meetings, protect the mornings',
+    people: [], projects: [], tags: ['writing', 'mornings'],
+    todos: [{ t: 'Block mornings for writing', p: 'today' }] },
+  { id: 'n9', title: 'walk with Mom', type: 'freeform', at: '2026-09-06T17:40', src: 'Sep 6', day: 'Sep 6', full: 'Sun, Sep 6 at 5:40 PM',
+    summary: "Mom's birthday is in November. She'd like a photo book.",
+    said: "Mom's birthday is in November, she said she'd like a photo book",
+    people: ['Mom'], projects: ['photo book'], tags: ['birthday', 'family'],
+    todos: [{ t: 'Start the photo book for Mom', p: 'later' }] },
+  { id: 'n10', title: 'errands', type: 'freeform', at: '2026-08-21T17:30', src: 'Aug 21', day: 'Aug 21', full: 'Fri, Aug 21 at 5:30 PM',
+    summary: 'The lease message and the library books.',
+    said: 'email the landlord about the lease, and the library books are due',
+    people: [], projects: ['lease'], tags: ['errands', 'home'],
+    todos: [{ t: 'Email the landlord about the lease', p: 'today' }, { t: 'Return the library books', p: 'today' }] },
+];
+const N = Object.fromEntries(NOTES.map(n => [n.id, n]));
+const ALL = NOTES.map(n => n.id);
+
+/* ---------- the rules the handoff specifies ---------- */
+// Normalize: case- and diacritic-insensitive, punctuation as spaces.
+const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+const words = s => norm(s).split(' ').filter(Boolean);
+const containsRun = (hay, needle) => needle.length > 0 && hay.some((_, i) => needle.every((w, j) => hay[i + j] === w));
+// Kinds in precedence order. A key used as more than one kind takes the first kind it has anywhere.
+const KINDS = [{ f: 'people', plural: 'people', one: 'person' }, { f: 'projects', plural: 'projects', one: 'project' }, { f: 'tags', plural: 'topics', one: 'topic' }];
+// Within one note, a topic whose words appear as a whole-word run inside a person or project on the same
+// note is folded into it (n1 and n5 say "pricing" next to "pricing page"; it shows once, as the project).
+function labelsOf(n) {
+  const named = [...n.people, ...n.projects].map(words);
+  const tags = n.tags.filter(t => !named.some(nw => containsRun(nw, words(t))));
+  const seen = new Set();
+  const out = [];
+  [['people', n.people], ['projects', n.projects], ['tags', tags]].forEach(([f, ls]) => ls.forEach(l => {
+    const k = norm(l); if (!seen.has(k)) { seen.add(k); out.push({ l, k, f }); }
+  }));
+  return out;
+}
+function buildIndex(ids = ALL) {
+  const m = new Map();
+  ids.map(i => N[i]).forEach(n => labelsOf(n).forEach(({ l, k, f }) => {
+    const e = m.get(k) || { k, l, f, ids: [], last: '' };
+    if (KINDS.findIndex(x => x.f === f) < KINDS.findIndex(x => x.f === e.f)) e.f = f;
+    if (n.at > e.last) { e.last = n.at; e.l = l; e.lastDay = n.day; }
+    e.ids.push(n.id);
+    m.set(k, e);
+  }));
+  // Two or more notes. Order: kind section, then last said (newest first), then note count, then label.
+  const rank = f => KINDS.findIndex(x => x.f === f);
+  return [...m.values()].filter(e => e.ids.length >= 2)
+    .sort((a, b) => rank(a.f) - rank(b.f) || b.last.localeCompare(a.last) || b.ids.length - a.ids.length || a.l.localeCompare(b.l, undefined, { sensitivity: 'base' }));
+}
+const INDEX = buildIndex();
+const entry = l => INDEX.find(e => e.k === norm(l));
+const kindOne = f => KINDS.find(x => x.f === f).one;
+const notesOf = e => e.ids.map(i => N[i]).sort((a, b) => b.at.localeCompare(a.at));
+const PLACE = { today: 0, 'this week': 1, later: 2, done: 3 };
+// A page lists the open to-dos from its notes whose own words contain the label.
+function pageTodos(e) {
+  const out = [];
+  notesOf(e).forEach(n => n.todos.forEach(t => { if (!t.done && containsRun(words(t.t), words(e.l))) out.push([t, n]); }));
+  return out.sort((a, b) => PLACE[a[0].p] - PLACE[b[0].p] || b[1].at.localeCompare(a[1].at));
+}
+// Up to three other index entries sharing the most notes with this one; ties keep index order.
+function comesUpWith(e) {
+  return INDEX.filter(o => o !== e).map(o => ({ o, s: o.ids.filter(i => e.ids.includes(i)).length }))
+    .filter(x => x.s > 0).sort((a, b) => b.s - a.s || INDEX.indexOf(a.o) - INDEX.indexOf(b.o)).slice(0, 3).map(x => x.o);
+}
+// Excerpt: the transcript sentence with the label; else one with a label word of 4+ letters; else the
+// summary sentence with the label; else the summary's first sentence. Only transcript text is quoted.
+function excerpt(n, label) {
+  const lw = words(label);
+  const sentences = s => s.split(/(?<=[.!?;])\s+/).filter(Boolean);
+  for (const s of [n.said]) if (containsRun(words(s), lw)) return { quote: true, text: s, mark: label };
+  const long = lw.filter(w => w.length >= 4);
+  for (const s of [n.said]) { const w = long.find(x => words(s).includes(x)); if (w) return { quote: true, text: s, mark: w }; }
+  const hit = sentences(n.summary).find(s => containsRun(words(s), lw));
+  if (hit) return { quote: false, text: hit, mark: label };
+  return { quote: false, text: sentences(n.summary)[0], mark: '' };
+}
+// Search: every query word must start a word in the same item. Case- and diacritic-insensitive.
+const qTerms = q => words(q);
+const hits = (text, ts) => { const ws = words(text); return ts.length > 0 && ts.every(t => ws.some(w => w.startsWith(t))); };
+function search(q) {
+  const ts = qTerms(q);
+  const index = INDEX.filter(e => hits(e.l, ts)).slice(0, 3);
+  const todos = [], notes = [];
+  NOTES.slice().sort((a, b) => b.at.localeCompare(a.at)).forEach(n => {
+    n.todos.forEach(t => { if (hits(t.t, ts)) todos.push([t, n]); });
+    if (hits([n.title, n.summary, n.said, ...labelsOf(n).map(x => x.l)].join(' '), ts)) notes.push(n);
+  });
+  todos.sort((a, b) => PLACE[a[0].p] - PLACE[b[0].p] || b[1].at.localeCompare(a[1].at));
+  return { ts, index, todos, notes };
+}
+
+/* ---------- helpers ---------- */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Highlight query words at word starts, or one whole phrase.
+function hl(text, ts) {
+  if (!ts || !ts.length) return esc(text);
+  const re = new RegExp('(?<![\\p{L}\\p{N}])(' + ts.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'giu');
+  return esc(text).replace(re, '<mark>$1</mark>');
+}
+function hlRun(text, phrase) {
+  if (!phrase) return esc(text);
+  const re = new RegExp('(?<![\\p{L}\\p{N}])(' + words(phrase).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^\\p{L}\\p{N}]+') + ')(?![\\p{L}\\p{N}])', 'iu');
+  return esc(text).replace(re, '<mark>$1</mark>');
+}
+const ICON = {
+  search: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>',
+  back: '<svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L2 10l8 8"/></svg>',
+  chev: '<svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg>',
+  clear: '<svg width="17" height="17" viewBox="0 0 17 17"><circle cx="8.5" cy="8.5" r="8.5" fill="currentColor" opacity="0.55"/><path d="M5.6 5.6l5.8 5.8M11.4 5.6l-5.8 5.8" stroke="var(--bg)" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  check: '<svg width="11" height="9" viewBox="0 0 11 9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.6L4 7.5 10 1.3"/></svg>',
+  trash: '<svg width="13" height="14" viewBox="0 0 13 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.5h10M5 3.5V2h3v1.5M2.8 3.5l.7 9h5.9l.7-9"/></svg>',
+};
+const status = () => '<div class="statusbar"><span>9:41</span><span class="right">●●● ◒ ▮</span></div>';
+const recorder = () => '<div class="rec"><button class="rec-btn"><span class="rec-mark"><i></i><i></i></span>Start recording</button></div>';
+const keyboard = () => '<div class="kbd"><div>' + '<span></span>'.repeat(10) + '</div><div>' + '<span></span>'.repeat(9) + '</div><div>' + '<span></span>'.repeat(7) + '</div><div><span class="mid"></span><span class="wide"></span><span class="mid"></span></div></div>';
+function phone(inner, { rec = true, kbd = false } = {}) {
+  return '<div class="phone">' + status() + inner + (kbd ? keyboard() : rec ? recorder() : '') + '</div>';
+}
+// The shipped Notes bar: "Back" and the title "Notes" at every level inside Notes.
+const nav = () => `<div class="nav"><button class="back">${ICON.back} Back</button><span class="title">Notes</span></div>`;
+function field({ q = '', focus = false, cancel = false } = {}) {
+  const content = q ? `<span class="q">${esc(q)}</span>` : '<span>Search notes and to-dos</span>';
+  const caret = focus ? '<span class="caret"></span>' : '';
+  const clear = q ? `<button class="clear" aria-label="Clear search">${ICON.clear}</button>` : '';
+  return `<div class="search"><div class="field" role="search">${ICON.search}<span>${content}${caret}</span>${clear}</div>${cancel ? '<button class="cancel">Cancel</button>' : ''}</div>`;
+}
+const banner = kind => ({
+  offline: '<div class="banner">Offline · searching what’s on this phone</div>',
+  loading: '<div class="banner"><span class="spin"></span>Loading notes · results so far</div>',
+  error: '<div class="banner">Couldn’t refresh notes · searching what’s on this phone</div>',
+}[kind] || '');
+const scroll = inner => `<div class="scroll">${inner}</div>`;
+const sect = (label, count, top = false) => `<div class="sect"${top ? ' style="margin-top:16px"' : ''}><span class="eyebrow">${esc(label)}${count != null ? `<b>${count}</b>` : ''}</span></div>`;
+// The shipped running-list row. Placement is added as a neutral tag because pages and results span tabs;
+// a shipped marker (none in this data) would keep its own style before it.
+function trow(todo, n, ts) {
+  const done = todo.done;
+  return `<div class="trow${done ? ' done' : ''}"><button class="circle" aria-label="${done ? 'Reopen' : 'Complete'}"><i>${done ? ICON.check : ''}</i></button>
+    <div class="tbody"><span class="ttext">${hl(todo.t, ts)}</span><span class="meta"><span class="mpill">${esc(todo.p)}</span><span class="srcl">${esc(n.title)} · ${esc(n.src)}</span></span></div>
+    ${done ? '' : '<span class="dots" aria-label="More actions">•••</span>'}</div>`;
+}
+function irow(e, { sub, ts } = {}) {
+  const s = sub || `last said ${e.lastDay}`;
+  return `<button class="irow"><span class="lbl">${ts ? hl(e.l, ts) : esc(e.l)}<span class="sub">${esc(s)}</span></span>${sub ? '' : `<span class="cnt">${e.ids.length}</span>`}<span class="chev">${ICON.chev}</span></button>`;
+}
+const allNotesRow = count => `<button class="irow" style="margin-top:14px"><span class="lbl">all notes</span><span class="cnt">${count}</span><span class="chev">${ICON.chev}</span></button>`;
+const indexFoot = '<p class="foot" style="margin-top:12px">Things you’ve mentioned once are on their note and in search.</p>';
+function indexBody(index, count) {
+  return KINDS.map(k => {
+    const es = index.filter(e => e.f === k.f);
+    return es.length ? sect(k.plural) + es.slice(0, 5).map(e => irow(e)).join('') : '';
+  }).join('') + allNotesRow(count) + indexFoot;
+}
+function nrow(n, ts) {
+  const s = hits(n.summary, ts);
+  const said = !s && hits(n.said, ts);
+  const ex = said ? `“…${hl(n.said, ts)}.”` : hl(n.summary, s ? ts : []);
+  const about = labelsOf(n).slice(0, 3).map(x => x.l).join(' · ');
+  return `<button class="nrow"><span class="top"><span class="ntitle">${hl(n.title, ts)}</span><span class="when">${esc(n.src)}</span></span>
+    <span class="ex${said ? ' said' : ''}">${ex}</span>${about ? `<span class="about">about ${esc(about)}</span>` : ''}</button>`;
+}
+function results(q) {
+  const r = search(q);
+  let html = '';
+  if (r.index.length) html += sect('in your index') + r.index.map(e => irow(e, { ts: r.ts, sub: `${kindOne(e.f)} · ${e.ids.length} notes · last said ${e.lastDay}` })).join('');
+  if (r.todos.length) html += sect('to-dos', r.todos.length, !!html) + r.todos.map(([t, n]) => trow(t, n, r.ts)).join('');
+  if (r.notes.length) html += sect('notes', r.notes.length, !!html) + r.notes.map(n => nrow(n, r.ts)).join('');
+  return html || noResults(q);
+}
+function noResults(q) {
+  return `<div class="empty"><h3>Nothing matches “${esc(q)}”.</h3><p>Search looks through your notes, what you said, and your to-dos.</p></div>`;
+}
+function page(label) {
+  const e = entry(label);
+  const ns = notesOf(e);
+  const first = ns[ns.length - 1].day, last = ns[0].day;
+  const span = first === last ? last : `${first} to ${last}`;
+  const links = comesUpWith(e);
+  const todos = pageTodos(e);
+  return `<span class="eyebrow">${kindOne(e.f)}</span><h1 class="ptitle">${esc(e.l)}</h1><p class="psub">${ns.length} notes · ${esc(span)}</p>` +
+    (links.length ? `<p class="links">comes up with ${links.map(o => `<a>${esc(o.l)}</a>`).join(' · ')}</p>` : '') +
+    (todos.length ? sect('open to-dos', todos.length) + todos.map(([t, n]) => trow(t, n)).join('') : '') +
+    sect('where you said it', null, todos.length > 0) +
+    ns.map(n => {
+      const x = excerpt(n, e.l);
+      const body = x.quote ? `<q>…${hlRun(x.text, x.mark)}.</q>` : `<p class="sum">${hlRun(x.text, x.mark)}</p>`;
+      return `<div class="said-row"><button class="src">${esc(n.title)} · ${esc(n.src)}</button>${body}</div>`;
+    }).join('');
+}
+const chip = l => `<button class="chip">${esc(l)}</button>`;
+function sheet(n) {
+  const ls = labelsOf(n);
+  return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">Edit</button><span class="ttl">memory</span><button class="pillbtn">Done</button></div>
+  <div class="sh-body"><span class="eyebrow">${esc(n.type)} · ${esc(n.full)}</span><h2>${esc(n.title)}</h2>
+  ${ls.length ? `<div class="aboutrow"><span class="eyebrow" style="margin-right:4px">about</span>${ls.map(x => chip(x.l)).join('')}</div>` : ''}
+  <span class="eyebrow">preview</span><p class="prose">${esc(n.summary)}</p>
+  <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="mini"><i></i>${esc(t.t)}</div>`).join('')}
+  <span class="eyebrow">transcript</span><p class="prose" style="color:var(--ink);opacity:.85">Synthetic transcript for design review. No private recording is used.</p></div></div>`;
+}
+function editSheet(n, removed) {
+  const rows = labelsOf(n).map(x => x.k === norm(removed)
+    ? `<div class="frow removed"><span class="lbl"><s>${esc(x.l)}</s><small>${kindOne(x.f)} · removed</small></span><button class="undo">Undo</button></div>`
+    : `<div class="frow"><span class="lbl">${esc(x.l)}<small>${kindOne(x.f)}</small></span><button class="act">Remove</button></div>`).join('');
+  return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">Cancel</button><span class="ttl">Edit note</span><button class="pillbtn" style="color:var(--blue);font-weight:500">Save</button></div>
+  <div class="sh-body"><span class="eyebrow">title</span><div class="fieldbox ghost">${esc(n.title)}</div><span class="eyebrow">summary</span><div class="fieldbox ghost" style="min-height:64px">${esc(n.summary)}</div>
+  <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="fieldbox ghost">${esc(t.t)}</div>`).join('')}
+  <span class="eyebrow" style="margin-top:6px">about</span><div class="form-sect">${rows}</div><p class="foot">Chosen from what you said. Removing one takes this note off that page, here and for your agent.</p></div></div>`;
+}
+// The shipped note card, unchanged except that its eyebrow gains the date in the running list's format.
+function card(n, { processing = '' } = {}) {
+  const open = n.todos.filter(t => !t.done).slice(0, 3);
+  return `<div class="card"><div class="head"><div class="t"><span class="eyebrow">${esc(n.type)} · ${esc(n.src)}</span><h4>${esc(n.title)}</h4></div><button class="trash" aria-label="Discard memory">${ICON.trash}</button></div>
+    ${processing ? `<div class="pstatus"><span class="spin"></span>${esc(processing)}</div>` : ''}
+    ${open.length ? `<span class="eyebrow">to-dos</span>${open.map(t => `<div class="mini"><i></i>${esc(t.t)}</div>`).join('')}` : ''}
+    <p class="pv">${esc(n.said.charAt(0).toUpperCase() + n.said.slice(1))}.</p></div>`;
+}
+
+/* ---------- frames ---------- */
+const FRAMES = {};
+const F = (id, t, d, html) => { FRAMES[id] = { t, d, html }; };
+
+F('index', 'Index', 'Notes opens on an index built from what you said: people, projects and topics that come up in two or more notes, newest first, with the note count. All notes is one row down.',
+  phone(nav() + scroll(field() + indexBody(INDEX, NOTES.length))));
+F('index-long', 'Index with more history', 'Each section shows its first five entries, then the shipped Show and Hide control. Long labels wrap. Synthetic, larger history.',
+  phone(nav() + scroll(field() +
+    sect('people') + [['Sam', 'today', 6], ['Mom', 'today', 4], ['Marcus', 'Fri', 3], ['Priya', 'Sep 26', 2], ['Dana', 'Sep 18', 3]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join('') +
+    '<button class="morerow"><span>2 more people</span><span class="show">Show</span></button>' +
+    sect('projects') + [['pricing page', 'today', 5], ['launch email', 'today', 4], ['the Boston trip with the whole team', 'Sep 18', 3]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join('') +
+    sect('topics') + [['health', 'today', 7], ['family', 'today', 5]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join(''))));
+F('results', 'Typing “sam”', 'One search: matching index entries first, then to-dos (the running-list row, so completion still works), then notes. The recorder hides while the keyboard is up.',
+  phone(nav() + scroll(field({ q: 'sam', focus: true, cancel: true }) + results('sam')), { kbd: true }));
+F('once', 'A label said once', 'Tapping a label that is not in the index opens search with that label as the query. Here nothing is in the index, so results start with to-dos.',
+  phone(nav() + scroll(field({ q: 'Marcus', cancel: true }) + results('Marcus'))));
+F('page', 'A page', 'An entry’s page: kind, count and span, what it comes up with, the open to-dos that name it, and every place you said it, newest first.',
+  phone(nav() + scroll(page('pricing page'))));
+F('page-quiet', 'A page with no open to-dos', 'With no open to-do naming the topic, that section is left out. When the transcript never says the word, the summary line is shown without quotes.',
+  phone(nav() + scroll(page('health'))));
+F('all-notes', 'All notes', 'Today’s Notes list, unchanged, one level down. Each card’s eyebrow now carries the date, in the running list’s format.',
+  phone(nav() + scroll(`<h1 class="ptitle" style="margin-top:2px">all notes</h1><p class="psub">${NOTES.length} notes</p>` + card(N.n1) + card(N.n3))));
+F('note', 'Note: what it’s about', 'The note sheet gains one quiet line under the title. A label with a page opens it; a label said once opens a search.',
+  phone(nav() + scroll('') + sheet(N.n1), { rec: false }));
+F('edit', 'Correcting a label', 'Edit gains an “about” section. Remove takes the note off that page, here and for your agent; Undo stays until Save. Nothing asks you to add labels.',
+  phone(nav() + scroll('') + editSheet(N.n1, 'pricing page'), { rec: false }));
+F('thin', 'Early days', 'Until something comes up twice, the index says so plainly and all notes is one row down.',
+  phone(nav() + scroll(field() + `<div class="empty" style="margin-top:12px"><span class="line"></span><h3>Nothing has come up twice yet.</h3><p>When a person, project or topic appears in two notes, it gets its own page here.</p></div>` + allNotesRow(3))));
+F('empty', 'No notes yet', 'With no notes there is nothing to search, so Notes keeps the shipped line and no field.',
+  phone(nav() + scroll('<p class="plain">Your notes will appear here.</p>')));
+F('none', 'No results', 'Plain words about where search looked. The field stays focused so the next try is one edit away.',
+  phone(nav() + scroll(field({ q: 'dentst', focus: true, cancel: true }) + noResults('dentst')), { kbd: true }));
+F('loading', 'Still loading', 'After sign-in, the index and search use the notes that have arrived and say so. The index grows as the rest load.',
+  phone(nav() + scroll(field() + banner('loading') + indexBody(buildIndex(['n1', 'n2', 'n3', 'n5', 'n7']), 5))));
+F('offline', 'Offline', 'The index, pages and search are built on the phone from notes already there, so they keep working.',
+  phone(nav() + scroll(field() + banner('offline') + indexBody(INDEX, NOTES.length))));
+F('error', 'Refresh failed', 'Same as offline, with its own line. Pull to refresh retries.',
+  phone(nav() + scroll(field() + banner('error') + indexBody(INDEX, NOTES.length))));
+F('processing', 'A note still processing', 'The shipped card and status line. Until extraction finishes, a note has no labels, is not counted in the index and matches search by its title only.',
+  phone(nav() + scroll(`<h1 class="ptitle" style="margin-top:2px">all notes</h1><p class="psub">${NOTES.length + 1} notes</p>` +
+    card({ type: 'freeform', src: '9:38 AM', title: 'voice note', todos: [], said: 'synthetic transcript for design review' }, { processing: 'Waiting for extraction' }) + card(N.n1))));
+
+/* ---------- render ---------- */
+if (ONLY && FRAMES[ONLY]) {
+  document.body.className = 'bare' + (AX ? ' ax' : '');
+  document.getElementById('root').innerHTML = FRAMES[ONLY].html;
+} else {
+  document.body.className = 'gallery' + (AX ? ' ax' : '');
+  const t = document.getElementById('themeToggle'); t.hidden = false;
+  t.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
+  t.onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark'; t.textContent = d.dataset.theme === 'dark' ? 'Light' : 'Dark'; };
+  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · pending Codex feasibility review</span><h1>Categories and search: an index that writes itself</h1>
+    <p>Candidate B, frozen for the handoff. Notes opens on an index of the people, projects and topics you keep coming back to. Each one is a page with its open to-dos and every place you said it. One search covers notes and to-dos. Synthetic content throughout. The handoff document is the contract; this page illustrates it.</p></header><div class="frames">`;
+  Object.entries(FRAMES).forEach(([id, f]) => {
+    html += `<div class="frame">${f.html}<div class="anno"><h3>${f.t}<code>${id}</code></h3><p>${f.d}</p></div></div>`;
+  });
+  document.getElementById('root').innerHTML = html + '</div>';
+}
+</script>
+</body>
+</html>

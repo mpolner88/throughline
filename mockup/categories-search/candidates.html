@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Categories and search — candidates</title>
+<!--
+  Design candidates for TL-KNOW-001, categories and search across notes and to-dos.
+  Design-only. Synthetic content. No production code. Nothing here is selected until Mike chooses.
+  Gallery:          candidates.html
+  One frame, bare:  candidates.html?only=a-library      (fills the viewport; used for reference renders)
+  Dark appearance:  &theme=dark       Larger text: &ax=1       Other phone: &w=375&h=667
+  Frame ids are listed in FRAMES below.
+-->
+<style>
+  :root {
+    --blue: #2563EB; --blue-lifted: #3B82F6;
+    --pill-bg: #EFF6FF; --pill-text: #1E3A8C;
+    --bg: #FFFFFF; --ink: #111114; --sec: #6E6E73;
+    --border: rgba(17,17,20,0.14); --page: #F4F4F6; --danger: #C93A3A;
+    --muted-bg: #F2F2F4; --scrim: rgba(0,0,0,0.34); --kbd: #D1D3D9; --key: #FFFFFF;
+    --s: 1;
+  }
+  [data-theme="dark"] {
+    --blue: #3B82F6;
+    --pill-bg: rgba(59,130,246,0.18); --pill-text: #B9D0FF;
+    --bg: #0E0E10; --ink: #F4F4F5; --sec: #9A9AA1;
+    --border: rgba(244,244,245,0.16); --page: #050506; --danger: #E06C6C;
+    --muted-bg: #1C1C1F; --scrim: rgba(0,0,0,0.5); --kbd: #2B2B2F; --key: #4A4A4F;
+  }
+  body.ax { --s: 1.35; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  body.gallery { padding: 44px 36px 96px; }
+  body.bare { background: var(--bg); overflow: hidden; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  /* gallery chrome */
+  .eyebrow { font-size: calc(11px * var(--s)); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sec); }
+  .masthead { max-width: 940px; margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px; }
+  .masthead h1 { font-size: 32px; font-weight: 500; letter-spacing: -0.01em; }
+  .masthead p, .doc p { font-size: 15px; line-height: 1.55; color: var(--sec); }
+  .doc { max-width: 940px; margin: 0 0 34px; border: 0.7px solid var(--border); border-radius: 8px; background: var(--bg); padding: 18px 22px; display: grid; gap: 10px; }
+  .doc h2 { font-size: 16px; font-weight: 600; }
+  .doc li { font-size: 13.5px; line-height: 1.55; color: var(--sec); margin-left: 18px; }
+  .doc li strong, .doc p strong { color: var(--ink); font-weight: 500; }
+  .doc table { border-collapse: collapse; font-size: 13px; line-height: 1.45; width: 100%; }
+  .doc th, .doc td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 0.7px solid var(--border); }
+  .doc th { font-weight: 600; color: var(--ink); }
+  .doc td { color: var(--sec); }
+  .doc td a, .doc li a { color: var(--blue); text-decoration: none; }
+  .current { display: flex; gap: 20px; flex-wrap: wrap; }
+  .current figure { width: 250px; }
+  .current img { width: 250px; border: 0.7px solid var(--border); border-radius: 22px; display: block; }
+  .current figcaption { font-size: 12.5px; line-height: 1.45; color: var(--sec); margin-top: 8px; }
+  .theme-toggle { position: fixed; top: 18px; right: 22px; z-index: 50; font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .cand { margin-bottom: 60px; }
+  .cand-head { max-width: 940px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .cand-head h2 { font-size: 24px; font-weight: 500; }
+  .cand-head p { font-size: 14px; line-height: 1.55; color: var(--sec); }
+  .cand-head p strong { color: var(--ink); font-weight: 500; }
+  .frames { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .frame { width: 390px; }
+  .anno { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .anno h3 { font-size: 14px; font-weight: 600; }
+  .anno h3 code { font: 500 11.5px ui-monospace, Menlo, monospace; color: var(--sec); margin-left: 6px; }
+  .anno p { font-size: 13px; line-height: 1.5; color: var(--sec); }
+
+  /* phone */
+  .phone { background: var(--bg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .gallery .phone { width: 390px; height: 844px; border: 1px solid var(--border); border-radius: 44px; }
+  .bare .phone { width: var(--w, 390px); height: var(--h, 844px); }
+  .statusbar { height: 52px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 34px 0; font-size: 15px; font-weight: 600; }
+  .statusbar .right { font-size: 12px; letter-spacing: 2px; }
+  .topbar { display: flex; align-items: center; padding: 20px 24px 14px; gap: 2px; flex: none; }
+  .wordmark { font-size: 21px; font-weight: 500; letter-spacing: -0.01em; border-bottom: 3px solid var(--blue); padding-bottom: 3px; line-height: 1.1; }
+  .topbar .sp { flex: 1; }
+  .tb-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); }
+  .tb-link { color: var(--blue); font-size: calc(15px * var(--s)); font-weight: 500; min-height: 44px; padding: 0 8px; }
+  .nav { height: 52px; flex: none; position: relative; display: flex; align-items: center; justify-content: center; padding: 0 16px; }
+  .nav .title { font-size: calc(17px * var(--s)); font-weight: 600; }
+  .nav .back { position: absolute; left: 14px; color: var(--blue); font-size: calc(17px * var(--s)); min-height: 44px; display: flex; align-items: center; gap: 4px; }
+  .nav .right { position: absolute; right: 18px; color: var(--blue); font-size: calc(17px * var(--s)); min-height: 44px; display: flex; align-items: center; }
+  .scroll { flex: 1; overflow: hidden; padding: 0 24px 16px; display: flex; flex-direction: column; }
+  .tabs { display: flex; gap: 22px; padding: 0 24px; border-bottom: 0.5px solid var(--border); flex: none; }
+  .tab { font-size: calc(15px * var(--s)); color: var(--sec); padding: 10px 0 11px; }
+  .tab.on { color: var(--ink); font-weight: 500; box-shadow: inset 0 -2px 0 var(--blue); }
+  .tab small { font-size: calc(12px * var(--s)); color: var(--sec); margin-left: 3px; }
+
+  .search { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; flex: none; }
+  .field { flex: 1; min-height: 40px; border-radius: 10px; background: var(--muted-bg); display: flex; align-items: center; gap: 7px; padding: 0 10px; font-size: calc(16px * var(--s)); color: var(--sec); }
+  .field .q { color: var(--ink); }
+  .field .caret { display: inline-block; width: 1.5px; height: 1.15em; background: var(--blue); vertical-align: -3px; margin-left: 1px; }
+  .field .clear { margin-left: auto; color: var(--sec); width: 44px; height: 40px; display: flex; align-items: center; justify-content: flex-end; }
+  .token { display: inline-flex; align-items: center; gap: 4px; background: var(--pill-bg); color: var(--pill-text); border-radius: 6px; padding: 3px 8px; font-size: calc(14px * var(--s)); font-weight: 500; }
+  .cancel { color: var(--blue); font-size: calc(16px * var(--s)); min-height: 44px; }
+  .banner { display: flex; align-items: center; gap: 8px; font-size: calc(13px * var(--s)); color: var(--sec); margin: -4px 0 14px; line-height: 1.4; }
+  .spin { width: 13px; height: 13px; border-radius: 50%; border: 1.6px solid var(--border); border-top-color: var(--sec); flex: none; }
+
+  .sect { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 0 2px; }
+  .sect .eyebrow b { font-weight: 500; color: var(--sec); margin-left: 4px; letter-spacing: 0.06em; }
+  .sect .more { color: var(--blue); font-size: calc(13px * var(--s)); font-weight: 500; min-height: 36px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 18px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 0.7px solid var(--border); font-size: calc(14px * var(--s)); color: var(--ink); max-width: 100%; text-align: left; }
+  .chip small { color: var(--sec); font-size: calc(12px * var(--s)); }
+  .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .chip.on small { color: rgba(255,255,255,0.8); }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 16px; flex: none; }
+  .seg .chip { flex: none; }
+
+  .trow { display: flex; align-items: flex-start; gap: 6px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .circle { width: 44px; height: 44px; margin: -10px 0 -10px -11px; flex: none; display: flex; align-items: center; justify-content: center; }
+  .circle i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--sec); display: flex; align-items: center; justify-content: center; }
+  .done .circle i { background: var(--blue); border-color: var(--blue); }
+  .tbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+  .ttext { font-size: calc(16px * var(--s)); line-height: 1.32; }
+  .done .ttext { color: var(--sec); text-decoration: line-through; text-decoration-color: var(--border); }
+  .meta .srcl { text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: calc(12.5px * var(--s)); color: var(--sec); line-height: 1.35; }
+  .mpill { background: var(--muted-bg); color: var(--sec); border-radius: 5px; padding: 1px 6px; font-size: calc(11.5px * var(--s)); }
+  .mpill.blue { background: var(--pill-bg); color: var(--pill-text); }
+  .dots { width: 44px; height: 44px; margin: -8px -12px -8px 0; flex: none; color: var(--sec); display: flex; align-items: center; justify-content: center; font-size: 18px; letter-spacing: 1px; }
+
+  .nrow { display: flex; flex-direction: column; gap: 5px; padding: 13px 0; border-bottom: 0.5px solid var(--border); text-align: left; width: 100%; }
+  .nrow .top { display: flex; align-items: baseline; gap: 10px; }
+  .nrow .ntitle { font-size: calc(17px * var(--s)); font-weight: 500; flex: 1; min-width: 0; }
+  .nrow .when { font-size: calc(13px * var(--s)); color: var(--sec); flex: none; }
+  .nrow .ex { font-size: calc(14px * var(--s)); line-height: 1.45; color: var(--sec); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .nrow .ex.said { color: var(--ink); opacity: 0.86; }
+  .nrow .about { font-size: calc(12.5px * var(--s)); color: var(--sec); }
+  .nrow .tcount { font-size: calc(12.5px * var(--s)); color: var(--sec); }
+  mark { background: var(--pill-bg); color: var(--pill-text); border-radius: 3px; padding: 0 1px; font-weight: 500; }
+
+  .irow { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 0.5px solid var(--border); width: 100%; text-align: left; }
+  .irow .lbl { font-size: calc(17px * var(--s)); flex: 1; min-width: 0; }
+  .irow .cnt { font-size: calc(14px * var(--s)); color: var(--sec); }
+  .irow .sub { font-size: calc(12.5px * var(--s)); color: var(--sec); display: block; margin-top: 2px; }
+  .chev { color: var(--sec); flex: none; }
+
+  .ptitle { font-size: calc(28px * var(--s)); font-weight: 500; letter-spacing: -0.01em; line-height: 1.15; margin: 6px 0 6px; }
+  .psub { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.45; margin-bottom: 14px; }
+  .links { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.5; margin: 2px 0 14px; }
+  .links a { color: var(--blue); text-decoration: none; font-weight: 500; }
+  .said-row { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+  .said-row .src { font-size: calc(12.5px * var(--s)); color: var(--blue); font-weight: 500; min-height: 22px; text-align: left; }
+  .said-row q { font-size: calc(15px * var(--s)); line-height: 1.45; quotes: "\201C" "\201D"; }
+
+  .empty { margin: 28px 4px 0; display: flex; flex-direction: column; gap: 10px; }
+  .empty h3 { font-size: calc(20px * var(--s)); font-weight: 500; line-height: 1.25; }
+  .empty p { font-size: calc(15px * var(--s)); color: var(--sec); line-height: 1.5; }
+  .empty .line { width: 34px; height: 3px; background: var(--blue); border-radius: 2px; margin-bottom: 6px; }
+
+  .rec { flex: none; padding: 10px 24px 30px; display: flex; flex-direction: column; gap: 9px; border-top: 0.5px solid var(--border); background: var(--bg); }
+  .rec-btn { width: 100%; height: 64px; border-radius: 8px; color: #fff; background: linear-gradient(150deg, var(--blue-lifted), #2563EB 62%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; font-size: calc(15px * var(--s)); font-weight: 500; }
+  .rec-mark { display: flex; gap: 10px; } .rec-mark i { width: 26px; height: 3px; background: #fff; border-radius: 2px; }
+  .kbd { flex: none; height: 291px; background: var(--kbd); padding: 8px 4px 40px; display: grid; grid-template-rows: repeat(4, 1fr); gap: 11px; }
+  .kbd div { display: flex; gap: 6px; justify-content: center; }
+  .kbd span { background: var(--key); border-radius: 5px; flex: 0 0 32px; box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+  .kbd .wide { flex: 0 0 186px; } .kbd .mid { flex: 0 0 86px; }
+
+  /* sheet */
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .sheet { position: absolute; left: 0; right: 0; top: 58px; bottom: 0; background: var(--bg); border-radius: 14px 14px 0 0; display: flex; flex-direction: column; }
+  .sh-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
+  .sh-head .pillbtn { min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--muted-bg); font-size: calc(15px * var(--s)); }
+  .sh-head .ttl { font-size: calc(16px * var(--s)); font-weight: 600; }
+  .sh-body { flex: 1; overflow: hidden; padding: 6px 24px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .sh-body h2 { font-size: calc(24px * var(--s)); font-weight: 500; line-height: 1.2; }
+  .sh-body .prose { font-size: calc(15px * var(--s)); line-height: 1.5; color: var(--sec); }
+  .aboutrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .aboutrow .chip { min-height: 34px; }
+  .mini { display: flex; gap: 12px; align-items: center; font-size: calc(15px * var(--s)); min-height: 30px; }
+  .mini i { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--sec); flex: none; }
+  .form-sect { display: flex; flex-direction: column; border-top: 0.5px solid var(--border); }
+  .frow { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 0.5px solid var(--border); }
+  .frow .lbl { flex: 1; font-size: calc(16px * var(--s)); }
+  .frow .lbl small { display: block; font-size: calc(12.5px * var(--s)); color: var(--sec); margin-top: 2px; }
+  .frow .act { color: var(--danger); font-size: calc(15px * var(--s)); min-height: 44px; padding: 0 2px; }
+  .frow.removed .lbl { color: var(--sec); }
+  .frow.removed .lbl s { text-decoration-color: var(--sec); }
+  .frow .undo { color: var(--blue); font-size: calc(15px * var(--s)); font-weight: 500; min-height: 44px; }
+  .foot { font-size: calc(13px * var(--s)); color: var(--sec); line-height: 1.45; }
+  .ghost { opacity: 0.45; }
+  .fieldbox { border: 0.7px solid var(--border); border-radius: 8px; padding: 11px 12px; font-size: calc(15px * var(--s)); }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" hidden>Dark</button>
+<div id="root"></div>
+<script>
+const P = new URLSearchParams(location.search);
+const ONLY = P.get('only');
+const AX = P.get('ax') === '1';
+document.documentElement.dataset.theme = P.get('theme') === 'dark' ? 'dark' : 'light';
+if (AX) document.body.classList.add('ax');
+if (P.get('w')) document.documentElement.style.setProperty('--w', P.get('w') + 'px');
+if (P.get('h')) document.documentElement.style.setProperty('--h', P.get('h') + 'px');
+
+/* ---------- synthetic data (no real notes) ---------- */
+// "Today" in these mocks is Monday, October 5. Labels are what extraction already returns:
+// people, projects and topic tags (A, B) or the five life areas (C). A topic that repeats a
+// named project or person in the same note is shown once, as the named one.
+const NOTES = [
+  { id: 'n1', title: 'drive in', type: 'freeform', when: '8:15 AM', group: 'today', full: 'Mon, Oct 5 at 8:15 AM',
+    summary: 'Pricing page copy before the launch email goes out. Ask Sam about the annual plan.',
+    said: 'get the pricing page copy done before the launch email goes out, and ask Sam about the annual plan',
+    people: ['Sam'], projects: ['pricing page', 'launch email'], tags: [], areas: ['work'],
+    todos: [{ t: 'Draft the pricing page copy', p: 'today' }, { t: 'Ask Sam about the annual plan', p: 'today' }] },
+  { id: 'n2', title: 'morning walk', type: 'morning', when: '7:42 AM', group: 'today', full: 'Mon, Oct 5 at 7:42 AM',
+    summary: 'The dentist this week, call Mom about Sunday dinner, a slower start.',
+    said: 'I need to call Mom about Sunday dinner, and get the dentist booked this week',
+    people: ['Mom'], projects: ['Sunday dinner'], tags: ['dentist', 'health', 'family'], areas: ['health', 'relationships'],
+    todos: [{ t: 'Book the dentist', p: 'this week' }, { t: 'Call Mom about Sunday dinner', p: 'today' }] },
+  { id: 'n3', title: 'drive home', type: 'evening', when: 'Fri 6:10 PM', group: 'last week', full: 'Fri, Oct 2 at 6:10 PM',
+    summary: 'The launch email is close. Marcus wants the numbers by Wednesday.',
+    said: 'the launch email is close, one more read, and Marcus wants the numbers by Wednesday',
+    people: ['Marcus'], projects: ['launch email', 'metrics doc'], tags: ['numbers'], areas: ['work'],
+    todos: [{ t: 'Send Marcus the metrics doc', p: 'done', done: true }, { t: 'Final read of the launch email', p: 'today' }] },
+  { id: 'n4', title: 'Sat walk', type: 'freeform', when: 'Sep 26', group: 'september', full: 'Sat, Sep 26 at 10:05 AM',
+    summary: 'Garage shelves and the pottery course, whenever.',
+    said: 'at some point the garage shelves, and look at that pottery course',
+    people: [], projects: ['garage shelves', 'pottery course'], tags: ['home'], areas: ['passions'],
+    todos: [{ t: 'Measure the garage wall', p: 'later' }, { t: 'Look up the pottery course', p: 'later' }] },
+  { id: 'n5', title: 'lunch walk', type: 'freeform', when: 'Sep 24', group: 'september', full: 'Thu, Sep 24 at 12:20 PM',
+    summary: 'The pricing tiers feel wrong; three is too many. Keep the free plan.',
+    said: 'the pricing tiers feel wrong, three is too many, but keep the free plan',
+    people: [], projects: ['pricing page'], tags: ['free plan'], areas: ['work', 'purpose'],
+    todos: [{ t: 'Sketch a two-tier pricing page', p: 'today' }] },
+  { id: 'n6', title: 'evening', type: 'evening', when: 'Sep 22', group: 'september', full: 'Tue, Sep 22 at 9:02 PM',
+    summary: 'Ran 5k and the knee felt fine. Physical therapy on Thursday.',
+    said: 'ran the 5k, knee felt fine, physical therapy is Thursday',
+    people: [], projects: ['physical therapy'], tags: ['running', 'health'], areas: ['health'],
+    todos: [{ t: 'Confirm physical therapy Thursday', p: 'done', done: true }] },
+  { id: 'n7', title: 'drive in', type: 'morning', when: 'Sep 18', group: 'september', full: 'Fri, Sep 18 at 8:20 AM',
+    summary: 'Sam needs the deck by Friday. Boston in October.',
+    said: 'Sam needs the deck by Friday, and Boston is in October',
+    people: ['Sam'], projects: ['deck', 'Boston trip'], tags: ['travel'], areas: ['work'],
+    todos: [{ t: 'Send Sam the revised deck', p: 'done', done: true }, { t: 'Book the Boston train', p: 'later' }] },
+  { id: 'n8', title: 'weekly review', type: 'weekly review', when: 'Sep 13', group: 'september', full: 'Sun, Sep 13 at 7:30 PM',
+    summary: 'A good week for writing. Too many meetings. Protect the mornings.',
+    said: 'good week for writing, too many meetings, protect the mornings',
+    people: [], projects: [], tags: ['writing', 'mornings'], areas: ['work', 'purpose'],
+    todos: [{ t: 'Block mornings for writing', p: 'today' }] },
+  { id: 'n9', title: 'walk with Mom', type: 'freeform', when: 'Sep 6', group: 'september', full: 'Sun, Sep 6 at 5:40 PM',
+    summary: "Mom's birthday is in November. She'd like a photo book.",
+    said: "Mom's birthday is in November, she said she'd like a photo book",
+    people: ['Mom'], projects: ['photo book'], tags: ['birthday', 'family'], areas: ['relationships'],
+    todos: [{ t: 'Start the photo book for Mom', p: 'later' }] },
+  { id: 'n10', title: 'errands', type: 'freeform', when: 'Aug 21', group: 'august', full: 'Fri, Aug 21 at 5:30 PM',
+    summary: 'The lease message and the library books.',
+    said: 'email the landlord about the lease, and the library books are due',
+    people: [], projects: ['lease'], tags: ['errands', 'home'], areas: [],
+    todos: [{ t: 'Email the landlord about the lease', p: 'today' }, { t: 'Return the library books', p: 'today' }] },
+];
+const N = Object.fromEntries(NOTES.map(n => [n.id, n]));
+const labelsOf = n => [...n.people, ...n.projects, ...n.tags];
+const AREAS = ['work', 'health', 'relationships', 'passions', 'purpose'];
+function repeated(kind) {
+  const c = {};
+  NOTES.forEach(n => n[kind].forEach(l => { c[l] = (c[l] || []).concat(n.id); }));
+  return Object.entries(c).filter(([, ids]) => ids.length >= 2).map(([l, ids]) => ({ l, ids }));
+}
+
+/* ---------- helpers ---------- */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function hl(text, q) {
+  if (!q) return esc(text);
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+  return esc(text).replace(re, '<mark>$1</mark>');
+}
+const ICON = {
+  search: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>',
+  back: '<svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L2 10l8 8"/></svg>',
+  chev: '<svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l5 5-5 5"/></svg>',
+  clear: '<svg width="17" height="17" viewBox="0 0 17 17"><circle cx="8.5" cy="8.5" r="8.5" fill="currentColor" opacity="0.55"/><path d="M5.6 5.6l5.8 5.8M11.4 5.6l-5.8 5.8" stroke="var(--bg)" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  gear: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  check: '<svg width="11" height="9" viewBox="0 0 11 9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.6L4 7.5 10 1.3"/></svg>',
+};
+const status = () => '<div class="statusbar"><span>9:41</span><span class="right">●●● ◒ ▮</span></div>';
+const recorder = () => '<div class="rec"><button class="rec-btn"><span class="rec-mark"><i></i><i></i></span>Start recording</button></div>';
+const keyboard = () => '<div class="kbd"><div>' + '<span></span>'.repeat(10) + '</div><div>' + '<span></span>'.repeat(9) + '</div><div>' + '<span></span>'.repeat(7) + '</div><div><span class="mid"></span><span class="wide"></span><span class="mid"></span></div></div>';
+function phone(inner, { rec = true, kbd = false } = {}) {
+  return '<div class="phone">' + status() + inner + (kbd ? keyboard() : rec ? recorder() : '') + '</div>';
+}
+const nav = (title, right = '') => `<div class="nav"><button class="back">${ICON.back} Back</button><span class="title">${esc(title)}</span>${right ? `<span class="right">${right}</span>` : ''}</div>`;
+function homeTop({ searchIcon = false } = {}) {
+  return `<div class="topbar"><span class="wordmark">throughline</span><span class="sp"></span>${searchIcon ? `<button class="tb-btn" aria-label="Search">${ICON.search}</button>` : ''}<button class="tb-link">notes</button><button class="tb-btn" aria-label="Settings">${ICON.gear}</button></div>`;
+}
+const tabs = () => '<div class="tabs"><span class="tab on">today<small>5</small></span><span class="tab">this week<small>1</small></span><span class="tab">later<small>4</small></span></div>';
+function field({ q = '', token = '', focus = false, placeholder = 'Search notes and to-dos', cancel = false } = {}) {
+  const content = token ? `<span class="token">${esc(token)}</span>` + (q ? ` <span class="q">${esc(q)}</span>` : '')
+    : q ? `<span class="q">${esc(q)}</span>` : `<span>${esc(placeholder)}</span>`;
+  const caret = focus ? '<span class="caret"></span>' : '';
+  const clear = (q || token) ? `<button class="clear" aria-label="Clear search">${ICON.clear}</button>` : '';
+  return `<div class="search"><div class="field" role="search">${ICON.search}<span>${content}${caret}</span>${clear}</div>${cancel ? '<button class="cancel">Cancel</button>' : ''}</div>`;
+}
+const banner = kind => ({
+  offline: '<div class="banner">Offline · searching what’s on this phone</div>',
+  loading: '<div class="banner"><span class="spin"></span>Loading notes · results so far</div>',
+  error: '<div class="banner">Couldn’t refresh notes · searching what’s on this phone</div>',
+}[kind] || '');
+function sourceLabel(n) { return `${esc(n.title)} · ${n.group === 'today' ? n.when : n.when}`; }
+function trow(todo, n, q = '', { pillOn = true } = {}) {
+  const done = todo.done;
+  const pill = !pillOn ? '' : done ? '<span class="mpill">done</span>' : `<span class="mpill${todo.p === 'today' ? ' blue' : ''}">${esc(todo.p)}</span>`;
+  return `<div class="trow${done ? ' done' : ''}"><button class="circle" aria-label="${done ? 'Reopen' : 'Complete'}"><i>${done ? ICON.check : ''}</i></button>
+    <div class="tbody"><span class="ttext">${hl(todo.t, q)}</span><span class="meta">${pill}<span class="srcl">${sourceLabel(n)}</span></span></div>
+    ${done ? '' : '<span class="dots" aria-label="More actions">•••</span>'}</div>`;
+}
+function nrow(n, { q = '', said = false, about = 'labels', todos = false } = {}) {
+  const ex = said ? `“…${n.said}.”` : n.summary;
+  const aboutTxt = about === 'labels' ? labelsOf(n).slice(0, 3).join(' · ') : about === 'areas' ? n.areas.join(' · ') : '';
+  const open = n.todos.filter(t => !t.done).length;
+  return `<button class="nrow"><span class="top"><span class="ntitle">${esc(n.title)}</span><span class="when">${n.when}</span></span>
+    <span class="ex${said ? ' said' : ''}">${hl(ex, q)}</span>
+    ${aboutTxt ? `<span class="about">about ${esc(aboutTxt)}</span>` : ''}${todos && open ? `<span class="tcount">${open} open to-do${open > 1 ? 's' : ''}</span>` : ''}</button>`;
+}
+function groupedNotes(ids, opts) {
+  let html = '', g = '';
+  ids.map(i => N[i]).forEach(n => {
+    if (n.group !== g) { g = n.group; html += `<div class="sect"><span class="eyebrow">${g}</span></div>`; }
+    html += nrow(n, opts);
+  });
+  return html;
+}
+function matches(q) {
+  const re = new RegExp(q, 'i');
+  const todos = [], notes = [];
+  NOTES.forEach(n => {
+    n.todos.forEach(t => { if (re.test(t.t)) todos.push([t, n]); });
+    if (re.test(n.title) || re.test(n.summary) || re.test(n.said) || labelsOf(n).some(l => re.test(l))) notes.push(n);
+  });
+  todos.sort((a, b) => (a[0].done ? 1 : 0) - (b[0].done ? 1 : 0));
+  return { todos, notes };
+}
+function results(q, { kind = 'labels', pages = '' } = {}) {
+  const { todos, notes } = matches(q);
+  return pages + `<div class="sect"><span class="eyebrow">to-dos<b>${todos.length}</b></span></div>` +
+    todos.map(([t, n]) => trow(t, n, q)).join('') +
+    `<div class="sect" style="margin-top:16px"><span class="eyebrow">notes<b>${notes.length}</b></span></div>` +
+    notes.map(n => nrow(n, { q, said: !new RegExp(q, 'i').test(n.summary), about: kind })).join('');
+}
+const chip = (l, count, on = false) => `<button class="chip${on ? ' on' : ''}">${esc(l)}${count != null ? `<small>${count}</small>` : ''}</button>`;
+function noScroll(inner) { return `<div class="scroll">${inner}</div>`; }
+function noResults(q) {
+  return `<div class="empty"><h3>Nothing matches “${esc(q)}”.</h3><p>Search looks through your notes, what you said, and your to-dos.</p></div>`;
+}
+function sheet(n, aboutHtml) {
+  return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">Edit</button><span class="ttl">memory</span><button class="pillbtn">Done</button></div>
+  <div class="sh-body"><span class="eyebrow">${esc(n.type)} · ${esc(n.full)}</span><h2>${esc(n.title)}</h2>${aboutHtml}
+  <span class="eyebrow">preview</span><p class="prose">${esc(n.summary)}</p>
+  <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="mini"><i></i>${esc(t.t)}</div>`).join('')}
+  <span class="eyebrow">transcript</span><p class="prose" style="color:var(--ink);opacity:.85">Synthetic transcript for design review. No private recording is used.</p></div></div>`;
+}
+function editSheet(rowsHtml, foot, title = 'about', n = N.n1) {
+  return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">Cancel</button><span class="ttl">Edit note</span><button class="pillbtn" style="color:var(--blue);font-weight:500">Save</button></div>
+  <div class="sh-body"><span class="eyebrow">title</span><div class="fieldbox ghost">${esc(n.title)}</div><span class="eyebrow">summary</span><div class="fieldbox ghost" style="min-height:64px">${esc(n.summary)}</div>
+  <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="fieldbox ghost">${esc(t.t)}</div>`).join('')}
+  <span class="eyebrow" style="margin-top:6px">${title}</span><div class="form-sect">${rowsHtml}</div><p class="foot">${foot}</p></div></div>`;
+}
+
+/* ---------- frames ---------- */
+const FRAMES = {};
+const F = (id, c, t, d, html) => { FRAMES[id] = { c, t, d, html }; };
+const ALL = NOTES.map(n => n.id);
+
+/* Candidate A — Search the library */
+const aChips = () => {
+  const items = [...repeated('people'), ...repeated('projects'), ...repeated('tags')];
+  return `<div class="sect"><span class="eyebrow">you keep coming back to</span></div><div class="chips">${items.map(x => chip(x.l, x.ids.length)).join('')}</div>`;
+};
+function aLibrary({ bannerKind = '', thin = false } = {}) {
+  return nav('Notes') + noScroll(field() + banner(bannerKind) + aChips() + groupedNotes(ALL, {}));
+}
+F('a-library', 'a', 'Library', 'Notes opens on one search field. Beneath it, the topics you have mentioned in two or more notes, then every note by day with a date, one line of what it says and what it is about.',
+  phone(aLibrary()));
+F('a-results', 'a', 'Typing “pricing”', 'One search, two groups: to-dos first (the same row as the running list, so completion still works), then notes. A note matched only in what you said shows that sentence, in quotes.',
+  phone(nav('Notes') + noScroll(field({ q: 'pricing', focus: true, cancel: true }) + results('pricing')), { kbd: true }));
+F('a-topic', 'a', 'A topic, tapped', 'A topic is a saved search, not a folder. The field shows it as a token; the screen lists its open to-dos, then each place you said it, newest first.',
+  phone(nav('Notes') + noScroll(field({ token: 'pricing page', cancel: true }) +
+    `<p class="psub" style="margin:0 0 10px">2 notes · Sep 24 to today · from what you said</p>` +
+    `<div class="sect"><span class="eyebrow">open to-dos<b>2</b></span></div>` + trow(N.n1.todos[0], N.n1) + trow(N.n5.todos[0], N.n5) +
+    `<div class="sect" style="margin-top:16px"><span class="eyebrow">where you said it<b>2</b></span></div>` + nrow(N.n1, { said: true, q: 'pricing page' }) + nrow(N.n5, { said: true, q: 'pricing' }))));
+F('a-note', 'a', 'Note: what it’s about', 'The note sheet gains one quiet line under the title. Each label opens that topic. Nothing else in the sheet changes.',
+  phone(nav('Notes') + noScroll(field() + groupedNotes(['n1', 'n2', 'n3'], {})) + sheet(N.n1, `<div class="aboutrow"><span class="eyebrow" style="margin-right:4px">about</span>${chip('Sam')}${chip('pricing page')}${chip('launch email')}</div>`), { rec: false }));
+F('a-edit', 'a', 'Correcting a label', 'Edit gains an “about” section. Remove takes the note out of that topic, here and for your agent; Undo stays until Save. Throughline never asks you to add labels.',
+  phone(nav('Notes') + noScroll('') + editSheet(
+    `<div class="frow"><span class="lbl">Sam<small>person</small></span><button class="act">Remove</button></div>
+     <div class="frow"><span class="lbl">pricing page<small>project</small></span><button class="act">Remove</button></div>
+     <div class="frow removed"><span class="lbl"><s>launch email</s><small>project · removed</small></span><button class="undo">Undo</button></div>`,
+    'Chosen from what you said. Removing one takes this note out of that topic, here and for your agent.'), { rec: false }));
+F('a-none', 'a', 'No results', 'Plain words about where search looked. The field stays focused so the next try is one edit away.',
+  phone(nav('Notes') + noScroll(field({ q: 'dentst', focus: true, cancel: true }) + noResults('dentst')), { kbd: true }));
+F('a-empty', 'a', 'First use', 'With no notes, search is still there for to-dos. Topics appear only after something has come up in two notes, so nothing looks broken on day one.',
+  phone(nav('Notes') + noScroll(field() + `<div class="empty"><span class="line"></span><h3>Your notes will appear here.</h3><p>When you mention a person, project or topic in two notes, it shows up here so you can find everything you said about it.</p></div>`)));
+F('a-offline', 'a', 'Offline', 'Notes and to-dos already on the phone stay searchable. One line says so; nothing else changes.',
+  phone(aLibrary({ bannerKind: 'offline' })));
+
+/* Candidate B — Index of what you talk about */
+function bIndex({ bannerKind = '' } = {}) {
+  const group = (title, kind, last) => `<div class="sect"><span class="eyebrow">${title}</span></div>` +
+    repeated(kind).map((x, i) => `<button class="irow"><span class="lbl">${esc(x.l)}<span class="sub">last said ${last[i] || 'Sep 24'}</span></span><span class="cnt">${x.ids.length}</span><span class="chev">${ICON.chev}</span></button>`).join('');
+  return nav('Notes') + noScroll(field() + banner(bannerKind) +
+    group('people', 'people', ['today', 'today']) + group('projects', 'projects', ['today', 'today']) + group('topics', 'tags', ['today', 'today', 'Sep 26']) +
+    `<button class="irow" style="margin-top:14px"><span class="lbl">all notes</span><span class="cnt">10</span><span class="chev">${ICON.chev}</span></button>
+     <p class="foot" style="margin-top:12px">Things you’ve mentioned once are on their note and in search.</p>`);
+}
+F('b-index', 'b', 'Index', 'Notes opens on an index built from what you said: the people, projects and topics that come up in two or more notes, with how often and when you last said them. Every note is one row down.',
+  phone(bIndex()));
+F('b-page', 'b', 'A topic page', 'Each entry is a page that writes itself: open to-dos from those notes, every place you said it, and what it tends to come up with.',
+  phone(nav('Notes') + noScroll(`<span class="eyebrow">project</span><h1 class="ptitle">pricing page</h1><p class="psub">2 notes · Sep 24 to today</p>
+    <p class="links">comes up with <a>Sam</a> · <a>launch email</a></p>` +
+    `<div class="sect"><span class="eyebrow">open to-dos<b>2</b></span></div>` + trow(N.n1.todos[0], N.n1) + trow(N.n5.todos[0], N.n5) +
+    `<div class="sect" style="margin-top:16px"><span class="eyebrow">where you said it</span></div>` +
+    `<div class="said-row"><button class="src">drive in · today 8:15 AM</button><q>…get the <mark>pricing page</mark> copy done before the launch email goes out.</q></div>` +
+    `<div class="said-row"><button class="src">lunch walk · Sep 24</button><q>…the <mark>pricing</mark> tiers feel wrong, three is too many, but keep the free plan.</q></div>`)));
+F('b-results', 'b', 'Typing “sam”', 'The same one search, with matching index entries first. Tapping “Sam” opens the page; the to-dos and notes below work exactly as in A.',
+  phone(nav('Notes') + noScroll(field({ q: 'sam', focus: true, cancel: true }) +
+    `<div class="sect"><span class="eyebrow">in your index</span></div><button class="irow"><span class="lbl"><mark>Sam</mark><span class="sub">person · 2 notes · last said today</span></span><span class="chev">${ICON.chev}</span></button>` +
+    results('sam').replace('<div class="sect">', '<div class="sect" style="margin-top:16px">')), { kbd: true }));
+F('b-note', 'b', 'Note: what it’s about', 'Same quiet line as A. Labels that have pages open them; a label said once opens a search.',
+  phone(nav('pricing page') + noScroll('') + sheet(N.n1, `<div class="aboutrow"><span class="eyebrow" style="margin-right:4px">about</span>${chip('Sam')}${chip('pricing page')}${chip('launch email')}</div>`), { rec: false }));
+F('b-edit', 'b', 'Correcting a label', 'Same correction as A. Removing the last note from an entry removes the entry from the index.',
+  phone(nav('pricing page') + noScroll('') + editSheet(
+    `<div class="frow"><span class="lbl">Sam<small>person</small></span><button class="act">Remove</button></div>
+     <div class="frow removed"><span class="lbl"><s>pricing page</s><small>project · removed</small></span><button class="undo">Undo</button></div>
+     <div class="frow"><span class="lbl">launch email<small>project</small></span><button class="act">Remove</button></div>`,
+    'Chosen from what you said. Removing one takes this note off that page, here and for your agent.'), { rec: false }));
+F('b-thin', 'b', 'Early days', 'Until something comes up twice, the index is honest about being empty and the notes are one row down.',
+  phone(nav('Notes') + noScroll(field() + `<div class="empty" style="margin-top:12px"><span class="line"></span><h3>Nothing has come up twice yet.</h3><p>When a person, project or topic appears in two notes, it gets its own page here.</p></div>
+    <button class="irow" style="margin-top:22px"><span class="lbl">all notes</span><span class="cnt">3</span><span class="chev">${ICON.chev}</span></button>`)));
+F('b-none', 'b', 'No results', 'Same as A.', phone(nav('Notes') + noScroll(field({ q: 'dentst', focus: true, cancel: true }) + noResults('dentst')), { kbd: true }));
+F('b-offline', 'b', 'Offline', 'The index and pages are built on the phone from notes already there, so they keep working.', phone(bIndex({ bannerKind: 'offline' })));
+
+/* Candidate C — Life areas, search from Home */
+const areaCount = a => NOTES.filter(n => n.areas.includes(a)).length;
+const seg = on => `<div class="seg">${chip('all', null, on === 'all')}${AREAS.map(a => chip(a, areaCount(a), on === a)).join('')}</div>`;
+F('c-home', 'c', 'Home: search in place', 'A search button joins the top bar. Tapping it turns the tabs into one search field over everything; Cancel returns to the running list exactly where it was.',
+  phone(homeTop({ searchIcon: true }) + tabs() + noScroll(`<div class="sect" style="margin-top:12px"><span class="eyebrow">today</span></div><p class="psub" style="color:var(--ink);font-weight:500;margin:4px 0 6px">Monday, October 5</p>` +
+    trow(N.n1.todos[0], N.n1, '', { pillOn: false }) + trow(N.n1.todos[1], N.n1, '', { pillOn: false }) + trow(N.n2.todos[1], N.n2, '', { pillOn: false }) + trow(N.n3.todos[1], N.n3, '', { pillOn: false }) + trow(N.n5.todos[0], N.n5, '', { pillOn: false }))));
+F('c-results', 'c', 'Typing “sam” on Home', 'Results replace the list: to-dos from every tab (the pill says where each one lives), then notes. The recorder returns when the keyboard goes away.',
+  phone(`<div class="topbar" style="padding-bottom:6px"><span class="wordmark">throughline</span></div>` + noScroll(field({ q: 'sam', focus: true, cancel: true }) + results('sam', { kind: 'areas' })), { kbd: true }));
+F('c-notes', 'c', 'Notes by life area', 'The library keeps one row of five fixed areas the extractor already assigns. They never multiply or need tidying. Named people and projects stay searchable but are not categories.',
+  phone(nav('Notes') + noScroll(seg('all') + groupedNotes(ALL, { about: 'areas' }))));
+F('c-area', 'c', 'An area, chosen', 'Choosing “health” narrows the same list: open to-dos from those notes first, then the notes.',
+  phone(nav('Notes') + noScroll(seg('health') + `<div class="sect"><span class="eyebrow">open to-dos<b>1</b></span></div>` + trow(N.n2.todos[0], N.n2) +
+    `<div class="sect" style="margin-top:16px"><span class="eyebrow">notes<b>2</b></span></div>` + nrow(N.n2, { about: 'areas', todos: true }) + nrow(N.n6, { about: 'areas', todos: true }))));
+F('c-note', 'c', 'Note: area and mentions', 'Areas are categories; people and projects are shown as “mentions” and open a search, not a page.',
+  phone(nav('Notes') + noScroll('') + sheet(N.n2, `<div class="aboutrow"><span class="eyebrow" style="margin-right:4px">about</span>${chip('health')}${chip('relationships')}</div><p class="foot">mentions <a style="color:var(--blue)">Mom</a> · <a style="color:var(--blue)">Sunday dinner</a></p>`), { rec: false }));
+F('c-edit', 'c', 'Correcting an area', 'Because the set is closed, correction works both ways: tap to add or remove any of the five.',
+  phone(nav('Notes') + noScroll('') + editSheet(
+    `<div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 0">${chip('work')}${chip('health', null, true)}${chip('relationships', null, true)}${chip('passions')}${chip('purpose')}</div>`,
+    'Chosen from what you said. Tap to change; your agent sees the same areas.', 'areas', N.n2), { rec: false }));
+F('c-none', 'c', 'No results', 'Same words as A, on Home.', phone(`<div class="topbar" style="padding-bottom:6px"><span class="wordmark">throughline</span></div>` + noScroll(field({ q: 'dentst', focus: true, cancel: true }) + noResults('dentst')), { kbd: true }));
+F('c-offline', 'c', 'Offline', 'Same line under the field. The five areas still filter what is on the phone.', phone(nav('Notes') + noScroll(banner('offline') + seg('all') + groupedNotes(ALL, { about: 'areas' }))));
+
+/* Shared states (every candidate) */
+F('s-loading', 's', 'Still loading', 'While notes load after sign-in, search works on what has arrived and says so. Shown in A’s chrome; B and C put the same line under their field.',
+  phone(nav('Notes') + noScroll(field({ q: 'pricing' }) + banner('loading') + results('pricing'))));
+F('s-processing', 's', 'A note still processing', 'Until extraction finishes, a note has no labels and matches only its title. Its row says so instead of showing an empty “about”.',
+  phone(nav('Notes') + noScroll(field() + `<div class="sect"><span class="eyebrow">today</span></div><div class="nrow"><span class="top"><span class="ntitle">voice note</span><span class="when">9:02 AM</span></span><span class="ex" style="display:flex;align-items:center;gap:8px"><span class="spin"></span>Turning this into a note…</span></div>` + groupedNotes(['n1', 'n2', 'n3', 'n4'], {}).replace('<div class="sect"><span class="eyebrow">today</span></div>', ''))));
+
+/* ---------- render ---------- */
+const CANDS = {
+  a: { name: 'A — Search the library', idea: 'Search is the front door to notes. Categories are the topics you keep coming back to, offered as one-tap searches.', what: 'Categories: named people, projects and topics from each note (already extracted), shown once they appear in two notes.' },
+  b: { name: 'B — An index that writes itself', idea: 'Notes opens on an index of what you talk about. Each person, project and topic is a page with its open to-dos and every place you said it.', what: 'Categories: the same named people, projects and topics, grouped by kind, each with a page.' },
+  c: { name: 'C — Five life areas, search from Home', idea: 'Search lives on Home and covers every tab plus notes. Categories are the five fixed life areas the extractor already assigns.', what: 'Categories: work, health, relationships, passions, purpose — a closed set that never sprawls.' },
+  s: { name: 'Shared states', idea: 'States that behave the same way in every candidate.', what: '' },
+};
+
+if (ONLY && FRAMES[ONLY]) {
+  document.body.className = 'bare' + (AX ? ' ax' : '');
+  document.getElementById('root').innerHTML = FRAMES[ONLY].html;
+} else {
+  document.body.className = 'gallery' + (AX ? ' ax' : '');
+  const t = document.getElementById('themeToggle'); t.hidden = false;
+  t.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
+  t.onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark'; t.textContent = d.dataset.theme === 'dark' ? 'Light' : 'Dark'; };
+  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · design candidates · awaiting Mike’s selection</span><h1>Categories and search</h1>
+    <p>Old notes are hard to get back to. Notes is one long chronological list with no search and no dates on its cards. Your agent can already search your notes; you can’t. Three different answers below, built only from what extraction already returns. Synthetic content throughout; nothing here is selected.</p></header>`;
+  html += `<section class="doc"><h2>Current flow · simulator, synthetic data, source 8b30dd8 (app source identical to submitted d7f2676)</h2><div class="current">
+    <figure><img src="current/today-light-sim.png" alt="Home running list, today tab"><figcaption>Home: the running list. “notes” is the only way to older notes.</figcaption></figure>
+    <figure><img src="current/notes-light-sim.png" alt="Notes list"><figcaption>Notes: full cards, newest first. No search, no grouping; the eyebrow shows only the time.</figcaption></figure>
+    <figure><img src="current/source-light-sim.png" alt="Note detail sheet"><figcaption>Note sheet: people, projects and topics are extracted but never shown.</figcaption></figure></div></section>`;
+  html += `<section class="doc"><h2>Rules every candidate keeps</h2><ul>
+    <li><strong>No new extraction.</strong> Categories use fields the extractor already returns for every note (people, projects, topic tags and five life areas). No prompt, schema, provider or model change.</li>
+    <li><strong>Grounded and traceable.</strong> Every category view shows where you said it. A topic that repeats a named project or person in the same note is shown once, as the named one.</li>
+    <li><strong>To-dos belong to their note.</strong> A to-do is found by its own words and inherits its note’s categories. In results it is the same row as the running list: completion, ••• and the source label all work.</li>
+    <li><strong>One search, on the phone.</strong> Titles, summaries, what you said, labels and to-dos (open and done), across every cached note. It keeps working offline. Query text and label names never go to analytics.</li>
+    <li><strong>Correction is easy and durable.</strong> Removing a label is a button in Edit, not a gesture, and your agent sees the same result. No manual tagging, renaming or merging in this slice.</li>
+    <li><strong>Unchanged:</strong> the running list, capture tray, recorder, AI controls, note sheet sections and grading.</li></ul></section>`;
+  ['a', 'b', 'c', 's'].forEach(c => {
+    html += `<section class="cand"><div class="cand-head"><h2>${CANDS[c].name}</h2><p>${CANDS[c].idea}</p>${CANDS[c].what ? `<p><strong>${CANDS[c].what}</strong></p>` : ''}</div><div class="frames">`;
+    Object.entries(FRAMES).filter(([, f]) => f.c === c).forEach(([id, f]) => {
+      html += `<div class="frame">${f.html}<div class="anno"><h3>${f.t}<code>${id}</code></h3><p>${f.d}</p></div></div>`;
+    });
+    html += '</div></section>';
+  });
+  document.getElementById('root').innerHTML = html;
+}
+</script>
+</body>
+</html>
