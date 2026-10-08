@@ -33,12 +33,13 @@ struct HomeView: View {
     @State private var showingNotes = false
     @State private var selectedTab: RunningListTab = .today
     @State private var headerHeight: CGFloat = 78
+    @State private var listTabsHeight: CGFloat = 44
     @State private var recorderControlsHeight: CGFloat = 126
     private let maxRecordingSeconds = 300
 
     var body: some View {
         GeometryReader { geometry in
-            let minimumHeight = HomeLayoutBudget.minimumHeight(header: headerHeight, recorder: recorderControlsHeight)
+            let minimumHeight = HomeLayoutBudget.minimumHeight(header: fixedHeaderHeight, recorder: recorderControlsHeight)
             // Keep one structural identity across rotation, text-size and recorder-height changes.
             // Normal content exactly fits; short windows can scroll to reach the footer.
             ScrollView {
@@ -134,6 +135,9 @@ struct HomeView: View {
         }
     }
 
+    /// Reserve the fixed tabs separately so the minimum applies to the scrolling task viewport.
+    private var fixedHeaderHeight: CGFloat { headerHeight + (showingNotes ? 0 : listTabsHeight) }
+
     private func homeLayout(availableHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
             topBar
@@ -150,12 +154,13 @@ struct HomeView: View {
                     emptyContent: AnyView(EmptyHomeContent(isDeemphasized: isShowingRecording || isShowingProcessing)),
                     onOpenNote: openNote,
                     onSignIn: { showingCaptureSignIn = true },
-                    onRefresh: refreshFromBackend
+                    onRefresh: refreshFromBackend,
+                    onTabsHeightChange: { listTabsHeight = $0 }
                 )
             }
 
             bottomRecorder(maximumTrayHeight: HomeLayoutBudget.captureTrayHeight(
-                available: availableHeight, header: headerHeight, recorder: recorderControlsHeight))
+                available: availableHeight, header: fixedHeaderHeight, recorder: recorderControlsHeight))
         }
     }
 

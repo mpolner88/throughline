@@ -16,6 +16,7 @@ struct RunningListView: View {
     let onOpenNote: (String) -> Void
     let onSignIn: () -> Void
     let onRefresh: () async -> Void
+    let onTabsHeightChange: (CGFloat) -> Void
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var now = Date()
@@ -56,6 +57,7 @@ struct RunningListView: View {
     var body: some View {
         VStack(spacing: 0) {
             tabs
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onTabsHeightChange($0) }
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     if coordinator.signInRequired {

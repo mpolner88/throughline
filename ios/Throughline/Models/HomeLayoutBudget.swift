@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// Bound the scrollable capture tray after accounting for the actual header and recorder.
+/// Bound the tray after accounting for the actual fixed header (including list tabs) and recorder.
 enum HomeLayoutBudget {
     private static let footerSpacing: CGFloat = 43 // 12 top + 22 bottom + 9 between tray and recorder.
     static func minimumHeight(header: CGFloat, recorder: CGFloat) -> CGFloat {

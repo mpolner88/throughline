@@ -64,11 +64,14 @@ import Foundation
         print("PASS full capture trays preserve list space as screen/header/recorder sizes change")
         for actualHeight in [220.0, 320, 550, 900] {
             for recorder in [126.0, 190, 400, 600] {
-                let layoutHeight = max(actualHeight, HomeLayoutBudget.minimumHeight(header: 110, recorder: recorder))
-                let tray = HomeLayoutBudget.captureTrayHeight(available: layoutHeight, header: 110, recorder: recorder)
-                precondition(layoutHeight - 110 - recorder - 43 - tray >= 180)
+                for tabs in [0.0, 44, 78] {
+                    let fixedHeader = 110 + tabs
+                    let layoutHeight = max(actualHeight, HomeLayoutBudget.minimumHeight(header: fixedHeader, recorder: recorder))
+                    let tray = HomeLayoutBudget.captureTrayHeight(available: layoutHeight, header: fixedHeader, recorder: recorder)
+                    precondition(layoutHeight - 110 - tabs - recorder - 43 - tray >= 180)
+                }
             }
         }
-        print("PASS constrained-height fallback keeps at least 180 points of scrollable list")
+        print("PASS constrained-height fallback reserves 180 points below fixed tabs, including accessibility sizes")
     }
 }
