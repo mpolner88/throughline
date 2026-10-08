@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-10-06",
+  "updated_at": "2026-10-08",
   "ordering": "Mike's September 30 order: deliver Candidate A running list (TL-TASK-001) to internal TestFlight first; categories and search (TL-KNOW-001) next; Private Evaluation (TL-EVAL-001) after that. Delivered capture recovery is preserved. Other portfolio positions remain historical and array position never authorizes work or waives a design, provider, policy, pricing, limit, onboarding or public-release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
@@ -338,8 +338,8 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike reported further scroll/tap bugs and authorized thorough investigation and repair. Release heartbeat paused at his request. Submitted public build remains separate.",
-        "current_bug": "Runtime review found the moving-scroll guard traversed the recognizer root instead of the actual touch ancestry. Corrected in 64ed72c; focused tests and rebuilt Debug app pass. Claude is rerunning touch/layout/accessibility checks; P2-1 stays open. No new internal delivery.",
-        "current_verification": "docs/evidence/2026-10-06-interaction-repair.md",
+        "current_bug": "Core gesture and target-edge matrix passed without P1/P2. Largest-text tab budget corrected in cfa7578; focused tests, exact-source Debug build, and observed landscape/full-tray reachability pass. Final Reduce Motion result and written review pending after Mac locked again. No new delivery.",
+        "current_verification": "docs/evidence/2026-10-08-interaction-closeout.md",
         "slice": "docs/slices/running-list.md",
         "tandem_stage": "building",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
@@ -363,8 +363,9 @@
         "public_listing_review": "docs/evidence/2026-10-05-claude-app-store-listing-review.md",
         "public_listing_readback": "docs/evidence/assets/2026-10-05-app-store/listing-verified.json",
         "public_submission_receipt": "docs/releases/2026-10-05-ios-1.0.5-2026100502-submission.md",
-        "interaction_candidate_revision": "64ed72ccc065377681a5659b8cd1b4cc1259c844",
-        "interaction_source_review": "docs/evidence/2026-10-06-claude-interaction-review.md"
+        "interaction_candidate_revision": "cfa757890eb268a90e13b1f02a451a7bb80fdb08",
+        "interaction_source_review": "docs/evidence/2026-10-06-claude-interaction-review.md",
+        "interaction_runtime_review": "docs/evidence/2026-10-06-claude-interaction-runtime-recheck.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -376,7 +377,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Complete Claude runtime recheck on corrected 64ed72c, resolve findings, then prepare an internal-only repair candidate under standing authority. Keep release heartbeat paused and the separate public submission unchanged.",
+      "next_action": "After unlock, collect Claude final Reduce Motion/layout review and slot handback, resolve any findings, then package and verify internal-only build 2026100801 for existing Internal QA. Keep release heartbeat paused and the public submission unchanged.",
       "slice_phase": "canary"
     },
     {
