@@ -94,7 +94,7 @@
   .field { flex: 1; min-height: 40px; border-radius: 10px; background: var(--muted-bg); display: flex; align-items: center; gap: 7px; padding: 0 10px; font-size: calc(16px * var(--s)); color: var(--sec); }
   .field .q { color: var(--ink); }
   .field .caret { display: inline-block; width: 1.5px; height: 1.15em; background: var(--blue); vertical-align: -3px; margin-left: 1px; }
-  .field .clear { margin-left: auto; color: var(--sec); width: 44px; height: 40px; display: flex; align-items: center; justify-content: flex-end; }
+  .field .clear { margin: -2px 0 -2px auto; color: var(--sec); width: 44px; height: 44px; display: flex; align-items: center; justify-content: flex-end; }
   .token { display: inline-flex; align-items: center; gap: 4px; background: var(--pill-bg); color: var(--pill-text); border-radius: 6px; padding: 3px 8px; font-size: calc(14px * var(--s)); font-weight: 500; }
   .cancel { color: var(--blue); font-size: calc(16px * var(--s)); min-height: 44px; }
   .banner { display: flex; align-items: center; gap: 8px; font-size: calc(13px * var(--s)); color: var(--sec); margin: -4px 0 14px; line-height: 1.4; }
@@ -142,9 +142,10 @@
   .ptitle { font-size: calc(28px * var(--s)); font-weight: 500; letter-spacing: -0.01em; line-height: 1.15; margin: 6px 0 6px; }
   .psub { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.45; margin-bottom: 14px; }
   .links { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.5; margin: 2px 0 14px; }
-  .links a { color: var(--blue); text-decoration: none; font-weight: 500; }
-  .said-row { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
-  .said-row .src { font-size: calc(12.5px * var(--s)); color: var(--blue); font-weight: 500; min-height: 22px; text-align: left; }
+  .links a { color: var(--blue); text-decoration: none; font-weight: 500; position: relative; }
+  .links a::after { content: ''; position: absolute; inset: -12px -5px; } /* 44 pt hit area, no visual change */
+  .said-row { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; width: 100%; text-align: left; } /* one button: source, then excerpt */
+  .said-row .src { font-size: calc(12.5px * var(--s)); color: var(--blue); font-weight: 500; min-height: 22px; display: flex; align-items: center; }
   .said-row q { font-size: calc(15px * var(--s)); line-height: 1.45; quotes: "\201C" "\201D"; }
 
   .empty { margin: 28px 4px 0; display: flex; flex-direction: column; gap: 10px; }
@@ -169,8 +170,9 @@
   .sh-body { flex: 1; overflow: hidden; padding: 6px 24px 20px; display: flex; flex-direction: column; gap: 14px; }
   .sh-body h2 { font-size: calc(24px * var(--s)); font-weight: 500; line-height: 1.2; }
   .sh-body .prose { font-size: calc(15px * var(--s)); line-height: 1.5; color: var(--sec); }
-  .aboutrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .aboutrow .chip { min-height: 34px; }
+  .aboutrow { display: flex; flex-wrap: wrap; gap: 10px 8px; align-items: center; }
+  .aboutrow .chip { min-height: 34px; position: relative; }
+  .aboutrow .chip::after { content: ''; position: absolute; left: 0; right: 0; top: -5px; bottom: -5px; } /* 44 pt hit area */
   .mini { display: flex; gap: 12px; align-items: center; font-size: calc(15px * var(--s)); min-height: 30px; }
   .mini i { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--sec); flex: none; }
   .form-sect { display: flex; flex-direction: column; border-top: 0.5px solid var(--border); }
@@ -198,12 +200,426 @@
   .card .trash { width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border); color: var(--sec); display: flex; align-items: center; justify-content: center; flex: none; }
   .card .pstatus { display: inline-flex; align-self: flex-start; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; background: var(--muted-bg); font-size: calc(13px * var(--s)); font-weight: 500; color: var(--sec); }
   .card .pv { font-size: calc(14px * var(--s)); line-height: 1.5; color: var(--sec); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  /* revision 2 */
+  .banner .retry { color: var(--blue); font-weight: 500; position: relative; flex: none; }
+  .banner .retry::after { content: ''; position: absolute; inset: -14px -8px; }
+  .field.paused { opacity: 0.6; }
+  .rec-btn.live { height: 190px; }
+  .rec-btn .rtitle { font-size: calc(16px * var(--s)); font-weight: 500; }
+  .rec-btn .rdetail { font: 600 calc(28px * var(--s)) ui-rounded, -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .rec-btn .rsupport { font-size: calc(13px * var(--s)); font-weight: 400; color: rgba(255,255,255,0.86); }
+  .sh-body .err { font-size: calc(13px * var(--s)); color: var(--danger); line-height: 1.4; }
+  .frozen { opacity: 0.55; display: flex; flex-direction: column; gap: 14px; }
+  .sh-body .privacy { color: var(--blue); font-size: calc(13px * var(--s)); font-weight: 500; }
+  .anno .ill { font: 500 11px ui-monospace, Menlo, monospace; color: var(--sec); border: 0.7px solid var(--border); border-radius: 5px; padding: 1px 6px; margin-left: 8px; vertical-align: 1px; }
+  .vstat { font: 500 12px ui-monospace, Menlo, monospace; color: var(--sec); }
+  .vstat.bad { color: var(--danger); }
 </style>
 </head>
 <body>
 <button class="theme-toggle" id="themeToggle" hidden>Dark</button>
 <div id="root"></div>
+<script type="application/json" id="rule-vectors">
+{
+  "about": "Rule vectors for the TL-KNOW-001 handoff, revision 2. Synthetic strings only. Native and server implementations of label-key-v1 and the derived rules must produce these results. Label ordering assumes an English collation locale.",
+  "keys": [
+    ["Pricing Page", "pricing page"],
+    ["  café—Plans! ", "cafe plans"],
+    ["Ｓａｍ", "sam"],
+    ["ﬁnance", "finance"],
+    ["ΟΔΟΣ", "οδοσ"],
+    ["Straße", "straße"],
+    ["Søren", "søren"],
+    ["Łódź", "łodz"],
+    ["İstanbul", "istanbul"],
+    ["été", "ete"],
+    ["don't", "don t"],
+    ["two-tier", "two tier"],
+    ["Acme™", "acme"],
+    ["½ marathon", "1 2 marathon"],
+    ["Q4 plan", "q4 plan"],
+    ["今日は晴れ", "今日は晴れ"],
+    ["!!!", ""],
+    ["   ", ""],
+    ["", ""]
+  ],
+  "queries": [
+    ["sam annual", ["sam", "annual"]],
+    ["  CAFÉ ", ["cafe"]],
+    ["pri", ["pri"]],
+    ["!!!", []],
+    ["", []]
+  ],
+  "ready": [
+    [{ "status": "processed" }, true],
+    [{ "status": "uploaded", "summary": "x" }, false],
+    [{ "status": "needs_transcript" }, false],
+    [{ "status": "needs_extractor" }, false],
+    [{ "status": "transcription_failed" }, false],
+    [{ "status": "extraction_failed", "summary": "x", "tags": ["x"] }, false],
+    [{ "status": "processing_failed" }, false],
+    [{ "summary": "x" }, true],
+    [{ "tags": ["x"] }, true],
+    [{ "summary": "  ", "people": [] }, false],
+    [{}, false]
+  ],
+  "sentences": [
+    ["One. Two? Three… four", ["One.", "Two?", "Three… four"]],
+    ["She said “ship it.” Then left", ["She said “ship it.”", "Then left"]],
+    ["3.5 miles today. ok", ["3.5 miles today.", "ok"]],
+    ["wait... then go! fine", ["wait... then go!", "fine"]],
+    ["Really?! Yes.", ["Really?!", "Yes."]],
+    ["first; second\nthird", ["first; second", "third"]],
+    ["今日は晴れ。明日は雨。", ["今日は晴れ。", "明日は雨。"]],
+    ["Call Dr. Lee", ["Call Dr.", "Lee"]],
+    ["Ok.\n\n...", ["Ok."]],
+    ["", []]
+  ],
+  "days": [
+    ["2026-10-05T00:00", "2026-10-05T09:41", "today"],
+    ["2026-10-04T23:59", "2026-10-05T09:41", "yesterday"],
+    ["2026-10-03T12:00", "2026-10-05T09:41", "Sat"],
+    ["2026-09-29T08:00", "2026-10-05T09:41", "Tue"],
+    ["2026-09-28T08:00", "2026-10-05T09:41", "Mon"],
+    ["2026-09-27T23:59", "2026-10-05T09:41", "Sep 27"],
+    ["2026-10-31T23:30", "2026-11-02T09:00", "Sat"],
+    ["2026-12-31T20:00", "2027-01-02T08:00", "Thu"],
+    ["2026-12-20T10:00", "2027-01-02T08:00", "Dec 20, 2026"],
+    ["2025-10-05T10:00", "2026-10-05T09:41", "Oct 5, 2025"],
+    ["2026-10-06T08:00", "2026-10-05T09:41", "Oct 6"]
+  ],
+  "ages": [
+    ["2026-10-05T08:15", "2026-10-05T09:41", "under_1_day"],
+    ["2026-10-04T09:41", "2026-10-05T09:41", "1_to_7_days"],
+    ["2026-09-28T09:41", "2026-10-05T09:41", "1_to_7_days"],
+    ["2026-09-28T09:40", "2026-10-05T09:41", "over_7_days"],
+    [null, "2026-10-05T09:41", "unknown"],
+    ["2026-10-06T00:00", "2026-10-05T09:41", "unknown"]
+  ],
+  "notes": {
+    "fold": { "id": "a", "status": "processed", "people": ["Sam"], "projects": ["pricing page", "launch email"], "tags": ["pricing", "Sam", "growth"] },
+    "invalid": { "id": "b", "status": "processed", "people": [], "projects": ["!!!"], "tags": ["  ", "travel"] },
+    "pending": { "id": "c", "status": "uploaded", "summary": "x", "people": ["Sam"], "projects": [], "tags": ["travel"] },
+    "dup": { "id": "d", "status": "processed", "people": ["Boston"], "projects": ["boston"], "tags": ["Boston trip"] }
+  },
+  "labels": [
+    { "name": "a topic inside a named label folds; a duplicate key shows once", "note": "fold", "sup": {}, "want": [["Sam", "people"], ["pricing page", "projects"], ["launch email", "projects"], ["growth", "tags"]] },
+    { "name": "suppressing only the parent lets the folded topic appear", "note": "fold", "sup": { "a": ["pricing page"] }, "want": [["Sam", "people"], ["launch email", "projects"], ["pricing", "tags"], ["growth", "tags"]] },
+    { "name": "Remove suppresses the parent and its folded topic", "note": "fold", "sup": { "a": ["pricing page", "pricing"] }, "want": [["Sam", "people"], ["launch email", "projects"], ["growth", "tags"]] },
+    { "name": "a suppressed key is gone in every kind", "note": "fold", "sup": { "a": ["sam"] }, "want": [["pricing page", "projects"], ["launch email", "projects"], ["growth", "tags"]] },
+    { "name": "a suppression on another note has no effect", "note": "fold", "sup": { "z": ["sam"] }, "want": [["Sam", "people"], ["pricing page", "projects"], ["launch email", "projects"], ["growth", "tags"]] },
+    { "name": "empty keys are dropped", "note": "invalid", "sup": {}, "want": [["travel", "tags"]] },
+    { "name": "a note that is not ready has no labels", "note": "pending", "sup": {}, "want": [] },
+    { "name": "the same key as person and project keeps the person", "note": "dup", "sup": {}, "want": [["Boston", "people"], ["Boston trip", "tags"]] }
+  ],
+  "index": [
+    { "name": "one kind per key across notes", "sup": {}, "notes": [
+      { "id": "p1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["Boston"] },
+      { "id": "p2", "status": "processed", "at": "2026-09-02T10:00", "people": [], "projects": ["Boston"], "tags": [] }
+    ], "want": [["Boston", "projects", 2]] },
+    { "name": "spelling from the most recent note", "sup": {}, "notes": [
+      { "id": "q1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": ["Q4 Plan"], "tags": [] },
+      { "id": "q2", "status": "processed", "at": "2026-09-03T10:00", "people": [], "projects": ["q4 plan"], "tags": [] }
+    ], "want": [["q4 plan", "projects", 2]] },
+    { "name": "spelling tie at the same time goes to the greater note id", "sup": {}, "notes": [
+      { "id": "x2", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": ["Q4 plan"], "tags": [] },
+      { "id": "x1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": ["Q4 Plan"], "tags": [] }
+    ], "want": [["Q4 plan", "projects", 2]] },
+    { "name": "kind, then last said, then count, then label, then key", "sup": {}, "notes": [
+      { "id": "r1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["Straße", "Strasse", "alpha", "beta"] },
+      { "id": "r2", "status": "processed", "at": "2026-09-02T10:00", "people": [], "projects": [], "tags": ["Straße", "Strasse", "beta"] },
+      { "id": "r3", "status": "processed", "at": "2026-09-02T09:00", "people": [], "projects": [], "tags": ["alpha", "beta"] },
+      { "id": "r4", "status": "processed", "at": "2026-08-01T10:00", "people": ["Ann"], "projects": [], "tags": [] },
+      { "id": "r5", "status": "processed", "at": "2026-08-02T10:00", "people": ["Ann"], "projects": [], "tags": [] }
+    ], "want": [["Ann", "people", 2], ["beta", "tags", 3], ["Strasse", "tags", 2], ["Straße", "tags", 2], ["alpha", "tags", 2]] },
+    { "name": "a suppression and a pending note both reduce the count", "sup": { "t1": ["travel"] }, "notes": [
+      { "id": "t1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["travel"] },
+      { "id": "t2", "status": "processed", "at": "2026-09-02T10:00", "people": [], "projects": [], "tags": ["travel"] },
+      { "id": "t3", "status": "uploaded", "summary": "x", "at": "2026-09-03T10:00", "people": [], "projects": [], "tags": ["travel"] }
+    ], "want": [] }
+  ],
+  "removal": [
+    { "name": "removing a project also suppresses its folded topic", "note": "fold", "key": "pricing page", "sup": {}, "want": ["pricing page", "pricing"] },
+    { "name": "removing a person suppresses that key in every kind", "note": "fold", "key": "sam", "sup": {}, "want": ["sam"] },
+    { "name": "a project with nothing folded", "note": "fold", "key": "launch email", "sup": {}, "want": ["launch email"] },
+    { "name": "a topic", "note": "fold", "key": "growth", "sup": {}, "want": ["growth"] },
+    { "name": "a label that is not shown can't be removed", "note": "fold", "key": "pricing", "sup": {}, "want": [] },
+    { "name": "a topic shown after its parent was removed", "note": "fold", "key": "pricing", "sup": { "a": ["pricing page"] }, "want": ["pricing"] },
+    { "name": "a note that is not ready has nothing to remove", "note": "pending", "key": "sam", "sup": {}, "want": [] }
+  ],
+  "searchNotes": [
+    { "id": "s1", "status": "processed", "title": "drive in", "summary": "Ask Sam about the annual plan.", "mi": ["Pricing before Friday"], "said": "we talked about the café menu. then errands", "people": ["Sam"], "projects": [], "tags": [], "areas": ["profession"] },
+    { "id": "s2", "status": "uploaded", "title": "Sam call", "summary": "", "said": "annual plan", "people": [], "projects": [], "tags": [] },
+    { "id": "s3", "status": "extraction_failed", "title": "voice note", "summary": "", "said": "Sam annual", "people": [], "projects": [], "tags": [] },
+    { "id": "s4", "title": "walk", "summary": "Garage shelves.", "said": "", "people": [], "projects": ["garage"], "tags": [] },
+    { "id": "s5", "title": "evening", "summary": "", "said": "Sam", "people": [], "projects": [], "tags": [] }
+  ],
+  "search": [
+    { "q": "sam annual", "want": ["s1"] },
+    { "q": "sam", "want": ["s1", "s2"] },
+    { "q": "sam errands", "want": ["s1"] },
+    { "q": "pricing friday", "want": ["s1"] },
+    { "q": "pri", "want": ["s1"] },
+    { "q": "cafe", "want": ["s1"] },
+    { "q": "CAFÉ", "want": ["s1"] },
+    { "q": "annual", "want": ["s1"] },
+    { "q": "voice", "want": ["s3"] },
+    { "q": "garage", "want": ["s4"] },
+    { "q": "profession", "want": [] },
+    { "q": "!!!", "want": [] }
+  ],
+  "noteExcerpt": [
+    { "name": "the summary when it has every term", "q": "sam", "note": { "status": "processed", "summary": "Ask Sam about the annual plan.", "said": "Sam again", "mi": [] }, "want": "Ask [Sam] about the annual plan." },
+    { "name": "one transcript sentence, not the whole transcript", "q": "annual", "note": { "status": "processed", "summary": "Plans for the week.", "said": "First we cleared the garage. Sam wants the annual plan. Then lunch.", "mi": [] }, "want": "“…Sam wants the [annual] plan.”" },
+    { "name": "the sentence with the most terms", "q": "sam annual", "note": { "status": "processed", "summary": "Plans.", "said": "Sam called. Sam wants the annual plan.", "mi": [] }, "want": "“…[Sam] wants the [annual] plan.”" },
+    { "name": "the earliest sentence on a tie", "q": "sam", "note": { "status": "processed", "summary": "Plans.", "said": "Sam called early. Then Sam left.", "mi": [] }, "want": "“…[Sam] called early.”" },
+    { "name": "a sentence keeps its own end punctuation", "q": "sam", "note": { "status": "processed", "summary": "Plans.", "said": "Did Sam call?", "mi": [] }, "want": "“…Did [Sam] call?”" },
+    { "name": "a late match starts four words before it", "q": "sam", "note": { "status": "processed", "summary": "Plans.", "said": "we went through the boxes in the garage and the shelves and then about Sam and the deck", "mi": [] }, "want": "“…shelves and then about [Sam] and the deck.”" },
+    { "name": "accents match and highlight the whole word", "q": "cafe", "note": { "status": "processed", "summary": "Plans.", "said": "the café menu", "mi": [] }, "want": "“…the [café] menu.”" },
+    { "name": "most important", "q": "bank", "note": { "status": "processed", "summary": "Plans.", "said": "", "mi": ["Book the dentist", "Call the bank"] }, "want": "Call the [bank]" },
+    { "name": "matched only by a label: the summary, unhighlighted", "q": "priya", "note": { "status": "processed", "summary": "Lunch plans.", "said": "lunch", "mi": [], "people": ["Priya"] }, "want": "Lunch plans." },
+    { "name": "a note that is not ready has no excerpt", "q": "sam", "note": { "status": "uploaded", "summary": "Sam.", "said": "Sam", "mi": [] }, "want": null }
+  ],
+  "pageExcerpt": [
+    { "name": "the transcript sentence with the label", "label": "pricing page", "note": { "said": "We cleared the garage. The pricing page is late.", "summary": "x." }, "want": "“…The [pricing page] is late.”" },
+    { "name": "a label word of four or more letters", "label": "pricing page", "note": { "said": "the pricing tiers feel wrong", "summary": "x." }, "want": "“…the [pricing] tiers feel wrong.”" },
+    { "name": "a label inside a hyphenated phrase", "label": "pricing page", "note": { "said": "a two-tier pricing page", "summary": "x." }, "want": "“…a two-tier [pricing page].”" },
+    { "name": "accents in the transcript", "label": "cafe luna", "note": { "said": "Back to Café Luna tomorrow", "summary": "x." }, "want": "“…Back to [Café Luna] tomorrow.”" },
+    { "name": "\"pages\" is not \"page\": the summary sentence instead", "label": "page", "note": { "said": "these pages are long", "summary": "Long pages. The page count." }, "want": "The [page] count." },
+    { "name": "the summary's first sentence, unhighlighted", "label": "health", "note": { "said": "", "summary": "Ran 5k. Knee fine." }, "want": "Ran 5k." },
+    { "name": "nothing to show", "label": "health", "note": { "said": "", "summary": "" }, "want": null }
+  ],
+  "highlight": [
+    ["Pricing page copy", "pric", ["Pricing"]],
+    ["The café menu", "cafe", ["café"]],
+    ["Sam's plan", "sam", ["Sam"]],
+    ["a two-tier plan", "tier", ["tier"]],
+    ["Ｓａｍ said", "sam", ["Ｓａｍ"]],
+    ["Sam and Samir", "sam", ["Sam", "Samir"]],
+    ["nothing here", "!!!", []]
+  ],
+  "todos": [
+    ["Draft the pricing page copy", "pricing page", true],
+    ["Sketch a two-tier pricing page", "pricing page", true],
+    ["Fix the pages", "page", false],
+    ["Price the page", "pricing page", false],
+    ["Book the Boston train", "Boston trip", false]
+  ]
+}
+</script>
 <script>
+// RULES-BEGIN
+// The exact rules of the handoff (revision 2). Pure functions with no DOM. verify-rules.mjs runs the vectors in
+// #rule-vectors against this section, and the gallery runs the same check on load. Frames marked "static
+// illustration" show a state; this script does not simulate saving, loading, recording or navigation.
+
+// label-key-v1. Original words are maximal runs of letters, digits and marks. Each word is lowercased with the
+// context-free Unicode default mapping (final sigma becomes sigma), decomposed with NFKD, stripped of every mark,
+// and split on anything that is still not a letter or digit. A key is the parts joined by one space. An empty key
+// is invalid: it is never indexed, matched or suppressed.
+const KEY_VERSION = 1;
+const ORIG = /[\p{L}\p{N}\p{M}]+/gu;
+const partsOf = w => w.toLowerCase().replace(/ς/g, 'σ').normalize('NFKD').replace(/\p{M}/gu, '').split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+const origWords = s => [...String(s ?? '').matchAll(ORIG)].map(m => ({ start: m.index, end: m.index + m[0].length, parts: partsOf(m[0]) })).filter(x => x.parts.length);
+const words = s => origWords(s).flatMap(x => x.parts);
+const labelKey = s => words(s).join(' ');
+const queryTerms = q => words(q); // a query with no terms behaves as an empty field
+const containsRun = (hay, needle) => needle.length > 0 && hay.some((_, i) => needle.every((w, j) => hay[i + j] === w));
+const cp = (a, b) => { const x = [...a], y = [...b]; for (let i = 0; i < Math.min(x.length, y.length); i++) { const d = x[i].codePointAt(0) - y[i].codePointAt(0); if (d) return d; } return x.length - y.length; };
+
+// Kinds in precedence order.
+const KINDS = [{ f: 'people', plural: 'people', one: 'person' }, { f: 'projects', plural: 'projects', one: 'project' }, { f: 'tags', plural: 'topics', one: 'topic' }];
+const rank = f => KINDS.findIndex(x => x.f === f);
+
+// 1. Ready: processing finished. A legacy note with no status counts when it has a summary or any label.
+// Pending and failed notes have no labels and match search by title only.
+const isReady = n => n.status === 'processed' || (n.status == null && (String(n.summary ?? '').trim() !== '' || KINDS.some(k => (n[k.f] || []).length > 0)));
+
+// Suppressions are per note and key, across every kind: { [noteId]: [key, ...] }.
+const supOf = (sup, id) => new Set((sup && sup[id]) || []);
+
+// 2–4. A note's labels: the raw labels of a ready note, keyed, with empty keys dropped; suppressed keys dropped in
+// every kind; topics folded into the note's remaining people and projects; then one label per key, by kind and
+// then array order. `i` is the label's place in its own array.
+function rawLabels(n) {
+  if (!isReady(n)) return [];
+  return KINDS.flatMap(k => (n[k.f] || []).map((l, i) => ({ l: String(l), k: labelKey(l), f: k.f, i }))).filter(x => x.k);
+}
+function noteLabels(n, sup) {
+  const s = supOf(sup, n.id);
+  const live = rawLabels(n).filter(x => !s.has(x.k));
+  const named = live.filter(x => x.f !== 'tags').map(x => x.k.split(' '));
+  const seen = new Set();
+  return live.filter(x => !(x.f === 'tags' && named.some(nw => containsRun(nw, x.k.split(' ')))))
+    .filter(x => !seen.has(x.k) && seen.add(x.k));
+}
+
+// 5. One kind per key across the owner's notes: the first of person, project, topic that the key has on any note
+// after steps 1–4. Chips, Edit, pages and results all show this kind.
+function globalKinds(notes, sup) {
+  const g = new Map();
+  notes.forEach(n => noteLabels(n, sup).forEach(x => { if (!g.has(x.k) || rank(x.f) < rank(g.get(x.k))) g.set(x.k, x.f); }));
+  return g;
+}
+
+// 6. The index. An entry is a key on two or more distinct notes. Its spelling is the one on the most recent note;
+// ties go to the higher-precedence field, then the earlier place in that field, then the greater note id (code
+// points). Order: kind section; last said, newest first; note count, highest first; label, localized and
+// case-insensitive; key, by code point.
+function buildIndex(notes, sup) {
+  const g = globalKinds(notes, sup), m = new Map();
+  notes.forEach(n => noteLabels(n, sup).forEach(x => {
+    const e = m.get(x.k) || { k: x.k, f: g.get(x.k), ids: [], last: '', l: '' };
+    const c = e.src;
+    if (!c || n.at > c.at || (n.at === c.at && (rank(x.f) - rank(c.f) || x.i - c.i || -cp(n.id, c.id)) < 0)) {
+      e.src = { at: n.at, f: x.f, i: x.i, id: n.id }; e.l = x.l; e.last = n.at;
+    }
+    e.ids.push(n.id);
+    m.set(x.k, e);
+  }));
+  return [...m.values()].filter(e => e.ids.length >= 2).sort((a, b) =>
+    rank(a.f) - rank(b.f) || cp(b.last, a.last) || b.ids.length - a.ids.length ||
+    a.l.localeCompare(b.l, undefined, { sensitivity: 'base' }) || cp(a.k, b.k));
+}
+
+// Remove. Only a label shown on the note can be removed. Removing a person or project also suppresses every topic
+// on that note that was folded into it, so nothing new appears in its place. Returns the keys to suppress, or none.
+function removalKeys(n, key, sup) {
+  const shown = noteLabels(n, sup).find(x => x.k === key);
+  if (!shown) return [];
+  if (shown.f === 'tags') return [key];
+  const s = supOf(sup, n.id), kw = key.split(' ');
+  return [key, ...new Set(rawLabels(n).filter(x => x.f === 'tags' && x.k !== key && !s.has(x.k) && containsRun(kw, x.k.split(' '))).map(x => x.k))];
+}
+
+// Sentences. A sentence ends after a run of . ! or ? that is not an ellipsis of two or more periods, with any
+// closing quotes or brackets, when whitespace or the end of the line follows; after 。！？ wherever they fall; and
+// at every line break. Semicolons, colons and ellipses (… or ...) do not end a sentence.
+function sentencesOf(text) {
+  const out = [];
+  String(text ?? '').split(/\r\n|[\n\r\u2028\u2029]/).forEach(line => {
+    const re = /([.!?]+)["'”’)\]»]*(?=\s|$)|[。！？]+[」』”’)\]]*/gu;
+    let from = 0, m;
+    while ((m = re.exec(line))) {
+      if (m[1] && /^\.{2,}$/.test(m[1])) continue;
+      out.push(line.slice(from, m.index + m[0].length)); from = m.index + m[0].length;
+    }
+    out.push(line.slice(from));
+  });
+  return out.map(s => s.trim()).filter(s => words(s).length > 0);
+}
+const endsTerminal = s => /[.!?…。！？]["'”’)\]»」』]*$/u.test(s);
+
+// Highlight: every whole original word with a part that starts with a query term, as offsets into the original text.
+const termRanges = (text, ts) => ts.length ? origWords(text).filter(x => x.parts.some(p => ts.some(t => p.startsWith(t)))).map(x => [x.start, x.end]) : [];
+// The first run of whole original words whose parts spell a key, as one range; null if there is none.
+function findRun(text, key) {
+  const kw = key ? key.split(' ') : [];
+  if (!kw.length) return null;
+  const ow = origWords(text), flat = ow.flatMap((x, i) => x.parts.map((p, j) => ({ p, i, first: j === 0, last: j === x.parts.length - 1 })));
+  for (let s = 0; s + kw.length <= flat.length; s++) {
+    const e = s + kw.length - 1;
+    if (flat[s].first && flat[e].last && kw.every((w, j) => flat[s + j].p === w)) return [ow[flat[s].i].start, ow[flat[e].i].end];
+  }
+  return null;
+}
+// Window: when the first highlight is the 13th word or later, the excerpt starts four words before it.
+function windowed(text, ranges) {
+  const ow = origWords(text), first = ranges.length ? ow.findIndex(x => x.start === ranges[0][0]) : -1;
+  if (first < 12) return { text, ranges, cut: false };
+  const off = ow[first - 4].start;
+  return { text: text.slice(off), ranges: ranges.map(([a, b]) => [a - off, b - off]), cut: true };
+}
+// An excerpt renders as: quoted text opens with "“…" and closes with its own end punctuation, or "." if it has
+// none, then "”"; unquoted text opens with "…" only when windowed. Highlights are whole words.
+const excerptParts = x => ({ lead: x.quote || x.cut ? '…' : '', text: x.text, ranges: x.ranges, tail: x.quote && !endsTerminal(x.text) ? '.' : '' });
+function excerptPlain(x) {
+  if (!x) return null;
+  const p = excerptParts(x);
+  let s = '', at = 0;
+  p.ranges.forEach(([a, b]) => { s += p.text.slice(at, a) + '[' + p.text.slice(a, b) + ']'; at = b; });
+  return (x.quote ? '“' : '') + p.lead + s + p.text.slice(at) + p.tail + (x.quote ? '”' : '');
+}
+
+// 9. Page excerpt for a note and an entry key, the first that applies: the transcript sentence containing the label,
+// quoted, label highlighted; the transcript sentence containing one of the label's words of four or more characters,
+// quoted, that word highlighted; the summary sentence containing the label, unquoted, label highlighted; the
+// summary's first sentence, unquoted, unhighlighted. With neither, there is no excerpt; nothing is invented.
+function pageExcerpt(n, key) {
+  const said = sentencesOf(n.said), sum = sentencesOf(n.summary);
+  const long = key.split(' ').filter(w => [...w].length >= 4);
+  let hit;
+  for (const s of said) if ((hit = findRun(s, key))) return { ...windowed(s, [hit]), quote: true };
+  for (const s of said) for (const w of long) if ((hit = findRun(s, w))) return { ...windowed(s, [hit]), quote: true };
+  for (const s of sum) if ((hit = findRun(s, key))) return { ...windowed(s, [hit]), quote: false };
+  return sum.length ? { text: sum[0], ranges: [], cut: false, quote: false } : null;
+}
+// 7. Page to-dos: open to-dos on the entry's notes whose own text contains the label as a whole-word run.
+const todoNames = (text, key) => findRun(text, key) !== null;
+
+// 10. Search. Terms are the query's key words, and every term must start some word of the item. Index entries
+// match on their label; to-dos on their own text, open and done; ready notes on title, summary, most important,
+// transcript and their effective labels, never life areas; other notes on title only.
+const matchesAll = (ws, ts) => ts.length > 0 && ts.every(t => ws.some(w => w.startsWith(t)));
+const noteWords = (n, sup) => (isReady(n) ? [n.title, n.summary, ...(n.mi || []), n.said, ...noteLabels(n, sup).map(x => x.l)] : [n.title]).flatMap(words);
+const noteMatches = (n, ts, sup) => matchesAll(noteWords(n, sup), ts);
+// A note result's excerpt, the first that applies: the summary, if it has every term; the transcript sentence with
+// the most distinct terms (the earliest on ties), quoted; the most-important item with the most terms; the summary.
+// A note that is not ready shows no excerpt.
+function noteExcerpt(n, ts) {
+  if (!isReady(n) || !ts.length) return null;
+  const sum = String(n.summary ?? '').trim();
+  const count = s => { const ws = words(s); return ts.filter(t => ws.some(w => w.startsWith(t))).length; };
+  const best = list => list.reduce((b, s) => { const c = count(s); return c > b.c ? { s, c } : b; }, { s: null, c: 0 }).s;
+  const said = best(sentencesOf(n.said)), mi = best((n.mi || []).map(s => String(s).trim()).filter(Boolean));
+  const x = sum && count(sum) === ts.length ? { text: sum, quote: false } : said ? { text: said, quote: true }
+    : mi ? { text: mi, quote: false } : sum ? { text: sum, quote: false } : null;
+  return x && { ...windowed(x.text, termRanges(x.text, ts)), quote: x.quote };
+}
+
+// 12. Day form for "last said" and page spans, from calendar dates in the phone's current time zone, never 24-hour
+// intervals: today; yesterday; the short weekday for two to seven days ago (the shipped source-time boundary);
+// otherwise "Sep 26", with the year added when it is not the current year. Production uses the locale's formats.
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function dayForm(at, now) {
+  const [y, m, d] = at.slice(0, 10).split('-').map(Number), [ny, nm, nd] = now.slice(0, 10).split('-').map(Number);
+  const day = Date.UTC(y, m - 1, d), diff = Math.round((Date.UTC(ny, nm - 1, nd) - day) / 864e5);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  if (diff >= 2 && diff <= 7) return WDAY[new Date(day).getUTCDay()];
+  return `${MON[m - 1]} ${d}` + (y !== ny ? `, ${y}` : '');
+}
+// Analytics age bucket, from elapsed time: under one day; one to seven days, inclusive of exactly seven; over seven
+// days; unknown when the time is missing or in the future.
+function ageBucket(at, now) {
+  const ms = at ? Date.parse(now + 'Z') - Date.parse(at + 'Z') : NaN;
+  if (!(ms >= 0)) return 'unknown';
+  return ms < 864e5 ? 'under_1_day' : ms <= 7 * 864e5 ? '1_to_7_days' : 'over_7_days';
+}
+
+function runVectors(V) {
+  const out = [], same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const t = (name, got, want) => out.push({ name, ok: same(got, want), got, want });
+  const q = s => JSON.stringify(s);
+  V.keys.forEach(([s, want]) => t(`key ${q(s)}`, labelKey(s), want));
+  V.queries.forEach(([s, want]) => t(`query ${q(s)}`, queryTerms(s), want));
+  V.ready.forEach(([n, want]) => t(`ready ${q(n)}`, isReady(n), want));
+  V.sentences.forEach(([s, want]) => t(`sentences ${q(s)}`, sentencesOf(s), want));
+  V.days.forEach(([at, now, want]) => t(`day ${at} at ${now}`, dayForm(at, now), want));
+  V.ages.forEach(([at, now, want]) => t(`age ${at} at ${now}`, ageBucket(at, now), want));
+  V.labels.forEach(c => t(`labels: ${c.name}`, noteLabels(V.notes[c.note], c.sup).map(x => [x.l, x.f]), c.want));
+  V.index.forEach(c => t(`index: ${c.name}`, buildIndex(c.notes, c.sup).map(e => [e.l, e.f, e.ids.length]), c.want));
+  V.removal.forEach(c => t(`removal: ${c.name}`, removalKeys(V.notes[c.note], c.key, c.sup), c.want));
+  V.search.forEach(c => t(`search ${q(c.q)}`, V.searchNotes.filter(n => noteMatches(n, queryTerms(c.q), {})).map(n => n.id), c.want));
+  V.noteExcerpt.forEach(c => t(`note excerpt: ${c.name}`, excerptPlain(noteExcerpt(c.note, queryTerms(c.q))), c.want));
+  V.pageExcerpt.forEach(c => t(`page excerpt: ${c.name}`, excerptPlain(pageExcerpt(c.note, labelKey(c.label))), c.want));
+  V.highlight.forEach(([text, s, want]) => t(`highlight ${q(s)} in ${q(text)}`, termRanges(text, queryTerms(s)).map(([a, b]) => text.slice(a, b)), want));
+  V.todos.forEach(([text, label, want]) => t(`page to-do ${q(label)} in ${q(text)}`, todoNames(text, labelKey(label)), want));
+  return out;
+}
+// RULES-END
+/* ---------- gallery ---------- */
 const P = new URLSearchParams(location.search);
 const ONLY = P.get('only');
 const AX = P.get('ax') === '1';
@@ -211,155 +627,115 @@ document.documentElement.dataset.theme = P.get('theme') === 'dark' ? 'dark' : 'l
 if (AX) document.body.classList.add('ax');
 if (P.get('w')) document.documentElement.style.setProperty('--w', P.get('w') + 'px');
 if (P.get('h')) document.documentElement.style.setProperty('--h', P.get('h') + 'px');
+const VECTORS = runVectors(JSON.parse(document.getElementById('rule-vectors').textContent));
 
 /* ---------- synthetic data (no real notes) ---------- */
 // "Now" is Monday, October 5, 9:41 AM. Labels are what extraction already returns: people, projects and
-// topic tags. `src` is the shipped running-list source time; `day` is the day-level form used for
-// "last said" and page spans.
+// topic tags. `src` is the shipped running-list source time; "last said" and page spans use dayForm.
+// `mi` is the note's most-important list. Every fixture note is processed unless it says otherwise.
+const NOW = '2026-10-05T09:41';
 const NOTES = [
-  { id: 'n1', title: 'drive in', type: 'freeform', at: '2026-10-05T08:15', src: '8:15 AM', day: 'today', full: 'Mon, Oct 5 at 8:15 AM',
+  { id: 'n1', title: 'drive in', type: 'freeform', at: '2026-10-05T08:15', src: '8:15 AM', full: 'Mon, Oct 5 at 8:15 AM',
     summary: 'Pricing page copy before the launch email goes out. Ask Sam about the annual plan.',
     said: 'get the pricing page copy done before the launch email goes out, and ask Sam about the annual plan',
+    mi: ['Pricing page copy before the launch email'],
     people: ['Sam'], projects: ['pricing page', 'launch email'], tags: ['pricing'],
     todos: [{ t: 'Draft the pricing page copy', p: 'today' }, { t: 'Ask Sam about the annual plan', p: 'today' }] },
-  { id: 'n2', title: 'morning walk', type: 'morning', at: '2026-10-05T07:42', src: '7:42 AM', day: 'today', full: 'Mon, Oct 5 at 7:42 AM',
+  { id: 'n2', title: 'morning walk', type: 'morning', at: '2026-10-05T07:42', src: '7:42 AM', full: 'Mon, Oct 5 at 7:42 AM',
     summary: 'The dentist this week, call Mom about Sunday dinner, a slower start.',
     said: 'I need to call Mom about Sunday dinner, and get the dentist booked this week',
+    mi: ['Book the dentist'],
     people: ['Mom'], projects: ['Sunday dinner'], tags: ['dentist', 'health', 'family'],
     todos: [{ t: 'Book the dentist', p: 'this week' }, { t: 'Call Mom about Sunday dinner', p: 'today' }] },
-  { id: 'n3', title: 'drive home', type: 'evening', at: '2026-10-02T18:10', src: 'Fri 6:10 PM', day: 'Fri', full: 'Fri, Oct 2 at 6:10 PM',
+  { id: 'n3', title: 'drive home', type: 'evening', at: '2026-10-02T18:10', src: 'Fri 6:10 PM', full: 'Fri, Oct 2 at 6:10 PM',
     summary: 'The launch email is close. Marcus wants the numbers by Wednesday.',
     said: 'the launch email is close, one more read, and Marcus wants the numbers by Wednesday',
+    mi: ['Numbers to Marcus by Wednesday'],
     people: ['Marcus'], projects: ['launch email', 'metrics doc'], tags: ['numbers'],
     todos: [{ t: 'Send Marcus the metrics doc', p: 'done', done: true }, { t: 'Final read of the launch email', p: 'today' }] },
-  { id: 'n4', title: 'Sat walk', type: 'freeform', at: '2026-09-26T10:05', src: 'Sep 26', day: 'Sep 26', full: 'Sat, Sep 26 at 10:05 AM',
+  { id: 'n4', title: 'Sat walk', type: 'freeform', at: '2026-09-26T10:05', src: 'Sep 26', full: 'Sat, Sep 26 at 10:05 AM',
     summary: 'Garage shelves and the pottery course, whenever.',
     said: 'at some point the garage shelves, and look at that pottery course',
     people: [], projects: ['garage shelves', 'pottery course'], tags: ['home'],
     todos: [{ t: 'Measure the garage wall', p: 'later' }, { t: 'Look up the pottery course', p: 'later' }] },
-  { id: 'n5', title: 'lunch walk', type: 'freeform', at: '2026-09-24T12:20', src: 'Sep 24', day: 'Sep 24', full: 'Thu, Sep 24 at 12:20 PM',
+  { id: 'n5', title: 'lunch walk', type: 'freeform', at: '2026-09-24T12:20', src: 'Sep 24', full: 'Thu, Sep 24 at 12:20 PM',
     summary: 'The pricing tiers feel wrong; three is too many. Keep the free plan.',
     said: 'the pricing tiers feel wrong, three is too many, but keep the free plan',
+    mi: ['Two tiers, keep the free plan'],
     people: [], projects: ['pricing page'], tags: ['pricing', 'free plan'],
     todos: [{ t: 'Sketch a two-tier pricing page', p: 'today' }] },
-  { id: 'n6', title: 'evening', type: 'evening', at: '2026-09-22T21:02', src: 'Sep 22', day: 'Sep 22', full: 'Tue, Sep 22 at 9:02 PM',
+  { id: 'n6', title: 'evening', type: 'evening', at: '2026-09-22T21:02', src: 'Sep 22', full: 'Tue, Sep 22 at 9:02 PM',
     summary: 'Ran 5k and the knee felt fine. Physical therapy on Thursday.',
     said: 'ran the 5k, knee felt fine, physical therapy is Thursday',
     people: [], projects: ['physical therapy'], tags: ['running', 'health'],
     todos: [{ t: 'Confirm physical therapy Thursday', p: 'done', done: true }] },
-  { id: 'n7', title: 'drive in', type: 'morning', at: '2026-09-18T08:20', src: 'Sep 18', day: 'Sep 18', full: 'Fri, Sep 18 at 8:20 AM',
+  { id: 'n7', title: 'drive in', type: 'morning', at: '2026-09-18T08:20', src: 'Sep 18', full: 'Fri, Sep 18 at 8:20 AM',
     summary: 'Sam needs the deck by Friday. Boston in October.',
     said: 'Sam needs the deck by Friday, and Boston is in October',
+    mi: ['Deck to Sam by Friday'],
     people: ['Sam'], projects: ['deck', 'Boston trip'], tags: ['travel'],
     todos: [{ t: 'Send Sam the revised deck', p: 'done', done: true }, { t: 'Book the Boston train', p: 'later' }] },
-  { id: 'n8', title: 'weekly review', type: 'weekly review', at: '2026-09-13T19:30', src: 'Sep 13', day: 'Sep 13', full: 'Sun, Sep 13 at 7:30 PM',
+  { id: 'n8', title: 'weekly review', type: 'weekly review', at: '2026-09-13T19:30', src: 'Sep 13', full: 'Sun, Sep 13 at 7:30 PM',
     summary: 'A good week for writing. Too many meetings. Protect the mornings.',
     said: 'good week for writing, too many meetings, protect the mornings',
+    mi: ['Protect the mornings'],
     people: [], projects: [], tags: ['writing', 'mornings'],
     todos: [{ t: 'Block mornings for writing', p: 'today' }] },
-  { id: 'n9', title: 'walk with Mom', type: 'freeform', at: '2026-09-06T17:40', src: 'Sep 6', day: 'Sep 6', full: 'Sun, Sep 6 at 5:40 PM',
+  { id: 'n9', title: 'walk with Mom', type: 'freeform', at: '2026-09-06T17:40', src: 'Sep 6', full: 'Sun, Sep 6 at 5:40 PM',
     summary: "Mom's birthday is in November. She'd like a photo book.",
     said: "Mom's birthday is in November, she said she'd like a photo book",
     people: ['Mom'], projects: ['photo book'], tags: ['birthday', 'family'],
     todos: [{ t: 'Start the photo book for Mom', p: 'later' }] },
-  { id: 'n10', title: 'errands', type: 'freeform', at: '2026-08-21T17:30', src: 'Aug 21', day: 'Aug 21', full: 'Fri, Aug 21 at 5:30 PM',
+  { id: 'n10', title: 'errands', type: 'freeform', at: '2026-08-21T17:30', src: 'Aug 21', full: 'Fri, Aug 21 at 5:30 PM',
     summary: 'The lease message and the library books.',
     said: 'email the landlord about the lease, and the library books are due',
     people: [], projects: ['lease'], tags: ['errands', 'home'],
     todos: [{ t: 'Email the landlord about the lease', p: 'today' }, { t: 'Return the library books', p: 'today' }] },
 ];
+NOTES.forEach(n => { n.status = n.status || 'processed'; n.mi = n.mi || []; });
 const N = Object.fromEntries(NOTES.map(n => [n.id, n]));
-const ALL = NOTES.map(n => n.id);
-
-/* ---------- the rules the handoff specifies ---------- */
-// Normalize: case- and diacritic-insensitive, punctuation as spaces.
-const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-const words = s => norm(s).split(' ').filter(Boolean);
-const containsRun = (hay, needle) => needle.length > 0 && hay.some((_, i) => needle.every((w, j) => hay[i + j] === w));
-// Kinds in precedence order. A key used as more than one kind takes the first kind it has anywhere.
-const KINDS = [{ f: 'people', plural: 'people', one: 'person' }, { f: 'projects', plural: 'projects', one: 'project' }, { f: 'tags', plural: 'topics', one: 'topic' }];
-// Within one note, a topic whose words appear as a whole-word run inside a person or project on the same
-// note is folded into it (n1 and n5 say "pricing" next to "pricing page"; it shows once, as the project).
-function labelsOf(n) {
-  const named = [...n.people, ...n.projects].map(words);
-  const tags = n.tags.filter(t => !named.some(nw => containsRun(nw, words(t))));
-  const seen = new Set();
-  const out = [];
-  [['people', n.people], ['projects', n.projects], ['tags', tags]].forEach(([f, ls]) => ls.forEach(l => {
-    const k = norm(l); if (!seen.has(k)) { seen.add(k); out.push({ l, k, f }); }
-  }));
-  return out;
-}
-function buildIndex(ids = ALL) {
-  const m = new Map();
-  ids.map(i => N[i]).forEach(n => labelsOf(n).forEach(({ l, k, f }) => {
-    const e = m.get(k) || { k, l, f, ids: [], last: '' };
-    if (KINDS.findIndex(x => x.f === f) < KINDS.findIndex(x => x.f === e.f)) e.f = f;
-    if (n.at > e.last) { e.last = n.at; e.l = l; e.lastDay = n.day; }
-    e.ids.push(n.id);
-    m.set(k, e);
-  }));
-  // Two or more notes. Order: kind section, then last said (newest first), then note count, then label.
-  const rank = f => KINDS.findIndex(x => x.f === f);
-  return [...m.values()].filter(e => e.ids.length >= 2)
-    .sort((a, b) => rank(a.f) - rank(b.f) || b.last.localeCompare(a.last) || b.ids.length - a.ids.length || a.l.localeCompare(b.l, undefined, { sensitivity: 'base' }));
-}
-const INDEX = buildIndex();
-const entry = l => INDEX.find(e => e.k === norm(l));
+const SUP = {}; // no suppressions in these frames; the Edit frames show a removal staged, not saved
+const GK = globalKinds(NOTES, SUP);
+const indexOf = notes => buildIndex(notes, SUP).map(e => ({ ...e, lastDay: dayForm(e.last, NOW) }));
+const INDEX = indexOf(NOTES);
+const entry = l => INDEX.find(e => e.k === labelKey(l));
 const kindOne = f => KINDS.find(x => x.f === f).one;
-const notesOf = e => e.ids.map(i => N[i]).sort((a, b) => b.at.localeCompare(a.at));
+const notesOf = e => e.ids.map(i => N[i]).sort((a, b) => cp(b.at, a.at) || cp(b.id, a.id));
 const PLACE = { today: 0, 'this week': 1, later: 2, done: 3 };
-// A page lists the open to-dos from its notes whose own words contain the label.
+const byPlace = (a, b) => PLACE[a[0].p] - PLACE[b[0].p] || cp(b[1].at, a[1].at);
+// 7. A page lists the open to-dos from its notes whose own text names the label as whole words.
 function pageTodos(e) {
   const out = [];
-  notesOf(e).forEach(n => n.todos.forEach(t => { if (!t.done && containsRun(words(t.t), words(e.l))) out.push([t, n]); }));
-  return out.sort((a, b) => PLACE[a[0].p] - PLACE[b[0].p] || b[1].at.localeCompare(a[1].at));
+  notesOf(e).forEach(n => n.todos.forEach(t => { if (!t.done && todoNames(t.t, e.k)) out.push([t, n]); }));
+  return out.sort(byPlace);
 }
-// Up to three other index entries sharing the most notes with this one; ties keep index order.
+// 8. Up to three other index entries sharing the most notes with this one; ties keep index order.
 function comesUpWith(e) {
   return INDEX.filter(o => o !== e).map(o => ({ o, s: o.ids.filter(i => e.ids.includes(i)).length }))
     .filter(x => x.s > 0).sort((a, b) => b.s - a.s || INDEX.indexOf(a.o) - INDEX.indexOf(b.o)).slice(0, 3).map(x => x.o);
 }
-// Excerpt: the transcript sentence with the label; else one with a label word of 4+ letters; else the
-// summary sentence with the label; else the summary's first sentence. Only transcript text is quoted.
-function excerpt(n, label) {
-  const lw = words(label);
-  const sentences = s => s.split(/(?<=[.!?;])\s+/).filter(Boolean);
-  for (const s of [n.said]) if (containsRun(words(s), lw)) return { quote: true, text: s, mark: label };
-  const long = lw.filter(w => w.length >= 4);
-  for (const s of [n.said]) { const w = long.find(x => words(s).includes(x)); if (w) return { quote: true, text: s, mark: w }; }
-  const hit = sentences(n.summary).find(s => containsRun(words(s), lw));
-  if (hit) return { quote: false, text: hit, mark: label };
-  return { quote: false, text: sentences(n.summary)[0], mark: '' };
-}
-// Search: every query word must start a word in the same item. Case- and diacritic-insensitive.
-const qTerms = q => words(q);
-const hits = (text, ts) => { const ws = words(text); return ts.length > 0 && ts.every(t => ws.some(w => w.startsWith(t))); };
+// 10. One search: up to three index entries, then to-dos by placement, then notes, newest first.
 function search(q) {
-  const ts = qTerms(q);
-  const index = INDEX.filter(e => hits(e.l, ts)).slice(0, 3);
+  const ts = queryTerms(q);
+  const index = INDEX.filter(e => matchesAll(words(e.l), ts)).slice(0, 3);
   const todos = [], notes = [];
-  NOTES.slice().sort((a, b) => b.at.localeCompare(a.at)).forEach(n => {
-    n.todos.forEach(t => { if (hits(t.t, ts)) todos.push([t, n]); });
-    if (hits([n.title, n.summary, n.said, ...labelsOf(n).map(x => x.l)].join(' '), ts)) notes.push(n);
+  NOTES.slice().sort((a, b) => cp(b.at, a.at) || cp(b.id, a.id)).forEach(n => {
+    n.todos.forEach(t => { if (matchesAll(words(t.t), ts)) todos.push([t, n]); });
+    if (noteMatches(n, ts, SUP)) notes.push(n);
   });
-  todos.sort((a, b) => PLACE[a[0].p] - PLACE[b[0].p] || b[1].at.localeCompare(a[1].at));
-  return { ts, index, todos, notes };
+  return { ts, index, todos: todos.sort(byPlace), notes };
 }
 
 /* ---------- helpers ---------- */
-const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-// Highlight query words at word starts, or one whole phrase.
-function hl(text, ts) {
-  if (!ts || !ts.length) return esc(text);
-  const re = new RegExp('(?<![\\p{L}\\p{N}])(' + ts.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'giu');
-  return esc(text).replace(re, '<mark>$1</mark>');
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Marks whole-word ranges computed by the rules, as offsets into the original text.
+function markup(text, ranges) {
+  let s = '', at = 0;
+  ranges.forEach(([a, b]) => { s += esc(text.slice(at, a)) + '<mark>' + esc(text.slice(a, b)) + '</mark>'; at = b; });
+  return s + esc(text.slice(at));
 }
-function hlRun(text, phrase) {
-  if (!phrase) return esc(text);
-  const re = new RegExp('(?<![\\p{L}\\p{N}])(' + words(phrase).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^\\p{L}\\p{N}]+') + ')(?![\\p{L}\\p{N}])', 'iu');
-  return esc(text).replace(re, '<mark>$1</mark>');
-}
+const hl = (text, ts) => markup(text, termRanges(text, ts || []));
+const excerptHTML = x => { const p = excerptParts(x); return p.lead + markup(p.text, p.ranges) + p.tail; };
 const ICON = {
   search: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>',
   back: '<svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L2 10l8 8"/></svg>',
@@ -370,30 +746,34 @@ const ICON = {
 };
 const status = () => '<div class="statusbar"><span>9:41</span><span class="right">●●● ◒ ▮</span></div>';
 const recorder = () => '<div class="rec"><button class="rec-btn"><span class="rec-mark"><i></i><i></i></span>Start recording</button></div>';
+// The shipped recording state of the record button, unchanged.
+const recorderLive = () => '<div class="rec"><button class="rec-btn live"><span class="rtitle">Stop recording</span><span class="rdetail">0:18 / 5:00</span><span class="rsupport">Listening… Tap when you’re done</span></button></div>';
 const keyboard = () => '<div class="kbd"><div>' + '<span></span>'.repeat(10) + '</div><div>' + '<span></span>'.repeat(9) + '</div><div>' + '<span></span>'.repeat(7) + '</div><div><span class="mid"></span><span class="wide"></span><span class="mid"></span></div></div>';
 function phone(inner, { rec = true, kbd = false } = {}) {
-  return '<div class="phone">' + status() + inner + (kbd ? keyboard() : rec ? recorder() : '') + '</div>';
+  return '<div class="phone">' + status() + inner + (kbd ? keyboard() : rec === 'live' ? recorderLive() : rec ? recorder() : '') + '</div>';
 }
 // The shipped Notes bar: "Back" and the title "Notes" at every level inside Notes.
 const nav = () => `<div class="nav"><button class="back">${ICON.back} Back</button><span class="title">Notes</span></div>`;
-function field({ q = '', focus = false, cancel = false } = {}) {
-  const content = q ? `<span class="q">${esc(q)}</span>` : '<span>Search notes and to-dos</span>';
+function field({ q = '', focus = false, cancel = false, paused = false } = {}) {
+  const content = q ? `<span class="q">${esc(q)}</span>` : `<span>${paused ? 'Search is paused while recording' : 'Search notes and to-dos'}</span>`;
   const caret = focus ? '<span class="caret"></span>' : '';
   const clear = q ? `<button class="clear" aria-label="Clear search">${ICON.clear}</button>` : '';
-  return `<div class="search"><div class="field" role="search">${ICON.search}<span>${content}${caret}</span>${clear}</div>${cancel ? '<button class="cancel">Cancel</button>' : ''}</div>`;
+  return `<div class="search"><div class="field${paused ? ' paused' : ''}" role="search"${paused ? ' aria-disabled="true"' : ''}>${ICON.search}<span>${content}${caret}</span>${clear}</div>${cancel ? '<button class="cancel">Cancel</button>' : ''}</div>`;
 }
 const banner = kind => ({
   offline: '<div class="banner">Offline · searching what’s on this phone</div>',
   loading: '<div class="banner"><span class="spin"></span>Loading notes · results so far</div>',
-  error: '<div class="banner">Couldn’t refresh notes · searching what’s on this phone</div>',
+  error: '<div class="banner">Couldn’t refresh notes · searching what’s on this phone<button class="retry">Try again</button></div>',
 }[kind] || '');
 const scroll = inner => `<div class="scroll">${inner}</div>`;
 const sect = (label, count, top = false) => `<div class="sect"${top ? ' style="margin-top:16px"' : ''}><span class="eyebrow">${esc(label)}${count != null ? `<b>${count}</b>` : ''}</span></div>`;
-// The shipped running-list row. Placement is added as a neutral tag because pages and results span tabs;
-// a shipped marker (none in this data) would keep its own style before it.
+// The shipped running-list row. Placement is added as a neutral tag because pages and results span tabs; a
+// shipped marker (none in this data) would keep its own style before it. VoiceOver reads the row as one element
+// whose label gains the placement; its children are not read separately.
 function trow(todo, n, ts) {
   const done = todo.done;
-  return `<div class="trow${done ? ' done' : ''}"><button class="circle" aria-label="${done ? 'Reopen' : 'Complete'}"><i>${done ? ICON.check : ''}</i></button>
+  const ax = `${todo.t}. ${todo.p}. From ${n.title}, ${n.src}.`;
+  return `<div class="trow${done ? ' done' : ''}" role="group" aria-label="${esc(ax)}"><button class="circle" aria-label="${done ? 'Reopen' : 'Complete'}"><i>${done ? ICON.check : ''}</i></button>
     <div class="tbody"><span class="ttext">${hl(todo.t, ts)}</span><span class="meta"><span class="mpill">${esc(todo.p)}</span><span class="srcl">${esc(n.title)} · ${esc(n.src)}</span></span></div>
     ${done ? '' : '<span class="dots" aria-label="More actions">•••</span>'}</div>`;
 }
@@ -410,12 +790,11 @@ function indexBody(index, count) {
   }).join('') + allNotesRow(count) + indexFoot;
 }
 function nrow(n, ts) {
-  const s = hits(n.summary, ts);
-  const said = !s && hits(n.said, ts);
-  const ex = said ? `“…${hl(n.said, ts)}.”` : hl(n.summary, s ? ts : []);
-  const about = labelsOf(n).slice(0, 3).map(x => x.l).join(' · ');
+  const x = noteExcerpt(n, ts);
+  const ex = x ? (x.quote ? `“${excerptHTML(x)}”` : excerptHTML(x)) : '';
+  const about = noteLabels(n, SUP).slice(0, 3).map(l => l.l).join(' · ');
   return `<button class="nrow"><span class="top"><span class="ntitle">${hl(n.title, ts)}</span><span class="when">${esc(n.src)}</span></span>
-    <span class="ex${said ? ' said' : ''}">${ex}</span>${about ? `<span class="about">about ${esc(about)}</span>` : ''}</button>`;
+    ${x ? `<span class="ex${x.quote ? ' said' : ''}">${ex}</span>` : ''}${about ? `<span class="about">about ${esc(about)}</span>` : ''}</button>`;
 }
 function results(q) {
   const r = search(q);
@@ -428,10 +807,11 @@ function results(q) {
 function noResults(q) {
   return `<div class="empty"><h3>Nothing matches “${esc(q)}”.</h3><p>Search looks through your notes, what you said, and your to-dos.</p></div>`;
 }
+// Each "where you said it" row is one button: the source line, then the excerpt. With no excerpt, only the source.
 function page(label) {
   const e = entry(label);
   const ns = notesOf(e);
-  const first = ns[ns.length - 1].day, last = ns[0].day;
+  const first = dayForm(ns[ns.length - 1].at, NOW), last = dayForm(ns[0].at, NOW);
   const span = first === last ? last : `${first} to ${last}`;
   const links = comesUpWith(e);
   const todos = pageTodos(e);
@@ -440,14 +820,14 @@ function page(label) {
     (todos.length ? sect('open to-dos', todos.length) + todos.map(([t, n]) => trow(t, n)).join('') : '') +
     sect('where you said it', null, todos.length > 0) +
     ns.map(n => {
-      const x = excerpt(n, e.l);
-      const body = x.quote ? `<q>…${hlRun(x.text, x.mark)}.</q>` : `<p class="sum">${hlRun(x.text, x.mark)}</p>`;
-      return `<div class="said-row"><button class="src">${esc(n.title)} · ${esc(n.src)}</button>${body}</div>`;
+      const x = pageExcerpt(n, e.k);
+      const body = !x ? '' : x.quote ? `<q>${excerptHTML(x)}</q>` : `<span class="sum">${excerptHTML(x)}</span>`;
+      return `<button class="said-row"><span class="src">${esc(n.title)} · ${esc(n.src)}</span>${body}</button>`;
     }).join('');
 }
 const chip = l => `<button class="chip">${esc(l)}</button>`;
 function sheet(n) {
-  const ls = labelsOf(n);
+  const ls = noteLabels(n, SUP);
   return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">Edit</button><span class="ttl">memory</span><button class="pillbtn">Done</button></div>
   <div class="sh-body"><span class="eyebrow">${esc(n.type)} · ${esc(n.full)}</span><h2>${esc(n.title)}</h2>
   ${ls.length ? `<div class="aboutrow"><span class="eyebrow" style="margin-right:4px">about</span>${ls.map(x => chip(x.l)).join('')}</div>` : ''}
@@ -455,14 +835,28 @@ function sheet(n) {
   <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="mini"><i></i>${esc(t.t)}</div>`).join('')}
   <span class="eyebrow">transcript</span><p class="prose" style="color:var(--ink);opacity:.85">Synthetic transcript for design review. No private recording is used.</p></div></div>`;
 }
-function editSheet(n, removed) {
-  const rows = labelsOf(n).map(x => x.k === norm(removed)
-    ? `<div class="frow removed"><span class="lbl"><s>${esc(x.l)}</s><small>${kindOne(x.f)} · removed</small></span><button class="undo">Undo</button></div>`
-    : `<div class="frow"><span class="lbl">${esc(x.l)}<small>${kindOne(x.f)}</small></span><button class="act">Remove</button></div>`).join('');
-  return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">Cancel</button><span class="ttl">Edit note</span><button class="pillbtn" style="color:var(--blue);font-weight:500">Save</button></div>
-  <div class="sh-body"><span class="eyebrow">title</span><div class="fieldbox ghost">${esc(n.title)}</div><span class="eyebrow">summary</span><div class="fieldbox ghost" style="min-height:64px">${esc(n.summary)}</div>
+// The shipped Edit form, abbreviated: the illustration omits most important and the transcript field. "about"
+// sits after the to-dos editor and before the transcript. Kinds are the global kinds (rule 5).
+// mode: 'edit' (a removal staged, Undo until Save), 'locked' (a record whose labels can't be removed), or
+// 'unconfirmed' (the shipped frozen state after a save whose outcome is unknown).
+const FOOT = {
+  edit: 'Chosen from what you said. Removing one takes this note off that page, here and for your agent.',
+  locked: 'Chosen from what you said. Labels on this note can’t be removed.',
+  unconfirmed: 'Chosen from what you said. Removing one takes this note off that page, here and for your agent.',
+};
+function editSheet(n, removed, mode = 'edit') {
+  const rk = removed ? labelKey(removed) : '';
+  const rows = noteLabels(n, SUP).map(x => {
+    const kind = kindOne(GK.get(x.k));
+    if (x.k === rk) return `<div class="frow removed"><span class="lbl"><s>${esc(x.l)}</s><small>${kind} · removed</small></span><button class="undo" aria-label="Undo removing ${esc(x.l)}"${mode === 'unconfirmed' ? ' disabled' : ''}>Undo</button></div>`;
+    return `<div class="frow"><span class="lbl">${esc(x.l)}<small>${kind}</small></span>${mode === 'locked' ? '' : `<button class="act" aria-label="Remove ${esc(x.l)}">Remove</button>`}</div>`;
+  }).join('');
+  const frozen = mode === 'unconfirmed';
+  const fields = `<span class="eyebrow">title</span><div class="fieldbox ghost">${esc(n.title)}</div><span class="eyebrow">summary</span><div class="fieldbox ghost" style="min-height:64px">${esc(n.summary)}</div>
   <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="fieldbox ghost">${esc(t.t)}</div>`).join('')}
-  <span class="eyebrow" style="margin-top:6px">about</span><div class="form-sect">${rows}</div><p class="foot">Chosen from what you said. Removing one takes this note off that page, here and for your agent.</p></div></div>`;
+  <span class="eyebrow" style="margin-top:6px">about</span><div class="form-sect">${rows}</div><p class="foot">${FOOT[mode]}</p>`;
+  return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">${frozen ? 'Close' : 'Cancel'}</button><span class="ttl">Edit note</span><button class="pillbtn" style="color:var(--blue);font-weight:500">Save</button></div>
+  <div class="sh-body">${frozen ? '<p class="err">Couldn\'t confirm the save. Tap Save to try again.</p><div class="frozen">' + fields + '</div>' : fields}${mode === 'locked' ? '<a class="privacy">How we treat recordings</a>' : ''}</div></div>`;
 }
 // The shipped note card, unchanged except that its eyebrow gains the date in the running list's format.
 function card(n, { processing = '' } = {}) {
@@ -474,8 +868,9 @@ function card(n, { processing = '' } = {}) {
 }
 
 /* ---------- frames ---------- */
+// `ill` marks a static illustration: the frame shows a state that this script does not simulate.
 const FRAMES = {};
-const F = (id, t, d, html) => { FRAMES[id] = { t, d, html }; };
+const F = (id, t, d, html, ill = false) => { FRAMES[id] = { t, d, html, ill }; };
 
 F('index', 'Index', 'Notes opens on an index built from what you said: people, projects and topics that come up in two or more notes, newest first, with the note count. All notes is one row down.',
   phone(nav() + scroll(field() + indexBody(INDEX, NOTES.length))));
@@ -484,12 +879,12 @@ F('index-long', 'Index with more history', 'Each section shows its first five en
     sect('people') + [['Sam', 'today', 6], ['Mom', 'today', 4], ['Marcus', 'Fri', 3], ['Priya', 'Sep 26', 2], ['Dana', 'Sep 18', 3]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join('') +
     '<button class="morerow"><span>2 more people</span><span class="show">Show</span></button>' +
     sect('projects') + [['pricing page', 'today', 5], ['launch email', 'today', 4], ['the Boston trip with the whole team', 'Sep 18', 3]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join('') +
-    sect('topics') + [['health', 'today', 7], ['family', 'today', 5]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join(''))));
-F('results', 'Typing “sam”', 'One search: matching index entries first, then to-dos (the running-list row, so completion still works), then notes. The recorder hides while the keyboard is up.',
+    sect('topics') + [['health', 'today', 7], ['family', 'today', 5]].map(([l, d, c]) => irow({ l, lastDay: d, ids: { length: c } })).join(''))), true);
+F('results', 'Typing “sam”', 'One search: matching index entries first, then to-dos (the running-list row, so completion still works), then notes. While the software keyboard is up and nothing is recording, the whole bottom region (tray, notices and recorder) is hidden.',
   phone(nav() + scroll(field({ q: 'sam', focus: true, cancel: true }) + results('sam')), { kbd: true }));
 F('once', 'A label said once', 'Tapping a label that is not in the index opens search with that label as the query. Here nothing is in the index, so results start with to-dos.',
   phone(nav() + scroll(field({ q: 'Marcus', cancel: true }) + results('Marcus'))));
-F('page', 'A page', 'An entry’s page: kind, count and span, what it comes up with, the open to-dos that name it, and every place you said it, newest first.',
+F('page', 'A page', 'An entry’s page: kind, count and span, what it comes up with, the open to-dos that name it, and every place you said it, newest first. Each place is one button.',
   phone(nav() + scroll(page('pricing page'))));
 F('page-quiet', 'A page with no open to-dos', 'With no open to-do naming the topic, that section is left out. When the transcript never says the word, the summary line is shown without quotes.',
   phone(nav() + scroll(page('health'))));
@@ -497,23 +892,31 @@ F('all-notes', 'All notes', 'Today’s Notes list, unchanged, one level down. Ea
   phone(nav() + scroll(`<h1 class="ptitle" style="margin-top:2px">all notes</h1><p class="psub">${NOTES.length} notes</p>` + card(N.n1) + card(N.n3))));
 F('note', 'Note: what it’s about', 'The note sheet gains one quiet line under the title. A label with a page opens it; a label said once opens a search.',
   phone(nav() + scroll('') + sheet(N.n1), { rec: false }));
-F('edit', 'Correcting a label', 'Edit gains an “about” section. Remove takes the note off that page, here and for your agent; Undo stays until Save. Nothing asks you to add labels.',
-  phone(nav() + scroll('') + editSheet(N.n1, 'pricing page'), { rec: false }));
+F('edit', 'Correcting a label', 'Edit gains an “about” section after the to-dos and before the transcript. Remove is staged with Undo and goes with Save in the same transaction. Removing “pricing page” also keeps the folded “pricing” from appearing. Nothing asks you to add labels.',
+  phone(nav() + scroll('') + editSheet(N.n1, 'pricing page'), { rec: false }), true);
+F('edit-locked', 'Labels that can’t be removed', 'A record whose edits go through Private Evaluation keeps its existing restrictions: its labels are shown without Remove, and the form says so. The shipped privacy link stays.',
+  phone(nav() + scroll('') + editSheet(N.n3, '', 'locked'), { rec: false }), true);
+F('edit-unconfirmed', 'Save not confirmed', 'The shipped frozen state after a save whose outcome is unknown, with a removal in it. Fields are read-only, Close replaces Cancel, and Save retries the same request. It survives relaunch.',
+  phone(nav() + scroll('') + editSheet(N.n1, 'pricing page', 'unconfirmed'), { rec: false }), true);
 F('thin', 'Early days', 'Until something comes up twice, the index says so plainly and all notes is one row down.',
   phone(nav() + scroll(field() + `<div class="empty" style="margin-top:12px"><span class="line"></span><h3>Nothing has come up twice yet.</h3><p>When a person, project or topic appears in two notes, it gets its own page here.</p></div>` + allNotesRow(3))));
 F('empty', 'No notes yet', 'With no notes there is nothing to search, so Notes keeps the shipped line and no field.',
   phone(nav() + scroll('<p class="plain">Your notes will appear here.</p>')));
 F('none', 'No results', 'Plain words about where search looked. The field stays focused so the next try is one edit away.',
   phone(nav() + scroll(field({ q: 'dentst', focus: true, cancel: true }) + noResults('dentst')), { kbd: true }));
-F('loading', 'Still loading', 'After sign-in, the index and search use the notes that have arrived and say so. The index grows as the rest load.',
-  phone(nav() + scroll(field() + banner('loading') + indexBody(buildIndex(['n1', 'n2', 'n3', 'n5', 'n7']), 5))));
+F('search-recording', 'Searching while recording', 'While a recording is being prepared, recorded or finished, the field can’t take focus, so the keyboard never covers Stop. The index and pages still work. Any query is kept; focus is never moved into the field when recording ends.',
+  phone(nav() + scroll(field({ paused: true }) + indexBody(INDEX, NOTES.length)), { rec: 'live' }), true);
+F('loading', 'Still loading', 'After sign-in, the index and search use the notes that have arrived and say so. Counts are provisional until loading completes. The index grows as the rest load.',
+  phone(nav() + scroll(field() + banner('loading') + indexBody(indexOf(['n1', 'n2', 'n3', 'n5', 'n7'].map(i => N[i])), 5))), true);
 F('offline', 'Offline', 'The index, pages and search are built on the phone from notes already there, so they keep working.',
-  phone(nav() + scroll(field() + banner('offline') + indexBody(INDEX, NOTES.length))));
-F('error', 'Refresh failed', 'Same as offline, with its own line. Pull to refresh retries.',
-  phone(nav() + scroll(field() + banner('error') + indexBody(INDEX, NOTES.length))));
-F('processing', 'A note still processing', 'The shipped card and status line. Until extraction finishes, a note has no labels, is not counted in the index and matches search by its title only.',
+  phone(nav() + scroll(field() + banner('offline') + indexBody(INDEX, NOTES.length))), true);
+F('error', 'Refresh failed', 'With notes on the phone: the same as offline, with its own line and a Try again button. Pull to refresh also retries.',
+  phone(nav() + scroll(field() + banner('error') + indexBody(INDEX, NOTES.length))), true);
+F('error-empty', 'Refresh failed, nothing on the phone', 'With no cached notes, Notes shows the shipped message and no field.',
+  phone(nav() + scroll('<p class="plain">Couldn\'t refresh your notes. Pull down to try again.</p>')), true);
+F('processing', 'A note still processing', 'The shipped card and status line. Until processing finishes, a note has no labels, is not counted in the index and matches search by its title only. Failed notes behave the same.',
   phone(nav() + scroll(`<h1 class="ptitle" style="margin-top:2px">all notes</h1><p class="psub">${NOTES.length + 1} notes</p>` +
-    card({ type: 'freeform', src: '9:38 AM', title: 'voice note', todos: [], said: 'synthetic transcript for design review' }, { processing: 'Waiting for extraction' }) + card(N.n1))));
+    card({ type: 'freeform', src: '9:38 AM', title: 'voice note', todos: [], said: 'synthetic transcript for design review' }, { processing: 'Waiting for extraction' }) + card(N.n1))), true);
 
 /* ---------- render ---------- */
 if (ONLY && FRAMES[ONLY]) {
@@ -524,10 +927,12 @@ if (ONLY && FRAMES[ONLY]) {
   const t = document.getElementById('themeToggle'); t.hidden = false;
   t.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
   t.onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark'; t.textContent = d.dataset.theme === 'dark' ? 'Light' : 'Dark'; };
-  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · pending Codex feasibility review</span><h1>Categories and search: an index that writes itself</h1>
-    <p>Candidate B, frozen for the handoff. Notes opens on an index of the people, projects and topics you keep coming back to. Each one is a page with its open to-dos and every place you said it. One search covers notes and to-dos. Synthetic content throughout. The handoff document is the contract; this page illustrates it.</p></header><div class="frames">`;
+  const failed = VECTORS.filter(v => !v.ok);
+  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · revision 2 · pending Codex feasibility re-review</span><h1>Categories and search: an index that writes itself</h1>
+    <p>Candidate B, frozen for the handoff. Notes opens on an index of the people, projects and topics you keep coming back to. Each one is a page with its open to-dos and every place you said it. One search covers notes and to-dos. Synthetic content throughout. The handoff document is the contract; this page illustrates it. The rules section of this script is executable and checked against the rule vectors below; frames marked “static illustration” show a state the script does not simulate.</p>
+    <span class="vstat${failed.length ? ' bad' : ''}">Rule vectors: ${VECTORS.length - failed.length}/${VECTORS.length} pass${failed.length ? ' · failing: ' + failed.map(v => esc(v.name)).join('; ') : ''}</span></header><div class="frames">`;
   Object.entries(FRAMES).forEach(([id, f]) => {
-    html += `<div class="frame">${f.html}<div class="anno"><h3>${f.t}<code>${id}</code></h3><p>${f.d}</p></div></div>`;
+    html += `<div class="frame">${f.html}<div class="anno"><h3>${f.t}<code>${id}</code>${f.ill ? '<span class="ill">static illustration</span>' : ''}</h3><p>${f.d}</p></div></div>`;
   });
   document.getElementById('root').innerHTML = html + '</div>';
 }
