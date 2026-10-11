@@ -1,0 +1,194 @@
+Claude final review, 2026-10-08: geometry and timelines
+=======================================================
+
+All times are local PDT (UTC-7) on 2026-10-08. Device: iPhone 17 Pro sim
+0DD12F5E-4A6F-48BF-A642-DEF0D2229513, iOS 26.3. App source cfa7578 (HEAD
+6b0cbbe, ios/ unchanged), debug dylib 4e0b3d16...cc9a3. Synthetic previews
+only: --throughline-preview-home --throughline-preview-running=long, plus
+--throughline-preview-capture=failed for "full tray", with
+-UIPreferredContentSizeCategoryName L (UICTContentSizeCategoryL) or AX XXXL
+(UICTContentSizeCategoryAccessibilityXXXL).
+
+How the data was collected
+---------------------------
+Geometry comes from a short LLDB attach (sv.lldb). It walks the key
+window's views and prints each UIScrollView's window-space top and bottom,
+height, contentSize.height and contentOffset.y. Then it detaches. It was
+used only on a static screen, between gestures, and never during a
+gesture. Tab-band bounds are read from frames against the list's top edge.
+
+"outer" is Home's outer HostingScrollView, "list" is the running-list
+scroll view and "tray" is the capture tray's scroll view. Numbers are in
+points. "offset" is contentOffset.y; the maximum outer offset is
+content - height + bottom inset.
+
+Motion timelines come from two sources:
+- `simctl recordVideo` (h264), with frames extracted at 402 px = 402 pt.
+  It writes frames only when the screen changes, so frames are sparse.
+  Labels are "ms since recording start".
+- `cap.sh`: back-to-back JPEG screenshots at about 0.2-0.25 s, each
+  labelled with a Unix epoch time.
+
+`grayx` is the leftmost neutral-dark pixel in the first row's band (y 385
+pt), which ignores the blue Done reveal. The row is at rest at 24 or 27,
+so drag offset = grayx - rest.
+
+1. Portrait, L, no tray (08:32:49) - baseline
+   window 402x874, safe area top 62 / bottom 34
+   outer   h 874  content 778  offset -62  (no overflow)
+   tabs    140-184 (44)
+   list    184-614 (430)  content 5272
+   Same as the Oct 6 measurements: no regression.          frame 01
+
+2. Landscape (Rotate right from the Claude simulator side panel), L, no tray
+   window 874x402, safe area left/right 62, bottom 20
+   08:33:44 initial: outer h 402, content 553; tabs 78-122 (44);
+            list 122-345 (223), content 6306                   frame 02
+   08:34:53 footer drag:        outer offset 120
+   08:35:33 footer drag:        outer offset 171 (max); recorder fully visible   frame 03
+   08:36:06 drag inside list:   list offset 80, outer still 171
+   08:36:33 drag back (footer): outer offset 1, list still 80                    frame 04
+   right swipe on a row:        completed, Today 70 -> 69                         frame 05
+   Result: PASS. Outer and list each scroll on their own; the recorder is reachable.
+
+3. Landscape, L, full tray
+   08:37:35 initial: list 122-302 (180), content 6464;
+            tray 314-358 (44), content 271                     frame 06
+   08:39:40 tray drag: tray offset 140; outer and list 0
+   08:40:10 tray drag: tray offset 220 (Save again, Play, Discard, "+2 more",
+            Show all reached)                                   frame 07
+   08:41:10 reverse tray drag: tray 190
+   08:41:39 footer drag: outer offset 150; recorder fully visible   frame 08
+   08:42:07 drag inside list: list offset 70; outer 150, tray 190 unchanged
+   Result: PASS.
+
+4. Landscape, AX XXXL, full tray
+   08:42:36 initial: outer content 750; tabs 92-177 (84);
+            list 177-357 (180), content 22351;
+            tray 369-413 (44), content 935                     frame 09
+   08:43:18 footer drag: outer offset 250
+   08:43:56 footer drag: outer offset 368 (max); recorder visible   frame 10
+   08:44:54 drag back:   outer offset 129
+   08:45:25 tray drag:   tray offset 230; outer 129 unchanged       frame 11
+   Result: PASS.
+
+5. Portrait, L, full tray (09:09:52)
+   outer content 778, offset -62
+   tabs 140-184 (44)
+   list 184-464 (280 = intended listViewport min(280, 0.4 x available)), content 5545
+   tray 476-626 (150), content 311                              frame 12
+   09:10:25 tray drag: tray 110
+   09:10:49 tray drag: tray 160 (Couldn't save, Save again, Play, Discard,
+            "+2 more", Show all reached)                        frame 13
+   09:11:17 drag inside list: list 120; tray 160 unchanged      frame 14
+   Result: PASS.
+
+6. Portrait, AX XXXL, first-use (consent) Home (09:11:39): the P3-1 target
+   tabs 154-239 (84)
+   list 239-462 (223), content 44024   [Oct 6, before cfa7578: about 158]
+   outer content 854                                           frame 15
+   09:12:08 footer drag: outer offset 14 (max); "Agree and record" visible   frame 16
+   09:12:33 drag inside list: list 130; outer unchanged                       frame 17
+   Result: PASS. P3-1 fixed: the list viewport is now >= 180 pt with the
+   84 pt tabs counted.
+
+7. Portrait, AX XXXL, full tray (09:13:20)
+   list 239-419 (180), content 25079
+   tray 431-475 (44), content 1287                              frame 18
+   09:13:49 tray 270; 09:14:26 tray 550; 09:14:59 tray 971 (Save again
+            visible; not tapped)                                frame 19
+   09:15:25 footer drag: outer 14 (max); tray still 971         frame 20
+   Result: PASS for reachability. The tray is a 44 pt keyhole at this size
+   (the minimum the budget allows); this predates cfa7578.
+
+8. Portrait, AX XXXL, Notes (09:16:00)
+   outer content 841
+   notes list 226-406 (179), content 2340
+   tray 418-462 (44)                                            frame 21
+   09:16:35 footer drag: outer 1 (max); recorder visible        frame 22
+   09:17:05 Back: Home again with tabs 84, list 180, tray 44     frame 23
+   Result: PASS.
+
+Reduce Motion
+-------------
+Method: the simulator's own Settings app (Accessibility > Motion > Reduce
+Motion), driven by simulator-tool taps. Each change was read back with
+  xcrun simctl spawn <sim> defaults read com.apple.Accessibility ReduceMotionEnabled
+and with a count of the toggle's green pixels. Inside the app it was read
+with a brief LLDB attach evaluating UIAccessibility.isReduceMotionEnabled,
+then detached before any gesture. No Mac setting was touched.
+
+  08:31:53  initial value 0 (re-read 08:46:11: 0)
+  08:47:26  set to 1 (toggle green)                         frame 24
+  08:50:35  app relaunched; in-process RM=true; detached
+  09:06:03  restored to 0; green 0                          frame 25
+  09:06     relaunch ctl0: in-process RM=false; detached
+  09:25:41  set to 1 again for the fast-swipe check. Two earlier taps
+            on the toggle did not register; the third did.
+  09:26     relaunch rmf0: in-process RM=true; detached
+  09:30:35  restored to 0 (defaults 0, green 0). Two taps did not
+            register; a 30 pt leftward drag on the knob did.  frame 35
+  09:34:15  handback relaunch: in-process RM=false; detached
+  RM was on from 08:47:26 to 09:06:03 and from 09:25:41 to 09:30:35.
+  The final state matches the initial state.
+
+RM on: rm-c120, a 130 pt right swipe (110 -> 240 at y 398, 0.35 s),
+recordVideo:
+  grayx  0:24  3230:118 (+94, clamp)  3235:118  3785:59 (completed render:
+         checked + Undo, Today 69; one-frame jump)  4472:24 (removed in
+         one frame)
+  The completion and removal have no intermediate frames.    frame 26
+
+RM on: cap-rmu4, circle tap then Undo (09:03:45). Tap (35,398), then
+screenshot, then tap Undo (354,402):
+  1791475428.567  open, Today 68
+  1791475428.816  checked + Undo, Today 67
+  1791475429.059  open again, Today 68                       frame 27
+
+RM on: rm-s55, a short 55 pt swipe (120 -> 175, 0.6 s):
+  2988:52 2993:52 3033:61 3138:70 3253:80 3272:24
+  = +28 +28 +37 +46 +56, then 0 in a single frame. No completion. frame 28
+
+RM on: rm-s45 (120 -> 170, 0.3 s): frames 0:24 and 2880:24 only; no movement
+  recorded. Today 70 unchanged. No completion.
+RM on: rm-s50 (120 -> 175, 0.3 s): frames 2972, 2975 and 2980 all at rest;
+  Today 69 unchanged. No completion.
+
+RM on: rm-fast55 (09:26-09:27), the same 120 -> 175 swipe at y 398 in
+0.3 s, matched to ctl-fast55 below. Only one frame after f0, at 1027 ms,
+and it is pixel-identical in the row band to frame 0. The row never moved.
+Today 70 unchanged. No completion.                            frame 34
+
+RM off: ctl-fast55 (09:24, relaunch "final", no debugger):
+  430:44 472:53 533:62 587:73 652:82 (+55)
+  then spring back 685:77 ... 820:27, settled by about 830-850 ms.
+  No completion.                                              frame 34
+
+RM off: ctl-c120, a 130 pt right swipe:
+  drag 2600:87 ... 2713:121 (+60 ... +94)
+  animated crossfade and spring 2975-3183
+  completed state steady 3183-3642
+  animated removal 3658-3742. Today 70 -> 69.                 frame 31
+
+RM off: ctl-s55, a short swipe, 0.6 s:
+  peak +53 at 3937 ms, then spring back +50 +41 +29 +22 +14 +10 +4 +2,
+  at rest by about 4105 ms. No completion.
+
+RM off: cap-ctlu, circle tap then Undo (09:07:48):
+  1791475674.427  checking, Today 68
+  1791475674.674  reopening, Today 69
+  1791475674.886  fully open                                  frame 32
+
+RM off: vertical drag (200,560 -> 200,300): only the list moved; no row
+  action.                                                     frame 33
+
+Attempts not counted (tool race or inert input; not app results)
+-------------------------------------------------------------------
+rm-undo         the Undo tap landed after the row moved; the ••• menu opened
+                and Today went 69 -> 68.                      frame 29
+rm-undo2,       the second tap had no visible effect; when it arrived is
+cap-rmu3        unknown.
+rm-short        sent with touch_path, which delivered nothing on screen
+                this session.
+slow 2.5 s      the long-press menu opened, as designed; dismissed by
+swipe           tapping (300,140).

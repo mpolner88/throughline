@@ -1,5 +1,7 @@
 # Scrolling and tap targets — repair review
 
+> **October 10 correction:** Five earlier curved/diagonal/reversed gesture cases are runtime-unverified because their injection tool may have been inert. The completed landscape/Reduce Motion review and the authoritative internal-delivery disposition are in [delivery readiness](2026-10-10-interaction-delivery-readiness.md). Earlier blanket pass claims below are superseded.
+
 **Verified:** 2026-10-06 (October 5 local time). **Owner:** Codex. **Baseline:** `6e1768b` on `codex/running-list`, active nonsynced checkout. **Candidate source:** `231755e593781786afc72637e195d15c5966eac9` — Repair scroll intent, tap targets, and crowded Home layouts. **Status:** implementation and focused checks complete; final runtime/Claude recheck pending. No new release is claimed.
 
 Mike requested a thorough investigation and repair of scroll and tap-target bugs. The submitted public build remains separate. The release heartbeat is paused at Mike's request; do not resume it. Claude's separate categories/search design commit and feasibility draft are preserved.

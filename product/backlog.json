@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-10-08",
+  "updated_at": "2026-10-10",
   "ordering": "Mike's September 30 order: deliver Candidate A running list (TL-TASK-001) to internal TestFlight first; categories and search (TL-KNOW-001) next; Private Evaluation (TL-EVAL-001) after that. Delivered capture recovery is preserved. Other portfolio positions remain historical and array position never authorizes work or waives a design, provider, policy, pricing, limit, onboarding or public-release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
@@ -338,15 +338,15 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike reported further scroll/tap bugs and authorized thorough investigation and repair. Release heartbeat paused at his request. Submitted public build remains separate.",
-        "current_bug": "Core gesture and target-edge matrix passed without P1/P2. Largest-text tab budget corrected in cfa7578; focused tests, exact-source Debug build, and observed landscape/full-tray reachability pass. Final Reduce Motion result and written review pending after Mac locked again. No new delivery.",
-        "current_verification": "docs/evidence/2026-10-08-interaction-closeout.md",
+        "current_bug": "Final Claude review received: landscape, largest text and Reduce Motion pass without P1/P2. Five prior gesture cases invalidated by unreliable injection remain runtime-unverified. Fast short RM swipes lack simulator drag feedback (P3, cause undetermined). Internal candidate compiled but macOS signing failed, including an independent probe; Terminal retry pending. No upload.",
+        "current_verification": "docs/evidence/2026-10-10-interaction-delivery-readiness.md",
         "slice": "docs/slices/running-list.md",
         "tandem_stage": "building",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
         "feasibility_status": "Reviewed repair follows Mike's direction to put older unfinished tasks in Today, with completed state and explicit moves intact. No backend or extraction change.",
-        "display_progress": "Scroll and tap repair — final checks and Claude review pending",
+        "display_progress": "Scroll and tap repair — signing blocked; Terminal retry pending",
         "review_pr_status": "Draft PR #4 was open at the September 30 verification; remote status was not refreshed in this October 5 app-only integration. No merge was performed.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
         "implementation_candidate": "docs/releases/2026-10-05-ios-1.0.5-2026100502-candidate.md",
@@ -363,9 +363,10 @@
         "public_listing_review": "docs/evidence/2026-10-05-claude-app-store-listing-review.md",
         "public_listing_readback": "docs/evidence/assets/2026-10-05-app-store/listing-verified.json",
         "public_submission_receipt": "docs/releases/2026-10-05-ios-1.0.5-2026100502-submission.md",
-        "interaction_candidate_revision": "cfa757890eb268a90e13b1f02a451a7bb80fdb08",
+        "interaction_candidate_revision": "bba98bb8fd01e28a3f3c73027932f1dfa66016b6",
         "interaction_source_review": "docs/evidence/2026-10-06-claude-interaction-review.md",
-        "interaction_runtime_review": "docs/evidence/2026-10-06-claude-interaction-runtime-recheck.md"
+        "interaction_runtime_review": "docs/evidence/2026-10-06-claude-interaction-runtime-recheck.md",
+        "interaction_final_review": "docs/evidence/2026-10-08-claude-interaction-final-review.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -377,7 +378,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "After unlock, collect Claude final Reduce Motion/layout review and slot handback, resolve any findings, then package and verify internal-only build 2026100801 for existing Internal QA. Keep release heartbeat paused and the public submission unchanged.",
+      "next_action": "Mike runs the prepared one-time internal-build helper in Terminal and handles any macOS password prompt. Codex then verifies the signed package and Apple processing before delivery of internal-only build 2026101001 to existing Internal QA. Phone acceptance covers scrolling, curved/reversed gestures, Reduce Motion feedback and VoiceOver. Keep release heartbeat paused and public submission unchanged.",
       "slice_phase": "canary"
     },
     {

@@ -1,5 +1,7 @@
 # Scroll and tap repair — final verification and internal candidate
 
+> **October 10 correction:** Five earlier curved/diagonal/reversed gesture cases are runtime-unverified because their injection tool may have been inert. The completed landscape/Reduce Motion review and the authoritative internal-delivery disposition are in [delivery readiness](2026-10-10-interaction-delivery-readiness.md). Earlier blanket pass claims below are superseded.
+
 **Verified:** 2026-10-08. **Owner:** Codex. **App source:** `cfa757890eb268a90e13b1f02a451a7bb80fdb08`, local `codex/running-list`. **Status:** final narrow simulator review underway; no new internal delivery yet.
 
 ## Review disposition
