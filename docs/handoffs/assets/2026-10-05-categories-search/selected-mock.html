@@ -296,6 +296,7 @@
     ["2026-10-05T09:41:00+0200", null],
     ["2026-10-05T09:41:00+24:00", null],
     ["2026-10-05T09:41:00z", null],
+    ["2026-10-05T10:00:00Zsuffix", null],
     ["", null],
     [null, null]
   ],
@@ -499,7 +500,21 @@
     { "name": "no span when no note has a known time", "label": "kiln", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York", "todos": [], "notes": [
       { "id": "k1", "status": "processed", "at": null, "people": [], "projects": [], "tags": ["kiln"] },
       { "id": "k2", "status": "processed", "at": "2026-10-01T10:00", "people": [], "projects": [], "tags": ["kiln"] }
-    ], "want": { "notes": ["k2", "k1"], "span": null, "todos": [], "related": [] } }
+    ], "want": { "notes": ["k2", "k1"], "span": null, "todos": [], "related": [] } },
+    { "name": "to-dos from notes at the same instant: the greater note ID first, then position", "label": "alpha", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York", "notes": [
+      { "id": "a", "status": "processed", "at": "2026-10-05T09:00:00Z", "people": [], "projects": [], "tags": ["alpha"] },
+      { "id": "z", "status": "processed", "at": "2026-10-05T11:00:00+02:00", "people": [], "projects": [], "tags": ["alpha"] }
+    ], "todos": [
+      { "id": "task-a", "note": "a", "text": "Draft the alpha plan", "place": "today", "done": false, "pos": 0 },
+      { "id": "task-z", "note": "z", "text": "Send the alpha plan", "place": "today", "done": false, "pos": 9 }
+    ], "want": { "notes": ["z", "a"], "span": "today", "todos": ["task-z", "task-a"], "related": [] } },
+    { "name": "to-dos from notes with no known time: the greater note ID first, then position", "label": "alpha", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York", "notes": [
+      { "id": "a", "status": "processed", "at": null, "people": [], "projects": [], "tags": ["alpha"] },
+      { "id": "z", "status": "processed", "at": null, "people": [], "projects": [], "tags": ["alpha"] }
+    ], "todos": [
+      { "id": "task-a", "note": "a", "text": "Draft the alpha plan", "place": "today", "done": false, "pos": 0 },
+      { "id": "task-z", "note": "z", "text": "Send the alpha plan", "place": "today", "done": false, "pos": 9 }
+    ], "want": { "notes": ["z", "a"], "span": null, "todos": ["task-z", "task-a"], "related": [] } }
   ],
   "visit": [
     { "name": "a visit starts with the page to-dos", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": [], "want": ["t1", "t3", "t2"] },
@@ -1139,7 +1154,7 @@ if (ONLY && FRAMES[ONLY]) {
   t.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
   t.onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark'; t.textContent = d.dataset.theme === 'dark' ? 'Light' : 'Dark'; };
   const failed = VECTORS.filter(v => !v.ok);
-  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · revision 3 · pending Codex feasibility re-review</span><h1>Categories and search: an index that writes itself</h1>
+  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · revision 4 · handoff ready</span><h1>Categories and search: an index that writes itself</h1>
     <p>Candidate B, frozen for the handoff. Notes opens on an index of the people, projects and topics you keep coming back to. Each one is a page with its open to-dos and every place you said it. One search covers notes and to-dos. Synthetic content throughout. The handoff document is the contract; this page illustrates it. The rules section of this script is executable and checked against the rule vectors below; frames marked “static illustration” show a state the script does not simulate.</p>
     <span class="vstat${failed.length ? ' bad' : ''}">Rule vectors: ${VECTORS.length - failed.length}/${VECTORS.length} pass${failed.length ? ' · failing: ' + failed.map(v => esc(v.name)).join('; ') : ''}</span></header><div class="frames">`;
   Object.entries(FRAMES).forEach(([id, f]) => {

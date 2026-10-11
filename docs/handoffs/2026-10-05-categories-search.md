@@ -3,12 +3,13 @@ handoff_id: "2026-10-05-categories-search"
 project_name: "Categories and search — an index that writes itself"
 backlog_id: "TL-KNOW-001"
 slice_brief: "docs/evidence/2026-10-05-categories-search-candidates.md"
-tandem_stage: "selected_pending_codex_feasibility_review"
-handoff_revision: 3
-prior_revision: "2, committed in 5933728, SHA-256 a8d93fb8190f430c422af2707ea34d7c0c6bd809d48e4db4e31eea0634424bad"
+tandem_stage: "handoff_ready"
+handoff_revision: 4
+prior_revision: "3, committed in 49500c7, SHA-256 2c03b764bf73f3a164484775fa63bcd20868ea8fa121a228a9bde5e6862af0d5"
 feasibility_review: "docs/evidence/2026-10-05-categories-search-feasibility.md"
 feasibility_rereview: "docs/evidence/2026-10-09-categories-search-feasibility-recheck.md"
-base_revision: "5933728"
+feasibility_rereview_2: "docs/evidence/2026-10-10-categories-search-feasibility-recheck-2.md"
+base_revision: "ecc301a"
 created_on: "2026-10-05"
 verified_on: "2026-10-10"
 design_agent: "Claude Code"
@@ -29,18 +30,30 @@ owned_paths:
 
 Follow [the Claude Code + Codex tandem workflow](../AGENT_TANDEM.md).
 
-**Stage note.** This is revision 3.
+**Stage note.** This is revision 4.
 - Mike selected Candidate B on 2026-10-05.
 - Codex reviewed revision 1 for feasibility on 2026-10-05 and requested changes: 2 blocking, 8 material and 1 minor finding ([review](../evidence/2026-10-05-categories-search-feasibility.md)). Revision 2 addressed them. The [revision 2 changes](#revision-2-changes) table maps them.
-- Codex re-reviewed revision 2 on 2026-10-09 and requested changes: 0 blocking, 4 material and 2 minor findings, CR1–CR6 ([re-review](../evidence/2026-10-09-categories-search-feasibility-recheck.md)). This revision resolves each one. The [revision 3 changes](#revision-3-changes) table maps them.
-- The stage stays `selected_pending_codex_feasibility_review` until Codex re-reviews this revision. Claude sets `handoff_ready` only after that re-review is recorded below and any new findings are resolved.
+- Codex re-reviewed revision 2 on 2026-10-09 and requested changes: 0 blocking, 4 material and 2 minor findings, CR1–CR6 ([re-review](../evidence/2026-10-09-categories-search-feasibility-recheck.md)). Revision 3 resolved each one. The [revision 3 changes](#revision-3-changes) table maps them.
+- Codex re-reviewed revision 3 on 2026-10-10 and found it `feasible`: 0 blocking, 0 material and 2 minor findings, CT1–CT2 ([re-review 2](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md)). Its receipt let Claude record CT1–CT2 and set `handoff_ready`. Revision 4 records them as Codex proposed. The [revision 4 changes](#revision-4-changes) table maps them.
+- The stage is `handoff_ready`. Codex has not re-reviewed revision 4. Its changes are prose and three added rule vectors; the mock's rules section is byte-identical to revision 3.
 - This document is not implementation authority. Build entry is Mike's separate decision.
 
-**Base.** Revision 3 is prepared on the shared local `codex/running-list` branch at `5933728fcdcff238c6ced3c346fadf62cd482e10`, which committed revision 2. Its parent is `6b0cbbe64bb3816f2ac45650a649e7236308c85b`.
+**Base.** Revision 4 is prepared on the shared local `codex/running-list` branch at `ecc301a031a59468bca823389812946cda50c752`. Revision 3 was committed in `49500c7ea1f7bc931a8fdf31a8ffc0dabc87994b`, and revision 2 in `5933728`. Two commits from another session sit between revision 3 and this base. `bba98bb` changed only the Xcode project's build number. `ecc301a` changed only another slice's documents, evidence and backlog entry.
 - Revision 1 was committed in `6e1768b`. After it, the interaction repair (`231755e`, with corrections through `6b0cbbe`) changed Home and the running-list row: a UIKit swipe recognizer that checks scroll views from the touch it receives (`64ed72c`), 44 pt targets, a tray height budget that reserves the list-tab height only outside Notes (`cfa7578`), and Back and Notes stacked at accessibility text sizes. This design inherits all of it. That repair is not released.
 - Running List 1.0.5 (2026100502) is in App Review per [CURRENT_STATE](../CURRENT_STATE.md). Apple state was not refreshed for this handoff.
-- `5933728` changed only design documents and frozen assets, so the source line references below hold at `6b0cbbe` and at `5933728`. iOS view references were checked at `6b0cbbe`. The other cited service, model and backend files are unchanged since `6e1768b`.
+- `5933728` and `49500c7` changed only design documents and frozen assets, and `bba98bb` and `ecc301a` changed no source this handoff cites, so the source line references below hold from `6b0cbbe` through `ecc301a`. iOS view references were checked at `6b0cbbe`. The other cited service, model and backend files are unchanged since `6e1768b`.
 - The brief, candidates and original questions are in the [candidates record](../evidence/2026-10-05-categories-search-candidates.md).
+
+## Revision 4 changes
+
+Codex's [re-review of revision 3](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md) found it feasible. Revision 4 records its two minor findings as proposed. Neither changes rule behavior.
+
+| Codex finding | Revision 4 change |
+| --- | --- |
+| CT1 (minor) The app's timestamp parser accepts forms that rule 12 calls unknown | [Rule 12](#rules)'s native adapter now checks the whole original timestamp against the rule's grammar and ranges before it treats the parser's result as known. A non-nil `Date` is not proof of a valid time. Known or unknown travels with the note through models and caches. The shared parser does not change. A trailing-text vector is added. |
+| CT2 (minor) To-do order has an undocumented tie-break | [Rule 7](#rules)'s to-do order now states the script's tie-break: when two source notes tie, by the same instant or both unknown, the greater source-note ID comes first, then position in the note, then to-do ID. Two page vectors are added, one for the same instant and one for unknown times. |
+
+The rule vectors grow from 189 to 192: instants from 21 to 22 and pages from 5 to 7. The mock's rules section is byte-identical to revision 3. Only its vectors block and the gallery header change, and all 32 screens are byte-identical.
 
 ## Revision 3 changes
 
@@ -103,7 +116,8 @@ Getting back to something you said more than a week ago is hard. Mike's directio
 | Source listed under [Current](#current) | Source at `6b0cbbe`, unchanged in `5933728`; backend unchanged since `6e1768b` |
 | [Codex feasibility review](../evidence/2026-10-05-categories-search-feasibility.md) of revision 1 | Codex, 2026-10-05, local read-only source and design review at `6e1768b`, with four synthetic probes of the revision 1 script |
 | [Codex feasibility re-review](../evidence/2026-10-09-categories-search-feasibility-recheck.md) of revision 2 | Codex, 2026-10-09, local read-only source and design review at `5933728`, with synthetic probes of the revision 2 script |
-| [Rule vectors](assets/2026-10-05-categories-search/verify-rules.mjs) | Claude, 2026-10-10: 194 of 194 synthetic checks (189 vectors in 18 groups, plus 5 calendar checks) pass against the mock's rules section in Node, with no network |
+| [Codex feasibility re-review 2](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md) of revision 3 | Codex, 2026-10-10, local read-only source and design review at `49500c7`, with 28 synthetic oracle probes and an extracted-parser probe under Swift 6.2.4 on macOS. It is not app or device evidence. |
+| [Rule vectors](assets/2026-10-05-categories-search/verify-rules.mjs) | Claude, 2026-10-10: 197 of 197 synthetic checks (192 vectors in 18 groups, plus 5 calendar checks) pass against the mock's rules section in Node, with no network |
 | Extraction prompt and labeled fixtures | Synthetic fixtures only: tags often repeat a project, and people are 0–1 per note |
 
 **Gaps.**
@@ -337,7 +351,7 @@ These are exact. The rules section of [selected-mock.html](assets/2026-10-05-cat
 node docs/handoffs/assets/2026-10-05-categories-search/verify-rules.mjs
 ```
 
-It runs 194 checks and exits 1 on any failure. There are 189 vectors in 18 groups: keys, queries, the ready predicate, sentences, instants, day forms, age buckets, labels, index, removal, search, both excerpt kinds, highlights, page to-do matching, whole pages, page visits and grouped search. The gallery runs the same 189 and shows the pass count on load. The script adds 5 independent weekday checks against the platform calendar in each vector's time zone.
+It runs 197 checks and exits 1 on any failure. There are 192 vectors in 18 groups: keys, queries, the ready predicate, sentences, instants, day forms, age buckets, labels, index, removal, search, both excerpt kinds, highlights, page to-do matching, whole pages, page visits and grouped search. The gallery runs the same 192 and shows the pass count on load. The script adds 5 independent weekday checks against the platform calendar in each vector's time zone.
 
 Every rule below is in the rules section, including the collection rules: page to-dos and their order, the visit's rows, related entries and grouped search. The gallery draws its frames by calling those functions, so its frames and the vectors cannot drift apart. These vectors are the shared parity set for the Swift module and for the server's key normalization. Where this prose and the script disagree, the script is the oracle and the disagreement is a handoff defect to report. Codex must not substitute a different algorithm during implementation.
 
@@ -368,7 +382,7 @@ Every rule below is in the rules section, including the collection rules: page t
    - **Input.** A to-do has an ID, its source note's ID, its text, its placement (today, this week or later while open), whether it is done, and its order in its note. The input is the authorized occurrences after deletion filters and the pending overlay (see [To-do rows outside the running list](#to-do-rows-outside-the-running-list)).
    - **Entry notes.** An entry's notes are the notes that carry its key now. While an open page stays until Back, there can be fewer than two.
    - **Qualifying.** A to-do qualifies when it is open, its source note is one of the entry's notes, and its own text contains the label's key as a run of whole words. A to-do does not qualify only because its note has the label.
-   - **To-do order.** Open before done. Open ones by placement: today, then this week, then later. Then the source note, newest first by rule 12; a source note that is not loaded counts as an unknown time. Then the to-do's order in its note. Then the to-do ID by code point. Search uses the same order.
+   - **To-do order.** Open before done. Open ones by placement: today, then this week, then later. Then the source note, newest first by rule 12; a source note that is not loaded counts as an unknown time. When two source notes tie, by the same instant or both unknown, the greater source-note ID by code point comes first. Then the to-do's order in its note. Then the to-do ID, ascending by code point. Search uses the same order.
    - **Page visit (rule 7a).** A visit starts when a page is pushed (from the index, results, a chip or a link), including a second push of the same entry. Back revealing a page continues that page's visit. The visit keeps an ordered list of displayed rows:
      - A displayed row stays, done or open, wherever its placement moves and whatever its text becomes, until its to-do is deleted or its source note is no longer one of the entry's notes.
      - A to-do that newly qualifies goes before the first displayed row that sorts after it in to-do order, or at the end if none does. Displayed rows never move.
@@ -398,12 +412,12 @@ Every rule below is in the rules section, including the collection rules: page t
     - **Grouped results.** Up to three matching index entries, in index order; then the matching to-dos in rule 7's order; then the matching notes, newest first by instant, each note once. A query with no terms has no results.
 11. **Placement tag.** A neutral tag reads today, this week, later or done, taken from the running-list placement logic. A shipped marker, such as "moved Tue" or "tomorrow", keeps its shipped style and comes before the tag. A done row shows only "done".
 12. **Times.**
-    - **Input.** A note's time is an RFC 3339 timestamp with a "T", seconds, an optional fraction and an offset ("Z" or ±hh:mm). This is the shape the shipped parser reads (`date(from:)`, [UploadClient.swift:274–283](../../ios/Throughline/Services/UploadClient.swift:274)). The fraction is truncated to milliseconds. Anything else is unknown, including a missing time, a time with no offset and an impossible date.
+    - **Input.** A note's time is an RFC 3339 timestamp with a "T", seconds, an optional fraction and an offset ("Z" or ±hh:mm). The shipped parser (`date(from:)`, [UploadClient.swift:274–283](../../ios/Throughline/Services/UploadClient.swift:274)) reads this shape, but it also accepts forms this rule calls unknown, so it is not the validity check (CT1). The fraction is truncated to milliseconds. Anything else is unknown, including a missing time, a time with no offset and an impossible date.
     - **Order.** Times compare as instants, never as strings. The same instant written in two offsets is equal, so the rule's own tie-break decides. An unknown time is older than every known time.
     - **Source label.** It uses the shipped running-list source format, for example "drive in · 8:15 AM".
     - **Day form.** "last said" and page spans use calendar dates in the phone's current time zone, never 24-hour intervals: today; yesterday; the short weekday ("Fri") for two to seven days ago; otherwise "Sep 26", with ", 2025" added for another year. A future date uses the date form. An unknown time has no day form. The index row then has no second line, the result row leaves out "last said", and the page span uses only known times.
     - **Age.** The analytics age bucket comes from elapsed time between instants, never from calendar dates: under one day; one to seven days, including exactly seven; over seven days. It is unknown when either time is unknown or the note is in the future.
-    - **Native adapter.** `ThroughlineNote.createdAt` is a non-optional `Date` ([ThroughlineNote.swift:144](../../ios/Throughline/Models/ThroughlineNote.swift:144)), and `createdAtDate` substitutes `Date()` when parsing fails ([UploadClient.swift:239–240](../../ios/Throughline/Services/UploadClient.swift:239)). The rule adapter must keep whether the time was known, so a substituted time counts as unknown. The native port must pass the instants, days and ages vectors through the parser the app uses. If that parser accepts a form the vectors call unknown, Codex adds a native vector for the form and reports it. The rule does not change silently.
+    - **Native adapter.** `ThroughlineNote.createdAt` is a non-optional `Date` ([ThroughlineNote.swift:144](../../ios/Throughline/Models/ThroughlineNote.swift:144)), and `createdAtDate` substitutes `Date()` when parsing fails ([UploadClient.swift:239–240](../../ios/Throughline/Services/UploadClient.swift:239)). The rule adapter must keep whether the time was known, so a substituted time counts as unknown. The adapter checks the whole original timestamp against this rule's grammar and its date, time and offset ranges before it treats the parser's result as known. A non-nil `Date` is not proof of a valid time. In Codex's 2026-10-10 probe on macOS, Foundation accepted an impossible date, 24:00, "+0200", "+24:00", a lowercase "z" and trailing text; each is unknown here. The shared shipped parser does not change. Known or unknown travels with the note through models and caches. The native port runs the instants, days and ages vectors, and these cases, on the supported iOS parser path. The rule does not change silently.
     - Production uses the locale's formats. The form is recomputed on calendar, time zone, locale and day changes.
 
 ### Loading and refresh
@@ -660,7 +674,7 @@ None are added. Completing a row keeps the shipped feedback.
   - index, page, results and all notes at larger text;
   - index, page and results at 375×667.
 - Automated tests:
-  - the Swift pure module passes a port of all 189 rule vectors, with the timestamp vectors run through the app's own parser, plus locale cases for the day form;
+  - the Swift pure module passes a port of all 192 rule vectors, with the timestamp vectors run through the app's own parser, plus locale cases for the day form;
   - backend tests for removal-only validation, additions, renames and unknown keys rejected, version conflict, atomic mixed Edit, repeated identity with the same and changed body, unknown-outcome retry, evaluation records, removal racing processing, deletion cascade, suppression surviving a synthetic extraction replacement, and the effective projection in every app and MCP read;
   - server key normalization passes the `keys` vectors;
   - analytics contract tests for the new names, properties and values.
@@ -717,8 +731,8 @@ None are added. Completing a row keeps the shipped feedback.
 
 ## Codex handoff
 
-- **Exact committed handoff revision:** revision 3, in the commit that records it on the local `codex/running-list` branch, prepared against `5933728`. Find it with `git log -1 -- docs/handoffs/2026-10-05-categories-search.md`. The branch is not pushed.
-- **Identity:** [SHA256SUMS.txt](assets/2026-10-05-categories-search/SHA256SUMS.txt) covers 34 files: the frozen mock (`4c5842ef138243a5c9a595247c45dc30abe6d8a46ba3eacc69d7203ceadf2ee1`), `verify-rules.mjs` (`b36b740c008b423db26ad62e10858be6fe1b8aa34d01c8e505536463626913a5`) and the 32 screens. The manifest itself is `3989702d389edbb3ce0ef3a81191665726b31c895b2042a81679abd2b7aa83b2`. Check it with `shasum -a 256 -c SHA256SUMS.txt` in the asset directory. `node verify-rules.mjs` reports 194/194.
+- **Exact committed handoff revision:** revision 4, in the commit that records it on the local `codex/running-list` branch, prepared against `ecc301a`. Find it with `git log -1 -- docs/handoffs/2026-10-05-categories-search.md`. The branch is not pushed.
+- **Identity:** [SHA256SUMS.txt](assets/2026-10-05-categories-search/SHA256SUMS.txt) covers 34 files: the frozen mock (`a3015c2c49396e26b1ecc64b47692a2a1024e06796423e3d90818ed63c610bff`), `verify-rules.mjs` (`b36b740c008b423db26ad62e10858be6fe1b8aa34d01c8e505536463626913a5`) and the 32 screens. The manifest itself is `695ddf58bdc9a7cfdc5358d346bf92d074e43bde3456dbd7a5e1519c88654732`. Check it with `shasum -a 256 -c SHA256SUMS.txt` in the asset directory. `node verify-rules.mjs` reports 197/197.
 - **Codex-owned paths:** production app and backend files, tests, canonical documents (including the decision log, CURRENT_STATE, the backlog and metrics) and integration. Claude owns the paths in `owned_paths`.
 - **Required evidence manifest:**
   - source revision;
@@ -731,15 +745,14 @@ None are added. Completing a row keeps the shipped feedback.
   - Q1, extraction fill: structurally feasible, semantics unverified (CS10).
   - Q2, the correction path: resolved by the [Edit contract](#edit-contract). A note with an evaluation revision keeps the shipped refusal of ordinary Edit; no evaluation correction route is added (CR1).
   - Q3, surviving reprocessing: resolved by the [overlay](#suppression-and-the-effective-labels).
-  - Q4, where rules run: index, folding and search on the phone; key normalization and suppression mirrored on the server for validation and effective reads; folding is display only. The rule vectors, 189 plus 5 calendar checks, are the parity set, and collection order comes from RULES rather than the gallery (CR4).
+  - Q4, where rules run: index, folding and search on the phone; key normalization and suppression mirrored on the server for validation and effective reads; folding is display only. The rule vectors, 192 plus 5 calendar checks, are the parity set, and collection order comes from RULES rather than the gallery (CR4).
   - Q5, performance: the [gate](#loading-and-refresh), to be measured. Notes and tasks load separately, and late tasks join a page by rule 7a (CR2, CR3).
   - Q6, cache protection: deferred with the gap recorded ([Data and privacy](#data-and-privacy)).
   - Q7, events: the lifecycle above, to be accepted.
   - Q8, label counts: **deferred evidence for Mike's build-entry decision.** It is not a prerequisite for `handoff_ready`. Running Codex's count-only query needs Mike's explicit authorization of a read-only database pass. Its result can show availability and sprawl, not label correctness. Nothing in this design changes extraction to make the index denser.
 - **Next gate:**
-  1. Codex re-reviews this exact revision for feasibility.
-  2. Claude resolves any new findings and sets `handoff_ready`.
-  3. Mike decides build entry, with Q8 as optional evidence.
+  1. Mike decides build entry. Q8 is optional evidence, and running it needs Mike's separate authorization.
+  2. If Mike approves build, Codex implements this exact revision and Claude reviews the implementation against it.
 
 ## Mutual review receipts
 
@@ -748,12 +761,14 @@ None are added. Completing a row keeps the shipped feedback.
 - **Technical findings and resolution:** changes requested, with 2 blocking, 8 material and 1 minor finding (CS1–CS11). Claude addressed each in revision 2, as listed in [revision 2 changes](#revision-2-changes).
 - **Codex re-review of revision 2:** Codex, 2026-10-09, [report](../evidence/2026-10-09-categories-search-feasibility-recheck.md). It reviewed revision 2 at `5933728`: handoff `a8d93fb8190f430c422af2707ea34d7c0c6bd809d48e4db4e31eea0634424bad`, mock `e91dbfd549800f768f4d984320b83ee574070e79ab7cc96e9113952998f3b50c`, manifest `32f1db1eac05609191a6f6dc03fdafafd4dd33d21392aff7354dceb55b4d8c9d`. Verdict `changes_requested`, with 0 blocking, 4 material and 2 minor findings (CR1–CR6).
   - Codex marked CS2, CS3, CS8, CS9 and CS10 resolved, and CS1, CS4, CS5, CS6, CS7 and CS11 partially resolved, with the remainder carried as CR1–CR6.
-  - Claude resolved CR1–CR6 in revision 3, as listed in [revision 3 changes](#revision-3-changes). These are Claude's resolutions. Codex has not reviewed them yet.
-- **Codex re-review of revision 3:** `peer_review_pending`.
+  - Claude resolved CR1–CR6 in revision 3, as listed in [revision 3 changes](#revision-3-changes). These are Claude's resolutions.
+- **Codex re-review of revision 3:** Codex, 2026-10-10, [report](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md). It reviewed revision 3 at `49500c7`: handoff `2c03b764bf73f3a164484775fa63bcd20868ea8fa121a228a9bde5e6862af0d5`, mock `4c5842ef138243a5c9a595247c45dc30abe6d8a46ba3eacc69d7203ceadf2ee1`, manifest `3989702d389edbb3ce0ef3a81191665726b31c895b2042a81679abd2b7aa83b2`. Another session advanced HEAD to `bba98bb`, a build-number change, during the review. Verdict `feasible`, with 0 blocking, 0 material and 2 minor findings (CT1–CT2).
+  - Codex marked CR1–CR6 resolved, and CS1, CS4, CS5, CS6, CS7 and CS11 resolved at the contract level.
+  - Claude recorded CT1–CT2 in revision 4 as Codex proposed, as listed in [revision 4 changes](#revision-4-changes), and set `handoff_ready` as the receipt allows. Codex has not re-reviewed revision 4.
 - **Claude implementation reviewer and date:** pending; follows implementation.
 - **Exact implementation revision and visual/behavior evidence reviewed:** pending.
 - **Design, interaction, accessibility, and failure-state findings and resolution:** pending.
-- **Remaining unverified checks:** every device check, the performance gate, Q1 semantics, Q8, the native rule-vector port, and every backend contract.
-- **Next owner and one next action:** Codex re-reviews revision 3 for feasibility.
+- **Remaining unverified checks:** as listed in Codex's [re-review 2](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md#remaining-unverified-checks). They include every device and native-rendering check, the performance gate, Q1 semantics, Q8, the native rule-vector port with the strict timestamp adapter, and every backend, suppression and event contract. None is a design blocker; each belongs to implementation or to Mike's build-entry decision.
+- **Next owner and one next action:** Mike decides build entry.
 
 Do not record a review as complete until that named tool actually performs it. Changed scope requires a new receipt for the affected revision. A receipt does not replace Mike's design selection or product acceptance.
