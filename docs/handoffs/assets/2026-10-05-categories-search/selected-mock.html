@@ -143,7 +143,7 @@
   .psub { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.45; margin-bottom: 14px; }
   .links { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.5; margin: 2px 0 14px; }
   .links a { color: var(--blue); text-decoration: none; font-weight: 500; position: relative; }
-  .links a::after { content: ''; position: absolute; inset: -12px -5px; } /* 44 pt hit area, no visual change */
+  .links a::after { content: ''; position: absolute; inset: -12px -5px; } /* 44 pt tall; width is approximate in the mock. Native: each name is its own button with a 44×44 pt region that doesn't overlap its neighbors */
   .said-row { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; width: 100%; text-align: left; } /* one button: source, then excerpt */
   .said-row .src { font-size: calc(12.5px * var(--s)); color: var(--blue); font-weight: 500; min-height: 22px; display: flex; align-items: center; }
   .said-row q { font-size: calc(15px * var(--s)); line-height: 1.45; quotes: "\201C" "\201D"; }
@@ -171,7 +171,7 @@
   .sh-body h2 { font-size: calc(24px * var(--s)); font-weight: 500; line-height: 1.2; }
   .sh-body .prose { font-size: calc(15px * var(--s)); line-height: 1.5; color: var(--sec); }
   .aboutrow { display: flex; flex-wrap: wrap; gap: 10px 8px; align-items: center; }
-  .aboutrow .chip { min-height: 34px; position: relative; }
+  .aboutrow .chip { min-height: 34px; min-width: 44px; justify-content: center; position: relative; }
   .aboutrow .chip::after { content: ''; position: absolute; left: 0; right: 0; top: -5px; bottom: -5px; } /* 44 pt hit area */
   .mini { display: flex; gap: 12px; align-items: center; font-size: calc(15px * var(--s)); min-height: 30px; }
   .mini i { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--sec); flex: none; }
@@ -193,6 +193,7 @@
   .morerow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; width: 100%; font-size: calc(14px * var(--s)); color: var(--sec); border-bottom: 0.5px solid var(--border); text-align: left; }
   .morerow .show { color: var(--blue); }
   .plain { font-size: calc(15px * var(--s)); color: var(--sec); margin-top: 8px; }
+  .plain-retry { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-top: 4px; color: var(--blue); font-weight: 500; font-size: calc(15px * var(--s)); }
   .card { display: flex; flex-direction: column; gap: 12px; padding: 12px 0 22px; border-bottom: 0.5px solid var(--border); }
   .card .head { display: flex; gap: 12px; align-items: flex-start; }
   .card .head .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -221,7 +222,7 @@
 <div id="root"></div>
 <script type="application/json" id="rule-vectors">
 {
-  "about": "Rule vectors for the TL-KNOW-001 handoff, revision 2. Synthetic strings only. Native and server implementations of label-key-v1 and the derived rules must produce these results. Label ordering assumes an English collation locale.",
+  "about": "Rule vectors for the TL-KNOW-001 handoff, revision 3. Synthetic strings only. Native and server implementations of label-key-v1 and the derived rules must produce these results. Label ordering assumes an English collation locale.",
   "keys": [
     ["Pricing Page", "pricing page"],
     ["  café—Plans! ", "cafe plans"],
@@ -275,26 +276,65 @@
     ["Ok.\n\n...", ["Ok."]],
     ["", []]
   ],
+  "instants": [
+    ["2026-10-05T09:41:00Z", "2026-10-05T09:41:00.000Z"],
+    ["2026-10-05T11:41:00+02:00", "2026-10-05T09:41:00.000Z"],
+    ["2026-10-05T05:41:00-04:00", "2026-10-05T09:41:00.000Z"],
+    ["2026-10-05T09:41:00-00:00", "2026-10-05T09:41:00.000Z"],
+    ["2026-10-05T00:30:00+01:00", "2026-10-04T23:30:00.000Z"],
+    ["2026-10-05T09:41:00.5+05:30", "2026-10-05T04:11:00.500Z"],
+    ["2026-10-05T09:41:00.123456Z", "2026-10-05T09:41:00.123Z"],
+    ["2026-10-05T09:41:00.9999Z", "2026-10-05T09:41:00.999Z"],
+    ["2024-02-29T12:00:00Z", "2024-02-29T12:00:00.000Z"],
+    ["2026-10-05T09:41", null],
+    ["2026-10-05T09:41:00", null],
+    ["2026-10-05", null],
+    ["2026-10-05 09:41:00Z", null],
+    ["2026-02-30T09:41:00Z", null],
+    ["2026-10-05T24:00:00Z", null],
+    ["2026-10-05T09:41:60Z", null],
+    ["2026-10-05T09:41:00+0200", null],
+    ["2026-10-05T09:41:00+24:00", null],
+    ["2026-10-05T09:41:00z", null],
+    ["", null],
+    [null, null]
+  ],
   "days": [
-    ["2026-10-05T00:00", "2026-10-05T09:41", "today"],
-    ["2026-10-04T23:59", "2026-10-05T09:41", "yesterday"],
-    ["2026-10-03T12:00", "2026-10-05T09:41", "Sat"],
-    ["2026-09-29T08:00", "2026-10-05T09:41", "Tue"],
-    ["2026-09-28T08:00", "2026-10-05T09:41", "Mon"],
-    ["2026-09-27T23:59", "2026-10-05T09:41", "Sep 27"],
-    ["2026-10-31T23:30", "2026-11-02T09:00", "Sat"],
-    ["2026-12-31T20:00", "2027-01-02T08:00", "Thu"],
-    ["2026-12-20T10:00", "2027-01-02T08:00", "Dec 20, 2026"],
-    ["2025-10-05T10:00", "2026-10-05T09:41", "Oct 5, 2025"],
-    ["2026-10-06T08:00", "2026-10-05T09:41", "Oct 6"]
+    ["2026-10-05T00:00:00Z", "2026-10-05T09:41:00Z", "UTC", "today"],
+    ["2026-10-04T23:59:00Z", "2026-10-05T09:41:00Z", "UTC", "yesterday"],
+    ["2026-10-03T12:00:00Z", "2026-10-05T09:41:00Z", "UTC", "Sat"],
+    ["2026-09-29T08:00:00Z", "2026-10-05T09:41:00Z", "UTC", "Tue"],
+    ["2026-09-28T08:00:00Z", "2026-10-05T09:41:00Z", "UTC", "Mon"],
+    ["2026-09-27T23:59:00Z", "2026-10-05T09:41:00Z", "UTC", "Sep 27"],
+    ["2026-10-31T23:30:00Z", "2026-11-02T09:00:00Z", "UTC", "Sat"],
+    ["2026-12-31T20:00:00Z", "2027-01-02T08:00:00Z", "UTC", "Thu"],
+    ["2026-12-20T10:00:00Z", "2027-01-02T08:00:00Z", "UTC", "Dec 20, 2026"],
+    ["2025-10-05T10:00:00Z", "2026-10-05T09:41:00Z", "UTC", "Oct 5, 2025"],
+    ["2026-10-06T08:00:00Z", "2026-10-05T09:41:00Z", "UTC", "Oct 6"],
+    ["2026-10-05T02:00:00Z", "2026-10-05T16:00:00Z", "America/Los_Angeles", "yesterday"],
+    ["2026-10-05T02:00:00Z", "2026-10-05T16:00:00Z", "UTC", "today"],
+    ["2026-11-01T07:30:00Z", "2026-11-02T08:00:00Z", "America/Los_Angeles", "yesterday"],
+    ["2026-03-08T07:30:00Z", "2026-03-08T10:30:00Z", "America/Los_Angeles", "yesterday"],
+    ["2026-10-04T23:30:00-04:00", "2026-10-05T09:41:00-04:00", "America/New_York", "yesterday"],
+    ["2026-10-05T01:00:00+09:00", "2026-10-05T09:00:00+09:00", "UTC", "yesterday"],
+    ["2026-10-05T01:00:00+09:00", "2026-10-05T09:00:00+09:00", "Asia/Tokyo", "today"],
+    ["2026-10-05T09:41", "2026-10-05T09:41:00Z", "UTC", null],
+    ["2026-02-30T09:41:00Z", "2026-10-05T09:41:00Z", "UTC", null],
+    [null, "2026-10-05T09:41:00Z", "UTC", null]
   ],
   "ages": [
-    ["2026-10-05T08:15", "2026-10-05T09:41", "under_1_day"],
-    ["2026-10-04T09:41", "2026-10-05T09:41", "1_to_7_days"],
-    ["2026-09-28T09:41", "2026-10-05T09:41", "1_to_7_days"],
-    ["2026-09-28T09:40", "2026-10-05T09:41", "over_7_days"],
-    [null, "2026-10-05T09:41", "unknown"],
-    ["2026-10-06T00:00", "2026-10-05T09:41", "unknown"]
+    ["2026-10-05T08:15:00Z", "2026-10-05T09:41:00Z", "under_1_day"],
+    ["2026-10-04T09:41:00Z", "2026-10-05T09:41:00Z", "1_to_7_days"],
+    ["2026-09-28T09:41:00Z", "2026-10-05T09:41:00Z", "1_to_7_days"],
+    ["2026-09-28T09:40:00Z", "2026-10-05T09:41:00Z", "over_7_days"],
+    [null, "2026-10-05T09:41:00Z", "unknown"],
+    ["2026-10-06T00:00:00Z", "2026-10-05T09:41:00Z", "unknown"],
+    ["2026-09-01T08:00:00Z", "2026-10-05T09:00:00Z", "over_7_days"],
+    ["2026-11-01T07:30:00Z", "2026-11-02T08:00:00Z", "1_to_7_days"],
+    ["2026-11-01T00:30:00-07:00", "2026-11-02T00:00:00-08:00", "1_to_7_days"],
+    ["2026-10-05T10:00:00+02:00", "2026-10-05T09:00:00Z", "under_1_day"],
+    ["2026-10-05T10:00:00Z", "2026-10-05T11:00:00+02:00", "unknown"],
+    ["2026-10-05T08:15", "2026-10-05T09:41:00Z", "unknown"]
   ],
   "notes": {
     "fold": { "id": "a", "status": "processed", "people": ["Sam"], "projects": ["pricing page", "launch email"], "tags": ["pricing", "Sam", "growth"] },
@@ -314,29 +354,51 @@
   ],
   "index": [
     { "name": "one kind per key across notes", "sup": {}, "notes": [
-      { "id": "p1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["Boston"] },
-      { "id": "p2", "status": "processed", "at": "2026-09-02T10:00", "people": [], "projects": ["Boston"], "tags": [] }
+      { "id": "p1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": [], "tags": ["Boston"] },
+      { "id": "p2", "status": "processed", "at": "2026-09-02T10:00:00Z", "people": [], "projects": ["Boston"], "tags": [] }
     ], "want": [["Boston", "projects", 2]] },
     { "name": "spelling from the most recent note", "sup": {}, "notes": [
-      { "id": "q1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": ["Q4 Plan"], "tags": [] },
-      { "id": "q2", "status": "processed", "at": "2026-09-03T10:00", "people": [], "projects": ["q4 plan"], "tags": [] }
+      { "id": "q1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": ["Q4 Plan"], "tags": [] },
+      { "id": "q2", "status": "processed", "at": "2026-09-03T10:00:00Z", "people": [], "projects": ["q4 plan"], "tags": [] }
     ], "want": [["q4 plan", "projects", 2]] },
     { "name": "spelling tie at the same time goes to the greater note id", "sup": {}, "notes": [
-      { "id": "x2", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": ["Q4 plan"], "tags": [] },
-      { "id": "x1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": ["Q4 Plan"], "tags": [] }
+      { "id": "x2", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": ["Q4 plan"], "tags": [] },
+      { "id": "x1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": ["Q4 Plan"], "tags": [] }
     ], "want": [["Q4 plan", "projects", 2]] },
     { "name": "kind, then last said, then count, then label, then key", "sup": {}, "notes": [
-      { "id": "r1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["Straße", "Strasse", "alpha", "beta"] },
-      { "id": "r2", "status": "processed", "at": "2026-09-02T10:00", "people": [], "projects": [], "tags": ["Straße", "Strasse", "beta"] },
-      { "id": "r3", "status": "processed", "at": "2026-09-02T09:00", "people": [], "projects": [], "tags": ["alpha", "beta"] },
-      { "id": "r4", "status": "processed", "at": "2026-08-01T10:00", "people": ["Ann"], "projects": [], "tags": [] },
-      { "id": "r5", "status": "processed", "at": "2026-08-02T10:00", "people": ["Ann"], "projects": [], "tags": [] }
+      { "id": "r1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": [], "tags": ["Straße", "Strasse", "alpha", "beta"] },
+      { "id": "r2", "status": "processed", "at": "2026-09-02T10:00:00Z", "people": [], "projects": [], "tags": ["Straße", "Strasse", "beta"] },
+      { "id": "r3", "status": "processed", "at": "2026-09-02T09:00:00Z", "people": [], "projects": [], "tags": ["alpha", "beta"] },
+      { "id": "r4", "status": "processed", "at": "2026-08-01T10:00:00Z", "people": ["Ann"], "projects": [], "tags": [] },
+      { "id": "r5", "status": "processed", "at": "2026-08-02T10:00:00Z", "people": ["Ann"], "projects": [], "tags": [] }
     ], "want": [["Ann", "people", 2], ["beta", "tags", 3], ["Strasse", "tags", 2], ["Straße", "tags", 2], ["alpha", "tags", 2]] },
     { "name": "a suppression and a pending note both reduce the count", "sup": { "t1": ["travel"] }, "notes": [
-      { "id": "t1", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["travel"] },
-      { "id": "t2", "status": "processed", "at": "2026-09-02T10:00", "people": [], "projects": [], "tags": ["travel"] },
-      { "id": "t3", "status": "uploaded", "summary": "x", "at": "2026-09-03T10:00", "people": [], "projects": [], "tags": ["travel"] }
-    ], "want": [] }
+      { "id": "t1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": [], "tags": ["travel"] },
+      { "id": "t2", "status": "processed", "at": "2026-09-02T10:00:00Z", "people": [], "projects": [], "tags": ["travel"] },
+      { "id": "t3", "status": "uploaded", "summary": "x", "at": "2026-09-03T10:00:00Z", "people": [], "projects": [], "tags": ["travel"] }
+    ], "want": [] },
+    { "name": "a repeated note id counts once", "sup": {}, "notes": [
+      { "id": "d1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": ["deck"], "tags": [] },
+      { "id": "d1", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": ["deck"], "tags": [] }
+    ], "want": [] },
+    { "name": "the most recent note is the later instant, not the later string", "sup": {}, "notes": [
+      { "id": "o1", "status": "processed", "at": "2026-09-03T10:00:00+02:00", "people": [], "projects": ["Q4 Plan"], "tags": [] },
+      { "id": "o2", "status": "processed", "at": "2026-09-03T09:00:00Z", "people": [], "projects": ["q4 plan"], "tags": [] }
+    ], "want": [["q4 plan", "projects", 2]] },
+    { "name": "the same instant in two offsets goes to the greater note id", "sup": {}, "notes": [
+      { "id": "s2", "status": "processed", "at": "2026-09-03T11:00:00+02:00", "people": [], "projects": ["Q4 plan"], "tags": [] },
+      { "id": "s1", "status": "processed", "at": "2026-09-03T09:00:00Z", "people": [], "projects": ["Q4 Plan"], "tags": [] }
+    ], "want": [["Q4 plan", "projects", 2]] },
+    { "name": "entries order by the latest instant across offsets", "sup": {}, "notes": [
+      { "id": "w1", "status": "processed", "at": "2026-09-03T23:00:00-04:00", "people": [], "projects": [], "tags": ["alpha"] },
+      { "id": "w2", "status": "processed", "at": "2026-09-01T10:00:00Z", "people": [], "projects": [], "tags": ["alpha", "beta"] },
+      { "id": "w3", "status": "processed", "at": "2026-09-04T01:00:00Z", "people": [], "projects": [], "tags": ["beta"] }
+    ], "want": [["alpha", "tags", 2], ["beta", "tags", 2]] },
+    { "name": "an unknown time is the oldest", "sup": {}, "notes": [
+      { "id": "u1", "status": "processed", "at": null, "people": [], "projects": [], "tags": ["alpha", "Garden"] },
+      { "id": "u2", "status": "processed", "at": "2026-09-01T10:00", "people": [], "projects": [], "tags": ["Alpha"] },
+      { "id": "u3", "status": "processed", "at": "2026-08-01T10:00:00Z", "people": [], "projects": [], "tags": ["garden"] }
+    ], "want": [["garden", "tags", 2], ["Alpha", "tags", 2]] }
   ],
   "removal": [
     { "name": "removing a project also suppresses its folded topic", "note": "fold", "key": "pricing page", "sup": {}, "want": ["pricing page", "pricing"] },
@@ -378,7 +440,8 @@
     { "name": "accents match and highlight the whole word", "q": "cafe", "note": { "status": "processed", "summary": "Plans.", "said": "the café menu", "mi": [] }, "want": "“…the [café] menu.”" },
     { "name": "most important", "q": "bank", "note": { "status": "processed", "summary": "Plans.", "said": "", "mi": ["Book the dentist", "Call the bank"] }, "want": "Call the [bank]" },
     { "name": "matched only by a label: the summary, unhighlighted", "q": "priya", "note": { "status": "processed", "summary": "Lunch plans.", "said": "lunch", "mi": [], "people": ["Priya"] }, "want": "Lunch plans." },
-    { "name": "a note that is not ready has no excerpt", "q": "sam", "note": { "status": "uploaded", "summary": "Sam.", "said": "Sam", "mi": [] }, "want": null }
+    { "name": "a note that is not ready has no excerpt", "q": "sam", "note": { "status": "uploaded", "summary": "Sam.", "said": "Sam", "mi": [] }, "want": null },
+    { "name": "a repeated term counts once", "q": "alpha alpha beta gamma", "note": { "status": "processed", "summary": "Plans.", "said": "Alpha. Beta gamma.", "mi": [] }, "want": "“…[Beta] [gamma].”" }
   ],
   "pageExcerpt": [
     { "name": "the transcript sentence with the label", "label": "pricing page", "note": { "said": "We cleared the garage. The pricing page is late.", "summary": "x." }, "want": "“…The [pricing page] is late.”" },
@@ -404,12 +467,75 @@
     ["Fix the pages", "page", false],
     ["Price the page", "pricing page", false],
     ["Book the Boston train", "Boston trip", false]
+  ],
+  "library": {
+    "about": "Shared synthetic notes and to-dos for the pages, visit and searchAll groups. A case may replace the notes, add notes (addNotes), add to-dos (add), or patch to-dos by id, where null deletes one.",
+    "notes": [
+      { "id": "c1", "status": "processed", "title": "morning", "at": "2026-10-05T08:00:00-04:00", "summary": "Roof repair quote from Ana.", "said": "Ana sent the roof repair quote.", "mi": [], "people": ["Ana"], "projects": ["roof repair"], "tags": ["house"] },
+      { "id": "c2", "status": "processed", "title": "lunch", "at": "2026-10-05T13:30:00+02:00", "summary": "Deposit for the roof repair.", "said": "pay the roof repair deposit this week", "mi": [], "people": ["Ana"], "projects": ["Roof repair"], "tags": ["house"] },
+      { "id": "c3", "status": "processed", "title": "Saturday", "at": "2026-10-03T09:00:00Z", "summary": "Comparing quotes and the budget.", "said": "compare the quotes and update the budget", "mi": [], "people": [], "projects": ["roof repair"], "tags": ["budget"] },
+      { "id": "c4", "status": "processed", "title": "note", "at": null, "summary": "House budget.", "said": "the house budget", "mi": [], "people": [], "projects": [], "tags": ["house", "budget"] },
+      { "id": "c5", "status": "processed", "title": "evening", "at": "2026-10-04T20:00:00-04:00", "summary": "Budget talk with Ana.", "said": "talked budget with Ana", "mi": [], "people": ["Ana"], "projects": [], "tags": ["budget"] }
+    ],
+    "todos": [
+      { "id": "t1", "note": "c1", "text": "Call Ana about the roof repair quote", "place": "today", "done": false, "pos": 0 },
+      { "id": "t2", "note": "c2", "text": "Pay the roof repair deposit", "place": "this week", "done": false, "pos": 0 },
+      { "id": "t3", "note": "c3", "text": "Compare roof repair quotes", "place": "today", "done": false, "pos": 0 },
+      { "id": "t4", "note": "c3", "text": "Update the budget", "place": "later", "done": false, "pos": 1 },
+      { "id": "t5", "note": "c1", "text": "Check the roof repair permit", "place": null, "done": true, "pos": 1 },
+      { "id": "t6", "note": "c5", "text": "Budget for the roof", "place": "today", "done": false, "pos": 0 },
+      { "id": "t7", "note": "c4", "text": "Ask Ana", "place": "later", "done": false, "pos": 0 }
+    ]
+  },
+  "pages": [
+    { "name": "notes newest first by instant; span in the phone's zone; to-dos; comes up with", "label": "roof repair", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York",
+      "want": { "notes": ["c1", "c2", "c3"], "span": "Sat to today", "todos": ["t1", "t3", "t2"], "related": ["Ana", "house", "budget"] } },
+    { "name": "a note with an unknown time is listed last and left out of the span", "label": "budget", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York",
+      "want": { "notes": ["c5", "c3", "c4"], "span": "Sat to yesterday", "todos": ["t6", "t4"], "related": ["Ana", "roof repair", "house"] } },
+    { "name": "the span follows the phone's time zone", "label": "budget", "now": "2026-10-05T13:41:00Z", "tz": "UTC",
+      "want": { "notes": ["c5", "c3", "c4"], "span": "Sat to today", "todos": ["t6", "t4"], "related": ["Ana", "roof repair", "house"] } },
+    { "name": "one day when every known time is on the same day", "label": "house", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York",
+      "want": { "notes": ["c1", "c2", "c4"], "span": "today", "todos": [], "related": ["Ana", "roof repair", "budget"] } },
+    { "name": "no span when no note has a known time", "label": "kiln", "now": "2026-10-05T09:41:00-04:00", "tz": "America/New_York", "todos": [], "notes": [
+      { "id": "k1", "status": "processed", "at": null, "people": [], "projects": [], "tags": ["kiln"] },
+      { "id": "k2", "status": "processed", "at": "2026-10-01T10:00", "people": [], "projects": [], "tags": ["kiln"] }
+    ], "want": { "notes": ["k2", "k1"], "span": null, "todos": [], "related": [] } }
+  ],
+  "visit": [
+    { "name": "a visit starts with the page to-dos", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": [], "want": ["t1", "t3", "t2"] },
+    { "name": "a row done elsewhere stays where it was", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t3", "t2"], "patch": { "t3": { "done": true, "place": null } }, "want": ["t1", "t3", "t2"] },
+    { "name": "a placement change does not move a shown row", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t3", "t2"], "patch": { "t2": { "place": "today" } }, "want": ["t1", "t3", "t2"] },
+    { "name": "a new visit uses the current order", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": [], "patch": { "t2": { "place": "today" } }, "want": ["t1", "t2", "t3"] },
+    { "name": "a shown row whose text changes stays", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t3", "t2"], "patch": { "t2": { "text": "Pay the deposit" } }, "want": ["t1", "t3", "t2"] },
+    { "name": "a new to-do goes before the first shown row that sorts after it", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t3", "t2"],
+      "add": [{ "id": "t8", "note": "c2", "text": "Book the roof repair crew", "place": "today", "done": false, "pos": 1 }], "want": ["t1", "t8", "t3", "t2"] },
+    { "name": "a new to-do that sorts last goes at the end", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t3", "t2"],
+      "add": [{ "id": "t9", "note": "c3", "text": "Schedule the roof repair", "place": "later", "done": false, "pos": 2 }], "want": ["t1", "t3", "t2", "t9"] },
+    { "name": "a to-do reopened elsewhere returns in order", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t2"], "want": ["t1", "t3", "t2"] },
+    { "name": "a done to-do that was not shown is not added", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": [], "patch": { "t3": { "done": true, "place": null } }, "want": ["t1", "t2"] },
+    { "name": "a deleted to-do leaves", "label": "roof repair", "ids": ["c1", "c2", "c3"], "shown": ["t1", "t3", "t2"], "patch": { "t3": null }, "want": ["t1", "t2"] },
+    { "name": "a note that loses the label takes its rows", "label": "roof repair", "ids": ["c1", "c3"], "shown": ["t1", "t3", "t2"], "want": ["t1", "t3"] }
+  ],
+  "searchAll": [
+    { "name": "index, then to-dos open before done, then notes", "q": "roof", "want": { "index": ["roof repair"], "todos": ["t1", "t6", "t3", "t2", "t5"], "notes": ["c1", "c2", "c3"] } },
+    { "name": "every term must match the same item", "q": "ana budget", "want": { "index": [], "todos": [], "notes": ["c5"] } },
+    { "name": "notes newest first by instant, not by string", "q": "a", "want": { "index": ["Ana"], "todos": ["t1", "t7"], "notes": ["c1", "c2", "c5", "c3"] } },
+    { "name": "a query with no terms has no results", "q": " – ", "want": { "index": [], "todos": [], "notes": [] } },
+    { "name": "a note that is not ready matches on its title only", "q": "repair", "addNotes": [
+      { "id": "c6", "status": "processing", "title": "roof walk", "at": "2026-10-05T09:00:00-04:00", "summary": "Roof repair photos.", "said": "", "mi": [], "people": [], "projects": ["roof repair"], "tags": [] }
+    ], "want": { "index": ["roof repair"], "todos": ["t1", "t3", "t2", "t5"], "notes": ["c1", "c2", "c3"] } },
+    { "name": "a note that is not ready is found by its title", "q": "walk", "addNotes": [
+      { "id": "c6", "status": "processing", "title": "roof walk", "at": "2026-10-05T09:00:00-04:00", "summary": "Roof repair photos.", "said": "", "mi": [], "people": [], "projects": ["roof repair"], "tags": [] }
+    ], "want": { "index": [], "todos": [], "notes": ["c6"] } },
+    { "name": "a repeated note id is one result", "q": "roof", "addNotes": [
+      { "id": "c1", "status": "processed", "title": "morning", "at": "2026-10-05T08:00:00-04:00", "summary": "Roof repair quote from Ana.", "said": "Ana sent the roof repair quote.", "mi": [], "people": ["Ana"], "projects": ["roof repair"], "tags": ["house"] }
+    ], "want": { "index": ["roof repair"], "todos": ["t1", "t6", "t3", "t2", "t5"], "notes": ["c1", "c2", "c3"] } }
   ]
 }
 </script>
 <script>
 // RULES-BEGIN
-// The exact rules of the handoff (revision 2). Pure functions with no DOM. verify-rules.mjs runs the vectors in
+// The exact rules of the handoff (revision 3). Pure functions with no DOM. verify-rules.mjs runs the vectors in
 // #rule-vectors against this section, and the gallery runs the same check on load. Frames marked "static
 // illustration" show a state; this script does not simulate saving, loading, recording or navigation.
 
@@ -462,23 +588,33 @@ function globalKinds(notes, sup) {
   return g;
 }
 
-// 6. The index. An entry is a key on two or more distinct notes. Its spelling is the one on the most recent note;
-// ties go to the higher-precedence field, then the earlier place in that field, then the greater note id (code
-// points). Order: kind section; last said, newest first; note count, highest first; label, localized and
-// case-insensitive; key, by code point.
+// Notes are identified by id. The input holds one record per id (the merge's accepted record); a repeated id is
+// a caller error, and the rules use only its first record, so a note is never counted twice.
+function uniqueNotes(notes) {
+  const seen = new Set();
+  return notes.filter(n => !seen.has(n.id) && seen.add(n.id));
+}
+// Newest first by creation instant (rule 12); a note with an unknown time comes after every known one; ties go to
+// the greater note id.
+const newer = (a, b) => cmpInstant(instantOf(b.at), instantOf(a.at)) || cp(b.id, a.id);
+
+// 6. The index. An entry is a key on two or more distinct notes. Its spelling is the one on the most recent note,
+// by instant; ties go to the higher-precedence field, then the earlier place in that field, then the greater note id
+// (code points). Order: kind section; last said, newest first; note count, highest first; label, localized and
+// case-insensitive; key, by code point. `last` is the most recent note's time as given.
 function buildIndex(notes, sup) {
-  const g = globalKinds(notes, sup), m = new Map();
-  notes.forEach(n => noteLabels(n, sup).forEach(x => {
-    const e = m.get(x.k) || { k: x.k, f: g.get(x.k), ids: [], last: '', l: '' };
-    const c = e.src;
-    if (!c || n.at > c.at || (n.at === c.at && (rank(x.f) - rank(c.f) || x.i - c.i || -cp(n.id, c.id)) < 0)) {
-      e.src = { at: n.at, f: x.f, i: x.i, id: n.id }; e.l = x.l; e.last = n.at;
+  const ns = uniqueNotes(notes), g = globalKinds(ns, sup), m = new Map();
+  ns.forEach(n => noteLabels(n, sup).forEach(x => {
+    const e = m.get(x.k) || { k: x.k, f: g.get(x.k), ids: [], last: null, l: '' };
+    const c = e.src, t = instantOf(n.at), d = c ? cmpInstant(t, c.t) : 1;
+    if (d > 0 || (d === 0 && (rank(x.f) - rank(c.f) || x.i - c.i || -cp(n.id, c.id)) < 0)) {
+      e.src = { t, f: x.f, i: x.i, id: n.id }; e.l = x.l; e.last = n.at ?? null;
     }
     e.ids.push(n.id);
     m.set(x.k, e);
   }));
   return [...m.values()].filter(e => e.ids.length >= 2).sort((a, b) =>
-    rank(a.f) - rank(b.f) || cp(b.last, a.last) || b.ids.length - a.ids.length ||
+    rank(a.f) - rank(b.f) || cmpInstant(b.src.t, a.src.t) || b.ids.length - a.ids.length ||
     a.l.localeCompare(b.l, undefined, { sensitivity: 'base' }) || cp(a.k, b.k));
 }
 
@@ -554,8 +690,53 @@ function pageExcerpt(n, key) {
   for (const s of sum) if ((hit = findRun(s, key))) return { ...windowed(s, [hit]), quote: false };
   return sum.length ? { text: sum[0], ranges: [], cut: false, quote: false } : null;
 }
-// 7. Page to-dos: open to-dos on the entry's notes whose own text contains the label as a whole-word run.
+// 7. Page to-dos. A to-do is { id, note, text, place, done, pos }: `note` is its source note's id, `place` is today,
+// this week or later while open, and `pos` is its order in that note. The input is the authorized occurrences after
+// deletion filters and the pending overlay. An entry's notes are the notes that carry its key now, which can be
+// fewer than two while an open page stays until Back. A page lists the open to-dos from those notes whose own text
+// contains the label as a whole-word run.
 const todoNames = (text, key) => findRun(text, key) !== null;
+const PLACES = ['today', 'this week', 'later'];
+// To-do order: open before done; open ones by placement; then the source note, newest first; then order in the note.
+function todoOrder(notes) {
+  const byId = new Map(uniqueNotes(notes).map(n => [n.id, n])), note = id => byId.get(id) || { id, at: null };
+  return (a, b) => (a.done - b.done) || (a.done ? 0 : PLACES.indexOf(a.place) - PLACES.indexOf(b.place)) ||
+    newer(note(a.note), note(b.note)) || a.pos - b.pos || cp(a.id, b.id);
+}
+function pageTodos(e, notes, todos) {
+  const ids = new Set(e.ids);
+  return todos.filter(t => !t.done && ids.has(t.note) && todoNames(t.text, e.k)).sort(todoOrder(notes));
+}
+// 7a. A page visit. A visit starts when a page is pushed (from the index, results, a chip or a link), including a
+// second push of the same entry; Back revealing a page continues that page's visit. `shown` is the ids the visit
+// displays, in order. A shown row stays, done or open and wherever its placement moves, until its to-do is deleted
+// or its source note is no longer one of the entry's notes. A to-do that newly qualifies (rule 7) goes before the
+// first displayed row that sorts after it in to-do order, otherwise at the end. Returns the ids to display; the
+// section shows while there are any, and its count is the displayed rows still open.
+function visitRows(shown, e, notes, todos) {
+  const ids = new Set(e.ids), live = new Map(todos.map(t => [t.id, t])), order = todoOrder(notes);
+  const out = shown.filter(id => live.has(id) && ids.has(live.get(id).note)).map(id => live.get(id));
+  const have = new Set(out.map(t => t.id));
+  pageTodos(e, notes, todos).filter(t => !have.has(t.id)).forEach(t => {
+    const at = out.findIndex(x => order(x, t) > 0);
+    out.splice(at < 0 ? out.length : at, 0, t);
+  });
+  return out.map(t => t.id);
+}
+// A page's notes, newest first, and its span: "{oldest day} to {newest day}", one day when they are the same, from
+// the notes with a known time; none when no note has one.
+const entryNotes = (e, notes) => { const ids = new Set(e.ids); return uniqueNotes(notes).filter(n => ids.has(n.id)).sort(newer); };
+function spanOf(ns, now, tz) {
+  const days = ns.map(n => dayForm(n.at, now, tz)).filter(d => d !== null);
+  if (!days.length) return null;
+  return days[0] === days[days.length - 1] ? days[0] : `${days[days.length - 1]} to ${days[0]}`;
+}
+// 8. Comes up with: up to three other index entries sharing the most notes with this one; ties keep index order.
+function related(e, index) {
+  const ids = new Set(e.ids);
+  return index.map((o, i) => ({ o, i, s: o.k === e.k ? 0 : o.ids.filter(id => ids.has(id)).length }))
+    .filter(x => x.s > 0).sort((a, b) => b.s - a.s || a.i - b.i).slice(0, 3).map(x => x.o);
+}
 
 // 10. Search. Terms are the query's key words, and every term must start some word of the item. Index entries
 // match on their label; to-dos on their own text, open and done; ready notes on title, summary, most important,
@@ -567,33 +748,73 @@ const noteMatches = (n, ts, sup) => matchesAll(noteWords(n, sup), ts);
 // the most distinct terms (the earliest on ties), quoted; the most-important item with the most terms; the summary.
 // A note that is not ready shows no excerpt.
 function noteExcerpt(n, ts) {
-  if (!isReady(n) || !ts.length) return null;
+  const uts = [...new Set(ts)]; // a repeated term counts once
+  if (!isReady(n) || !uts.length) return null;
   const sum = String(n.summary ?? '').trim();
-  const count = s => { const ws = words(s); return ts.filter(t => ws.some(w => w.startsWith(t))).length; };
+  const count = s => { const ws = words(s); return uts.filter(t => ws.some(w => w.startsWith(t))).length; };
   const best = list => list.reduce((b, s) => { const c = count(s); return c > b.c ? { s, c } : b; }, { s: null, c: 0 }).s;
   const said = best(sentencesOf(n.said)), mi = best((n.mi || []).map(s => String(s).trim()).filter(Boolean));
-  const x = sum && count(sum) === ts.length ? { text: sum, quote: false } : said ? { text: said, quote: true }
+  const x = sum && count(sum) === uts.length ? { text: sum, quote: false } : said ? { text: said, quote: true }
     : mi ? { text: mi, quote: false } : sum ? { text: sum, quote: false } : null;
   return x && { ...windowed(x.text, termRanges(x.text, ts)), quote: x.quote };
 }
+// One search over an index, the notes and the to-dos (rule 7's to-do shape): up to three index entries in index
+// order, then the matching to-dos in to-do order, then the matching notes, newest first. A query with no terms has
+// no results.
+function searchAll(q, index, notes, todos, sup) {
+  const ts = queryTerms(q);
+  return {
+    ts,
+    index: index.filter(e => matchesAll(words(e.l), ts)).slice(0, 3),
+    todos: todos.filter(t => matchesAll(words(t.text), ts)).sort(todoOrder(notes)),
+    notes: uniqueNotes(notes).filter(n => noteMatches(n, ts, sup)).sort(newer),
+  };
+}
 
-// 12. Day form for "last said" and page spans, from calendar dates in the phone's current time zone, never 24-hour
+// 12. Times. A time is an RFC 3339 timestamp with a "T", seconds, an optional fraction and an offset ("Z" or
+// ±hh:mm): the shape the shipped parser reads. The fraction is kept to milliseconds, truncated. Anything else,
+// including a missing time, is unknown. Times compare as instants, never as strings; an unknown time comes before
+// every known one in ascending order, so it is the oldest.
+const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(?:(Z)|([+-])(\d{2}):(\d{2}))$/;
+const utcDay = (y, m, d) => { const x = new Date(0); x.setUTCFullYear(y, m - 1, d); return x; };
+function instantOf(s) {
+  const m = typeof s === 'string' ? RFC3339.exec(s) : null;
+  if (!m) return null;
+  const [y, mo, d, h, mi, se] = m.slice(1, 7).map(Number), oh = Number(m[10] ?? 0), om = Number(m[11] ?? 0);
+  const day = utcDay(y, mo, d);
+  if (day.getUTCFullYear() !== y || day.getUTCMonth() !== mo - 1 || day.getUTCDate() !== d) return null;
+  if (h > 23 || mi > 59 || se > 59 || oh > 23 || om > 59) return null;
+  const ms = Number(((m[7] ?? '') + '000').slice(0, 3)), off = (m[9] === '-' ? -1 : 1) * (oh * 60 + om) * 6e4;
+  return day.getTime() + ((h * 60 + mi) * 60 + se) * 1e3 + ms - off;
+}
+const cmpInstant = (a, b) => a === b ? 0 : a === null ? -1 : b === null ? 1 : a - b;
+// The calendar date of an instant in a time zone (an IANA name; production uses the phone's current zone).
+const CIVIL = new Map();
+function civilDate(ms, tz) {
+  if (!CIVIL.has(tz)) CIVIL.set(tz, new Intl.DateTimeFormat('en-US', { timeZone: tz, calendar: 'gregory', numberingSystem: 'latn', year: 'numeric', month: 'numeric', day: 'numeric' }));
+  const p = Object.fromEntries(CIVIL.get(tz).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return [Number(p.year), Number(p.month), Number(p.day)];
+}
+// Day form for "last said" and page spans, from calendar dates in the phone's current time zone, never 24-hour
 // intervals: today; yesterday; the short weekday for two to seven days ago (the shipped source-time boundary);
-// otherwise "Sep 26", with the year added when it is not the current year. Production uses the locale's formats.
+// otherwise "Sep 26", with the year added when it is not the current year; a future date takes the date form. An
+// unknown time has no day form. Production uses the locale's formats.
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-function dayForm(at, now) {
-  const [y, m, d] = at.slice(0, 10).split('-').map(Number), [ny, nm, nd] = now.slice(0, 10).split('-').map(Number);
-  const day = Date.UTC(y, m - 1, d), diff = Math.round((Date.UTC(ny, nm - 1, nd) - day) / 864e5);
+function dayForm(at, now, tz) {
+  const a = instantOf(at), b = instantOf(now);
+  if (a === null || b === null) return null;
+  const [y, m, d] = civilDate(a, tz), [ny, nm, nd] = civilDate(b, tz);
+  const day = utcDay(y, m, d), diff = Math.round((utcDay(ny, nm, nd) - day) / 864e5);
   if (diff === 0) return 'today';
   if (diff === 1) return 'yesterday';
-  if (diff >= 2 && diff <= 7) return WDAY[new Date(day).getUTCDay()];
+  if (diff >= 2 && diff <= 7) return WDAY[day.getUTCDay()];
   return `${MON[m - 1]} ${d}` + (y !== ny ? `, ${y}` : '');
 }
-// Analytics age bucket, from elapsed time: under one day; one to seven days, inclusive of exactly seven; over seven
-// days; unknown when the time is missing or in the future.
+// Analytics age bucket, from elapsed time between instants: under one day; one to seven days, inclusive of exactly
+// seven; over seven days; unknown when either time is unknown or the note is in the future.
 function ageBucket(at, now) {
-  const ms = at ? Date.parse(now + 'Z') - Date.parse(at + 'Z') : NaN;
+  const a = instantOf(at), b = instantOf(now), ms = a === null || b === null ? NaN : b - a;
   if (!(ms >= 0)) return 'unknown';
   return ms < 864e5 ? 'under_1_day' : ms <= 7 * 864e5 ? '1_to_7_days' : 'over_7_days';
 }
@@ -606,8 +827,9 @@ function runVectors(V) {
   V.queries.forEach(([s, want]) => t(`query ${q(s)}`, queryTerms(s), want));
   V.ready.forEach(([n, want]) => t(`ready ${q(n)}`, isReady(n), want));
   V.sentences.forEach(([s, want]) => t(`sentences ${q(s)}`, sentencesOf(s), want));
-  V.days.forEach(([at, now, want]) => t(`day ${at} at ${now}`, dayForm(at, now), want));
-  V.ages.forEach(([at, now, want]) => t(`age ${at} at ${now}`, ageBucket(at, now), want));
+  V.instants.forEach(([s, want]) => { const ms = instantOf(s); t(`instant ${q(s)}`, ms === null ? null : new Date(ms).toISOString(), want); });
+  V.days.forEach(([at, now, tz, want]) => t(`day ${q(at)} at ${q(now)} in ${tz}`, dayForm(at, now, tz), want));
+  V.ages.forEach(([at, now, want]) => t(`age ${q(at)} at ${q(now)}`, ageBucket(at, now), want));
   V.labels.forEach(c => t(`labels: ${c.name}`, noteLabels(V.notes[c.note], c.sup).map(x => [x.l, x.f]), c.want));
   V.index.forEach(c => t(`index: ${c.name}`, buildIndex(c.notes, c.sup).map(e => [e.l, e.f, e.ids.length]), c.want));
   V.removal.forEach(c => t(`removal: ${c.name}`, removalKeys(V.notes[c.note], c.key, c.sup), c.want));
@@ -616,6 +838,21 @@ function runVectors(V) {
   V.pageExcerpt.forEach(c => t(`page excerpt: ${c.name}`, excerptPlain(pageExcerpt(c.note, labelKey(c.label))), c.want));
   V.highlight.forEach(([text, s, want]) => t(`highlight ${q(s)} in ${q(text)}`, termRanges(text, queryTerms(s)).map(([a, b]) => text.slice(a, b)), want));
   V.todos.forEach(([text, label, want]) => t(`page to-do ${q(label)} in ${q(text)}`, todoNames(text, labelKey(label)), want));
+  const lib = c => {
+    const notes = (c.notes || V.library.notes).concat(c.addNotes || []);
+    const todos = (c.todos || V.library.todos).flatMap(x => c.patch && c.patch[x.id] === null ? [] : [{ ...x, ...((c.patch || {})[x.id] || {}) }]).concat(c.add || []);
+    return { notes, todos, sup: c.sup || {} };
+  };
+  V.pages.forEach(c => {
+    const { notes, todos, sup } = lib(c), index = buildIndex(notes, sup), e = index.find(x => x.k === labelKey(c.label));
+    const ns = e ? entryNotes(e, notes) : [];
+    t(`page: ${c.name}`, !e ? null : { notes: ns.map(n => n.id), span: spanOf(ns, c.now, c.tz), todos: pageTodos(e, notes, todos).map(x => x.id), related: related(e, index).map(o => o.l) }, c.want);
+  });
+  V.visit.forEach(c => { const { notes, todos } = lib(c); t(`visit: ${c.name}`, visitRows(c.shown, { k: labelKey(c.label), ids: c.ids }, notes, todos), c.want); });
+  V.searchAll.forEach(c => {
+    const { notes, todos, sup } = lib(c), r = searchAll(c.q, buildIndex(notes, sup), notes, todos, sup);
+    t(`search all ${q(c.q)}: ${c.name}`, { index: r.index.map(e => e.l), todos: r.todos.map(x => x.id), notes: r.notes.map(n => n.id) }, c.want);
+  });
   return out;
 }
 // RULES-END
@@ -630,63 +867,63 @@ if (P.get('h')) document.documentElement.style.setProperty('--h', P.get('h') + '
 const VECTORS = runVectors(JSON.parse(document.getElementById('rule-vectors').textContent));
 
 /* ---------- synthetic data (no real notes) ---------- */
-// "Now" is Monday, October 5, 9:41 AM. Labels are what extraction already returns: people, projects and
+// "Now" is Monday, October 5, 9:41 AM, on a phone set to New York time. Labels are what extraction already returns: people, projects and
 // topic tags. `src` is the shipped running-list source time; "last said" and page spans use dayForm.
 // `mi` is the note's most-important list. Every fixture note is processed unless it says otherwise.
-const NOW = '2026-10-05T09:41';
+const NOW = '2026-10-05T09:41:00-04:00', TZ = 'America/New_York';
 const NOTES = [
-  { id: 'n1', title: 'drive in', type: 'freeform', at: '2026-10-05T08:15', src: '8:15 AM', full: 'Mon, Oct 5 at 8:15 AM',
+  { id: 'n1', title: 'drive in', type: 'freeform', at: '2026-10-05T08:15:00-04:00', src: '8:15 AM', full: 'Mon, Oct 5 at 8:15 AM',
     summary: 'Pricing page copy before the launch email goes out. Ask Sam about the annual plan.',
     said: 'get the pricing page copy done before the launch email goes out, and ask Sam about the annual plan',
     mi: ['Pricing page copy before the launch email'],
     people: ['Sam'], projects: ['pricing page', 'launch email'], tags: ['pricing'],
     todos: [{ t: 'Draft the pricing page copy', p: 'today' }, { t: 'Ask Sam about the annual plan', p: 'today' }] },
-  { id: 'n2', title: 'morning walk', type: 'morning', at: '2026-10-05T07:42', src: '7:42 AM', full: 'Mon, Oct 5 at 7:42 AM',
+  { id: 'n2', title: 'morning walk', type: 'morning', at: '2026-10-05T07:42:00-04:00', src: '7:42 AM', full: 'Mon, Oct 5 at 7:42 AM',
     summary: 'The dentist this week, call Mom about Sunday dinner, a slower start.',
     said: 'I need to call Mom about Sunday dinner, and get the dentist booked this week',
     mi: ['Book the dentist'],
     people: ['Mom'], projects: ['Sunday dinner'], tags: ['dentist', 'health', 'family'],
     todos: [{ t: 'Book the dentist', p: 'this week' }, { t: 'Call Mom about Sunday dinner', p: 'today' }] },
-  { id: 'n3', title: 'drive home', type: 'evening', at: '2026-10-02T18:10', src: 'Fri 6:10 PM', full: 'Fri, Oct 2 at 6:10 PM',
+  { id: 'n3', title: 'drive home', type: 'evening', at: '2026-10-02T18:10:00-04:00', src: 'Fri 6:10 PM', full: 'Fri, Oct 2 at 6:10 PM',
     summary: 'The launch email is close. Marcus wants the numbers by Wednesday.',
     said: 'the launch email is close, one more read, and Marcus wants the numbers by Wednesday',
     mi: ['Numbers to Marcus by Wednesday'],
     people: ['Marcus'], projects: ['launch email', 'metrics doc'], tags: ['numbers'],
     todos: [{ t: 'Send Marcus the metrics doc', p: 'done', done: true }, { t: 'Final read of the launch email', p: 'today' }] },
-  { id: 'n4', title: 'Sat walk', type: 'freeform', at: '2026-09-26T10:05', src: 'Sep 26', full: 'Sat, Sep 26 at 10:05 AM',
+  { id: 'n4', title: 'Sat walk', type: 'freeform', at: '2026-09-26T10:05:00-04:00', src: 'Sep 26', full: 'Sat, Sep 26 at 10:05 AM',
     summary: 'Garage shelves and the pottery course, whenever.',
     said: 'at some point the garage shelves, and look at that pottery course',
     people: [], projects: ['garage shelves', 'pottery course'], tags: ['home'],
     todos: [{ t: 'Measure the garage wall', p: 'later' }, { t: 'Look up the pottery course', p: 'later' }] },
-  { id: 'n5', title: 'lunch walk', type: 'freeform', at: '2026-09-24T12:20', src: 'Sep 24', full: 'Thu, Sep 24 at 12:20 PM',
+  { id: 'n5', title: 'lunch walk', type: 'freeform', at: '2026-09-24T12:20:00-04:00', src: 'Sep 24', full: 'Thu, Sep 24 at 12:20 PM',
     summary: 'The pricing tiers feel wrong; three is too many. Keep the free plan.',
     said: 'the pricing tiers feel wrong, three is too many, but keep the free plan',
     mi: ['Two tiers, keep the free plan'],
     people: [], projects: ['pricing page'], tags: ['pricing', 'free plan'],
     todos: [{ t: 'Sketch a two-tier pricing page', p: 'today' }] },
-  { id: 'n6', title: 'evening', type: 'evening', at: '2026-09-22T21:02', src: 'Sep 22', full: 'Tue, Sep 22 at 9:02 PM',
+  { id: 'n6', title: 'evening', type: 'evening', at: '2026-09-22T21:02:00-04:00', src: 'Sep 22', full: 'Tue, Sep 22 at 9:02 PM',
     summary: 'Ran 5k and the knee felt fine. Physical therapy on Thursday.',
     said: 'ran the 5k, knee felt fine, physical therapy is Thursday',
     people: [], projects: ['physical therapy'], tags: ['running', 'health'],
     todos: [{ t: 'Confirm physical therapy Thursday', p: 'done', done: true }] },
-  { id: 'n7', title: 'drive in', type: 'morning', at: '2026-09-18T08:20', src: 'Sep 18', full: 'Fri, Sep 18 at 8:20 AM',
+  { id: 'n7', title: 'drive in', type: 'morning', at: '2026-09-18T08:20:00-04:00', src: 'Sep 18', full: 'Fri, Sep 18 at 8:20 AM',
     summary: 'Sam needs the deck by Friday. Boston in October.',
     said: 'Sam needs the deck by Friday, and Boston is in October',
     mi: ['Deck to Sam by Friday'],
     people: ['Sam'], projects: ['deck', 'Boston trip'], tags: ['travel'],
     todos: [{ t: 'Send Sam the revised deck', p: 'done', done: true }, { t: 'Book the Boston train', p: 'later' }] },
-  { id: 'n8', title: 'weekly review', type: 'weekly review', at: '2026-09-13T19:30', src: 'Sep 13', full: 'Sun, Sep 13 at 7:30 PM',
+  { id: 'n8', title: 'weekly review', type: 'weekly review', at: '2026-09-13T19:30:00-04:00', src: 'Sep 13', full: 'Sun, Sep 13 at 7:30 PM',
     summary: 'A good week for writing. Too many meetings. Protect the mornings.',
     said: 'good week for writing, too many meetings, protect the mornings',
     mi: ['Protect the mornings'],
     people: [], projects: [], tags: ['writing', 'mornings'],
     todos: [{ t: 'Block mornings for writing', p: 'today' }] },
-  { id: 'n9', title: 'walk with Mom', type: 'freeform', at: '2026-09-06T17:40', src: 'Sep 6', full: 'Sun, Sep 6 at 5:40 PM',
+  { id: 'n9', title: 'walk with Mom', type: 'freeform', at: '2026-09-06T17:40:00-04:00', src: 'Sep 6', full: 'Sun, Sep 6 at 5:40 PM',
     summary: "Mom's birthday is in November. She'd like a photo book.",
     said: "Mom's birthday is in November, she said she'd like a photo book",
     people: ['Mom'], projects: ['photo book'], tags: ['birthday', 'family'],
     todos: [{ t: 'Start the photo book for Mom', p: 'later' }] },
-  { id: 'n10', title: 'errands', type: 'freeform', at: '2026-08-21T17:30', src: 'Aug 21', full: 'Fri, Aug 21 at 5:30 PM',
+  { id: 'n10', title: 'errands', type: 'freeform', at: '2026-08-21T17:30:00-04:00', src: 'Aug 21', full: 'Fri, Aug 21 at 5:30 PM',
     summary: 'The lease message and the library books.',
     said: 'email the landlord about the lease, and the library books are due',
     people: [], projects: ['lease'], tags: ['errands', 'home'],
@@ -696,36 +933,12 @@ NOTES.forEach(n => { n.status = n.status || 'processed'; n.mi = n.mi || []; });
 const N = Object.fromEntries(NOTES.map(n => [n.id, n]));
 const SUP = {}; // no suppressions in these frames; the Edit frames show a removal staged, not saved
 const GK = globalKinds(NOTES, SUP);
-const indexOf = notes => buildIndex(notes, SUP).map(e => ({ ...e, lastDay: dayForm(e.last, NOW) }));
+// The shared to-do shape (rule 7); `t` keeps the fixture row for drawing.
+const TODOS = NOTES.flatMap(n => n.todos.map((t, i) => ({ id: `${n.id}.${i}`, note: n.id, text: t.t, place: t.done ? null : t.p, done: !!t.done, pos: i, t })));
+const indexOf = notes => buildIndex(notes, SUP).map(e => ({ ...e, lastDay: dayForm(e.last, NOW, TZ) }));
 const INDEX = indexOf(NOTES);
 const entry = l => INDEX.find(e => e.k === labelKey(l));
 const kindOne = f => KINDS.find(x => x.f === f).one;
-const notesOf = e => e.ids.map(i => N[i]).sort((a, b) => cp(b.at, a.at) || cp(b.id, a.id));
-const PLACE = { today: 0, 'this week': 1, later: 2, done: 3 };
-const byPlace = (a, b) => PLACE[a[0].p] - PLACE[b[0].p] || cp(b[1].at, a[1].at);
-// 7. A page lists the open to-dos from its notes whose own text names the label as whole words.
-function pageTodos(e) {
-  const out = [];
-  notesOf(e).forEach(n => n.todos.forEach(t => { if (!t.done && todoNames(t.t, e.k)) out.push([t, n]); }));
-  return out.sort(byPlace);
-}
-// 8. Up to three other index entries sharing the most notes with this one; ties keep index order.
-function comesUpWith(e) {
-  return INDEX.filter(o => o !== e).map(o => ({ o, s: o.ids.filter(i => e.ids.includes(i)).length }))
-    .filter(x => x.s > 0).sort((a, b) => b.s - a.s || INDEX.indexOf(a.o) - INDEX.indexOf(b.o)).slice(0, 3).map(x => x.o);
-}
-// 10. One search: up to three index entries, then to-dos by placement, then notes, newest first.
-function search(q) {
-  const ts = queryTerms(q);
-  const index = INDEX.filter(e => matchesAll(words(e.l), ts)).slice(0, 3);
-  const todos = [], notes = [];
-  NOTES.slice().sort((a, b) => cp(b.at, a.at) || cp(b.id, a.id)).forEach(n => {
-    n.todos.forEach(t => { if (matchesAll(words(t.t), ts)) todos.push([t, n]); });
-    if (noteMatches(n, ts, SUP)) notes.push(n);
-  });
-  return { ts, index, todos: todos.sort(byPlace), notes };
-}
-
 /* ---------- helpers ---------- */
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 // Marks whole-word ranges computed by the rules, as offsets into the original text.
@@ -778,8 +991,8 @@ function trow(todo, n, ts) {
     ${done ? '' : '<span class="dots" aria-label="More actions">•••</span>'}</div>`;
 }
 function irow(e, { sub, ts } = {}) {
-  const s = sub || `last said ${e.lastDay}`;
-  return `<button class="irow"><span class="lbl">${ts ? hl(e.l, ts) : esc(e.l)}<span class="sub">${esc(s)}</span></span>${sub ? '' : `<span class="cnt">${e.ids.length}</span>`}<span class="chev">${ICON.chev}</span></button>`;
+  const s = sub || (e.lastDay ? `last said ${e.lastDay}` : ''); // no "last said" when no note has a known time
+  return `<button class="irow"><span class="lbl">${ts ? hl(e.l, ts) : esc(e.l)}${s ? `<span class="sub">${esc(s)}</span>` : ''}</span>${sub ? '' : `<span class="cnt">${e.ids.length}</span>`}<span class="chev">${ICON.chev}</span></button>`;
 }
 const allNotesRow = count => `<button class="irow" style="margin-top:14px"><span class="lbl">all notes</span><span class="cnt">${count}</span><span class="chev">${ICON.chev}</span></button>`;
 const indexFoot = '<p class="foot" style="margin-top:12px">Things you’ve mentioned once are on their note and in search.</p>';
@@ -797,10 +1010,10 @@ function nrow(n, ts) {
     ${x ? `<span class="ex${x.quote ? ' said' : ''}">${ex}</span>` : ''}${about ? `<span class="about">about ${esc(about)}</span>` : ''}</button>`;
 }
 function results(q) {
-  const r = search(q);
+  const r = searchAll(q, INDEX, NOTES, TODOS, SUP);
   let html = '';
-  if (r.index.length) html += sect('in your index') + r.index.map(e => irow(e, { ts: r.ts, sub: `${kindOne(e.f)} · ${e.ids.length} notes · last said ${e.lastDay}` })).join('');
-  if (r.todos.length) html += sect('to-dos', r.todos.length, !!html) + r.todos.map(([t, n]) => trow(t, n, r.ts)).join('');
+  if (r.index.length) html += sect('in your index') + r.index.map(e => irow(e, { ts: r.ts, sub: [kindOne(e.f), `${e.ids.length} notes`, e.lastDay && `last said ${e.lastDay}`].filter(Boolean).join(' · ') })).join('');
+  if (r.todos.length) html += sect('to-dos', r.todos.length, !!html) + r.todos.map(x => trow(x.t, N[x.note], r.ts)).join('');
   if (r.notes.length) html += sect('notes', r.notes.length, !!html) + r.notes.map(n => nrow(n, r.ts)).join('');
   return html || noResults(q);
 }
@@ -810,14 +1023,12 @@ function noResults(q) {
 // Each "where you said it" row is one button: the source line, then the excerpt. With no excerpt, only the source.
 function page(label) {
   const e = entry(label);
-  const ns = notesOf(e);
-  const first = dayForm(ns[ns.length - 1].at, NOW), last = dayForm(ns[0].at, NOW);
-  const span = first === last ? last : `${first} to ${last}`;
-  const links = comesUpWith(e);
-  const todos = pageTodos(e);
-  return `<span class="eyebrow">${kindOne(e.f)}</span><h1 class="ptitle">${esc(e.l)}</h1><p class="psub">${ns.length} notes · ${esc(span)}</p>` +
+  const ns = entryNotes(e, NOTES), span = spanOf(ns, NOW, TZ);
+  const links = related(e, INDEX);
+  const todos = visitRows([], e, NOTES, TODOS).map(id => TODOS.find(x => x.id === id)); // a visit just pushed
+  return `<span class="eyebrow">${kindOne(e.f)}</span><h1 class="ptitle">${esc(e.l)}</h1><p class="psub">${ns.length} notes${span ? ` · ${esc(span)}` : ''}</p>` +
     (links.length ? `<p class="links">comes up with ${links.map(o => `<a>${esc(o.l)}</a>`).join(' · ')}</p>` : '') +
-    (todos.length ? sect('open to-dos', todos.length) + todos.map(([t, n]) => trow(t, n)).join('') : '') +
+    (todos.length ? sect('open to-dos', todos.length) + todos.map(x => trow(x.t, N[x.note])).join('') : '') +
     sect('where you said it', null, todos.length > 0) +
     ns.map(n => {
       const x = pageExcerpt(n, e.k);
@@ -837,7 +1048,7 @@ function sheet(n) {
 }
 // The shipped Edit form, abbreviated: the illustration omits most important and the transcript field. "about"
 // sits after the to-dos editor and before the transcript. Kinds are the global kinds (rule 5).
-// mode: 'edit' (a removal staged, Undo until Save), 'locked' (a record whose labels can't be removed), or
+// mode: 'edit' (a removal staged, Undo until Save), 'locked' (a Private Evaluation note after its refused Save), or
 // 'unconfirmed' (the shipped frozen state after a save whose outcome is unknown).
 const FOOT = {
   edit: 'Chosen from what you said. Removing one takes this note off that page, here and for your agent.',
@@ -856,7 +1067,7 @@ function editSheet(n, removed, mode = 'edit') {
   <span class="eyebrow">to-dos</span>${n.todos.map(t => `<div class="fieldbox ghost">${esc(t.t)}</div>`).join('')}
   <span class="eyebrow" style="margin-top:6px">about</span><div class="form-sect">${rows}</div><p class="foot">${FOOT[mode]}</p>`;
   return `<div class="scrim"></div><div class="sheet"><div class="sh-head"><button class="pillbtn">${frozen ? 'Close' : 'Cancel'}</button><span class="ttl">Edit note</span><button class="pillbtn" style="color:var(--blue);font-weight:500">Save</button></div>
-  <div class="sh-body">${frozen ? '<p class="err">Couldn\'t confirm the save. Tap Save to try again.</p><div class="frozen">' + fields + '</div>' : fields}${mode === 'locked' ? '<a class="privacy">How we treat recordings</a>' : ''}</div></div>`;
+  <div class="sh-body">${frozen ? '<p class="err">Couldn\'t confirm the save. Tap Save to try again.</p><div class="frozen">' + fields + '</div>' : mode === 'locked' ? '<p class="err">Couldn\'t save your change. Try again.</p>' + fields : fields}${mode === 'locked' ? '<a class="privacy">How we treat recordings</a>' : ''}</div></div>`;
 }
 // The shipped note card, unchanged except that its eyebrow gains the date in the running list's format.
 function card(n, { processing = '' } = {}) {
@@ -884,9 +1095,9 @@ F('results', 'Typing “sam”', 'One search: matching index entries first, then
   phone(nav() + scroll(field({ q: 'sam', focus: true, cancel: true }) + results('sam')), { kbd: true }));
 F('once', 'A label said once', 'Tapping a label that is not in the index opens search with that label as the query. Here nothing is in the index, so results start with to-dos.',
   phone(nav() + scroll(field({ q: 'Marcus', cancel: true }) + results('Marcus'))));
-F('page', 'A page', 'An entry’s page: kind, count and span, what it comes up with, the open to-dos that name it, and every place you said it, newest first. Each place is one button.',
+F('page', 'A page', 'An entry’s page: kind, count and span, what it comes up with, the open to-dos that name it, and every place you said it, newest first. Each place is one button. Each related name is its own button, with a 44-point square natively.',
   phone(nav() + scroll(page('pricing page'))));
-F('page-quiet', 'A page with no open to-dos', 'With no open to-do naming the topic, that section is left out. When the transcript never says the word, the summary line is shown without quotes.',
+F('page-quiet', 'A page with no open to-dos', 'While this visit has no to-do to show, that section is left out; a to-do that qualifies later adds it. When the transcript never says the word, the summary line is shown without quotes.',
   phone(nav() + scroll(page('health'))));
 F('all-notes', 'All notes', 'Today’s Notes list, unchanged, one level down. Each card’s eyebrow now carries the date, in the running list’s format.',
   phone(nav() + scroll(`<h1 class="ptitle" style="margin-top:2px">all notes</h1><p class="psub">${NOTES.length} notes</p>` + card(N.n1) + card(N.n3))));
@@ -894,7 +1105,7 @@ F('note', 'Note: what it’s about', 'The note sheet gains one quiet line under 
   phone(nav() + scroll('') + sheet(N.n1), { rec: false }));
 F('edit', 'Correcting a label', 'Edit gains an “about” section after the to-dos and before the transcript. Remove is staged with Undo and goes with Save in the same transaction. Removing “pricing page” also keeps the folded “pricing” from appearing. Nothing asks you to add labels.',
   phone(nav() + scroll('') + editSheet(N.n1, 'pricing page'), { rec: false }), true);
-F('edit-locked', 'Labels that can’t be removed', 'A record whose edits go through Private Evaluation keeps its existing restrictions: its labels are shown without Remove, and the form says so. The shipped privacy link stays.',
+F('edit-locked', 'Labels that can’t be removed', 'A note linked to Private Evaluation, after Save. The shipped Edit form still opens, and the server refuses its Save for these notes, so the shipped message shows and the form stays editable. This revision adds no save route. Its labels are listed without Remove, the foot says so, and the shipped privacy link stays. Making these notes editable is separate scope for Mike.',
   phone(nav() + scroll('') + editSheet(N.n3, '', 'locked'), { rec: false }), true);
 F('edit-unconfirmed', 'Save not confirmed', 'The shipped frozen state after a save whose outcome is unknown, with a removal in it. Fields are read-only, Close replaces Cancel, and Save retries the same request. It survives relaunch.',
   phone(nav() + scroll('') + editSheet(N.n1, 'pricing page', 'unconfirmed'), { rec: false }), true);
@@ -912,8 +1123,8 @@ F('offline', 'Offline', 'The index, pages and search are built on the phone from
   phone(nav() + scroll(field() + banner('offline') + indexBody(INDEX, NOTES.length))), true);
 F('error', 'Refresh failed', 'With notes on the phone: the same as offline, with its own line and a Try again button. Pull to refresh also retries.',
   phone(nav() + scroll(field() + banner('error') + indexBody(INDEX, NOTES.length))), true);
-F('error-empty', 'Refresh failed, nothing on the phone', 'With no cached notes, Notes shows the shipped message and no field.',
-  phone(nav() + scroll('<p class="plain">Couldn\'t refresh your notes. Pull down to try again.</p>')), true);
+F('error-empty', 'Refresh failed, nothing on the phone', 'With no cached notes, including an empty cache while offline, Notes shows the shipped message, no field, and Try again; pull to refresh also retries. A retry that fails keeps this state. Only a load that finishes with no notes shows “Your notes will appear here.”',
+  phone(nav() + scroll('<p class="plain">Couldn\'t refresh your notes. Pull down to try again.</p><button class="plain-retry">Try again</button>')), true);
 F('processing', 'A note still processing', 'The shipped card and status line. Until processing finishes, a note has no labels, is not counted in the index and matches search by its title only. Failed notes behave the same.',
   phone(nav() + scroll(`<h1 class="ptitle" style="margin-top:2px">all notes</h1><p class="psub">${NOTES.length + 1} notes</p>` +
     card({ type: 'freeform', src: '9:38 AM', title: 'voice note', todos: [], said: 'synthetic transcript for design review' }, { processing: 'Waiting for extraction' }) + card(N.n1))), true);
@@ -928,7 +1139,7 @@ if (ONLY && FRAMES[ONLY]) {
   t.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
   t.onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark'; t.textContent = d.dataset.theme === 'dark' ? 'Light' : 'Dark'; };
   const failed = VECTORS.filter(v => !v.ok);
-  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · revision 2 · pending Codex feasibility re-review</span><h1>Categories and search: an index that writes itself</h1>
+  let html = `<header class="masthead"><span class="eyebrow">TL-KNOW-001 · selected by Mike, 2026-10-05 · revision 3 · pending Codex feasibility re-review</span><h1>Categories and search: an index that writes itself</h1>
     <p>Candidate B, frozen for the handoff. Notes opens on an index of the people, projects and topics you keep coming back to. Each one is a page with its open to-dos and every place you said it. One search covers notes and to-dos. Synthetic content throughout. The handoff document is the contract; this page illustrates it. The rules section of this script is executable and checked against the rule vectors below; frames marked “static illustration” show a state the script does not simulate.</p>
     <span class="vstat${failed.length ? ' bad' : ''}">Rule vectors: ${VECTORS.length - failed.length}/${VECTORS.length} pass${failed.length ? ' · failing: ' + failed.map(v => esc(v.name)).join('; ') : ''}</span></header><div class="frames">`;
   Object.entries(FRAMES).forEach(([id, f]) => {

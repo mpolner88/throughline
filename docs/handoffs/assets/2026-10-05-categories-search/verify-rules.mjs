@@ -14,11 +14,11 @@ if (!rules || !vectors) { console.error('RULES section or rule-vectors block not
 const V = JSON.parse(vectors);
 const results = new Function(`${rules}\nreturn runVectors;`)()(V);
 
-// Independent check of the expected weekdays, using the platform calendar rather than the rule's own table.
-const WD = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });
-V.days.filter(([, , want]) => /^[A-Z][a-z]{2}$/.test(want) && !/^[A-Z][a-z]{2} \d/.test(want)).forEach(([at, now, want]) => {
-  const got = WD.format(new Date(at.slice(0, 10) + 'T12:00:00Z'));
-  results.push({ name: `calendar weekday of ${at}`, ok: got === want, got, want });
+// Independent check of the expected weekdays, using the platform calendar in each vector's time zone rather than
+// the rule's own table.
+V.days.filter(([, , , want]) => /^[A-Z][a-z]{2}$/.test(want ?? '')).forEach(([at, , tz, want]) => {
+  const got = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz }).format(new Date(at));
+  results.push({ name: `calendar weekday of ${at} in ${tz}`, ok: got === want, got, want });
 });
 
 const failed = results.filter(r => !r.ok);

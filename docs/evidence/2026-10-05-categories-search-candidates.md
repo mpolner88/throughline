@@ -1,6 +1,6 @@
 # Categories and search — design candidates (TL-KNOW-001)
 
-**Verified:** 2026-10-05. **Author:** Claude Code (design only). **Tandem stage:** `candidates_ready`, then `awaiting_mike_selection`. On 2026-10-05 Mike selected **Candidate B**: "I choose candidate B (an index that writes itself)." The [handoff](../handoffs/2026-10-05-categories-search.md) is held at `selected_pending_codex_feasibility_review`. **Backlog:** TL-KNOW-001 (`collecting_evidence`, depends on TL-DATA-001). No production app, backend, prompt, schema or release file was changed. Codex reviewed handoff revision 1 on 2026-10-05 and requested changes ([review](2026-10-05-categories-search-feasibility.md)). Handoff revision 2 resolves them and awaits Codex's re-review. Build entry is not approved. See [Codex feasibility questions](#codex-feasibility-questions).
+**Verified:** 2026-10-05. **Author:** Claude Code (design only). **Tandem stage:** `candidates_ready`, then `awaiting_mike_selection`. On 2026-10-05 Mike selected **Candidate B**: "I choose candidate B (an index that writes itself)." The [handoff](../handoffs/2026-10-05-categories-search.md) is held at `selected_pending_codex_feasibility_review`. **Backlog:** TL-KNOW-001 (`collecting_evidence`, depends on TL-DATA-001). No production app, backend, prompt, schema or release file was changed. Codex reviewed handoff revision 1 on 2026-10-05 and requested changes ([review](2026-10-05-categories-search-feasibility.md)). Codex re-reviewed revision 2 on 2026-10-09 and requested changes again ([re-review](2026-10-09-categories-search-feasibility-recheck.md)). Handoff revision 3 resolves them and awaits Codex's re-review. Build entry is not approved. See [Codex feasibility questions](#codex-feasibility-questions).
 
 - Checkout: `throughline-local`, branch `codex/running-list`, HEAD `8b30dd8ac3e2847b542189e588d1905e0b3071be`. There are no `ios/`, `supabase/` or `core/` changes since `d7f2676`, which is the app source of the submitted Running List 1.0.5 (2026100502, WAITING_FOR_REVIEW per [CURRENT_STATE](../CURRENT_STATE.md)). Apple state was not refreshed here.
 - Candidates: [mockup/categories-search/candidates.html](../../mockup/categories-search/candidates.html), SHA-256 `8e9f05e9fb385feb3ccf85fce3eed8c322b458d2e5512ecebb1ad73eb7fbc826`. Use `?only=<frame>` for one frame, plus `&theme=dark`, `&ax=1` for larger text, and `&w=375&h=667`.
@@ -122,9 +122,11 @@ This was a recommendation, not a selection. Mike selected B; the recommendation 
 Mike selected B on 2026-10-05. The contract is the [handoff](../handoffs/2026-10-05-categories-search.md) and its frozen target, [selected-mock.html](../handoffs/assets/2026-10-05-categories-search/selected-mock.html), with 32 reference screens and executable rule vectors. That handoff records the clarifications Claude made while freezing.
 
 - Codex reviewed revision 1 for feasibility and answered Q1–Q8 ([review](2026-10-05-categories-search-feasibility.md)). It requested changes, with 2 blocking, 8 material and 1 minor finding.
-- Revision 2 of the handoff resolves CS1–CS11 and records a disposition for each question. Q8 is deferred evidence for Mike's build-entry decision, and running it needs Mike's authorization.
+- Revision 2 of the handoff addressed CS1–CS11 and recorded a disposition for each question.
+- Codex re-reviewed revision 2 ([re-review](2026-10-09-categories-search-feasibility-recheck.md)). It requested changes, with 0 blocking, 4 material and 2 minor findings (CR1–CR6).
+- Revision 3 of the handoff resolves CR1–CR6. Q8 is deferred evidence for Mike's build-entry decision, and running it needs Mike's authorization.
 
 Next:
-1. Codex re-reviews handoff revision 2 for feasibility.
+1. Codex re-reviews handoff revision 3 for feasibility.
 2. Claude resolves any new findings and sets `handoff_ready`.
 3. Mike decides build entry.
