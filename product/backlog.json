@@ -338,7 +338,7 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike reported further scroll/tap bugs and authorized thorough investigation and repair. Release heartbeat paused at his request. Submitted public build remains separate.",
-        "current_bug": "Final Claude review received: landscape, largest text and Reduce Motion pass without P1/P2. Five prior gesture cases invalidated by unreliable injection remain runtime-unverified. Fast short RM swipes lack simulator drag feedback (P3, cause undetermined). Internal candidate compiled but macOS signing failed, including an independent probe; Terminal retry pending. No upload.",
+        "current_bug": "Final Claude review received: landscape, largest text and Reduce Motion pass without P1/P2. Five prior gesture cases invalidated by unreliable injection remain runtime-unverified. Fast short RM swipes lack simulator drag feedback (P3, cause undetermined). Internal candidate compiled but macOS signing failed, including an independent probe; Terminal retry failed without a prompt; direct synthetic signing returns authentication failure. Keychain authentication pending. No upload.",
         "current_verification": "docs/evidence/2026-10-10-interaction-delivery-readiness.md",
         "slice": "docs/slices/running-list.md",
         "tandem_stage": "building",
@@ -346,7 +346,7 @@
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
         "feasibility_status": "Reviewed repair follows Mike's direction to put older unfinished tasks in Today, with completed state and explicit moves intact. No backend or extraction change.",
-        "display_progress": "Scroll and tap repair — signing blocked; Terminal retry pending",
+        "display_progress": "Scroll and tap repair — signing-key authentication blocked",
         "review_pr_status": "Draft PR #4 was open at the September 30 verification; remote status was not refreshed in this October 5 app-only integration. No merge was performed.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
         "implementation_candidate": "docs/releases/2026-10-05-ios-1.0.5-2026100502-candidate.md",
@@ -378,7 +378,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Mike runs the prepared one-time internal-build helper in Terminal and handles any macOS password prompt. Codex then verifies the signed package and Apple processing before delivery of internal-only build 2026101001 to existing Internal QA. Phone acceptance covers scrolling, curved/reversed gestures, Reduce Motion feedback and VoiceOver. Keep release heartbeat paused and public submission unchanged.",
+      "next_action": "Mike authenticates the existing signing keychain in Terminal; Codex reruns a small synthetic signing probe before another archive attempt. Codex then verifies the signed package and Apple processing before delivery of internal-only build 2026101001 to existing Internal QA. Phone acceptance covers scrolling, curved/reversed gestures, Reduce Motion feedback and VoiceOver. Keep release heartbeat paused and public submission unchanged.",
       "slice_phase": "canary"
     },
     {
