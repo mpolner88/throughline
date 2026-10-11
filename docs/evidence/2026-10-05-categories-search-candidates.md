@@ -126,7 +126,7 @@ Mike selected B on 2026-10-05. The contract is the [handoff](../handoffs/2026-10
 - Codex re-reviewed revision 2 ([re-review](2026-10-09-categories-search-feasibility-recheck.md)). It requested changes, with 0 blocking, 4 material and 2 minor findings (CR1–CR6).
 - Revision 3 of the handoff resolved CR1–CR6.
 - Codex re-reviewed revision 3 ([re-review 2](2026-10-10-categories-search-feasibility-recheck-2.md)) and found it `feasible`, with 0 blocking, 0 material and 2 minor findings (CT1–CT2).
-- Revision 4 of the handoff records CT1–CT2 as Codex proposed and sets `handoff_ready`. Codex has not re-reviewed revision 4. Q8 is deferred evidence for Mike's build-entry decision, and running it needs Mike's authorization.
+- Revision 4 of the handoff records CT1–CT2 as Codex proposed and sets `handoff_ready`. Codex confirmed revision 4 with no findings ([confirmation](2026-10-10-categories-search-rev4-confirmation.md)). Q8 is deferred evidence for Mike's build-entry decision, and running it needs Mike's authorization.
 
 Next:
 1. Mike decides build entry.

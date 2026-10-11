@@ -9,6 +9,7 @@ prior_revision: "3, committed in 49500c7, SHA-256 2c03b764bf73f3a164484775fa63bc
 feasibility_review: "docs/evidence/2026-10-05-categories-search-feasibility.md"
 feasibility_rereview: "docs/evidence/2026-10-09-categories-search-feasibility-recheck.md"
 feasibility_rereview_2: "docs/evidence/2026-10-10-categories-search-feasibility-recheck-2.md"
+feasibility_confirmation: "docs/evidence/2026-10-10-categories-search-rev4-confirmation.md"
 base_revision: "ecc301a"
 created_on: "2026-10-05"
 verified_on: "2026-10-10"
@@ -35,7 +36,7 @@ Follow [the Claude Code + Codex tandem workflow](../AGENT_TANDEM.md).
 - Codex reviewed revision 1 for feasibility on 2026-10-05 and requested changes: 2 blocking, 8 material and 1 minor finding ([review](../evidence/2026-10-05-categories-search-feasibility.md)). Revision 2 addressed them. The [revision 2 changes](#revision-2-changes) table maps them.
 - Codex re-reviewed revision 2 on 2026-10-09 and requested changes: 0 blocking, 4 material and 2 minor findings, CR1–CR6 ([re-review](../evidence/2026-10-09-categories-search-feasibility-recheck.md)). Revision 3 resolved each one. The [revision 3 changes](#revision-3-changes) table maps them.
 - Codex re-reviewed revision 3 on 2026-10-10 and found it `feasible`: 0 blocking, 0 material and 2 minor findings, CT1–CT2 ([re-review 2](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md)). Its receipt let Claude record CT1–CT2 and set `handoff_ready`. Revision 4 records them as Codex proposed. The [revision 4 changes](#revision-4-changes) table maps them.
-- The stage is `handoff_ready`. Codex has not re-reviewed revision 4. Its changes are prose and three added rule vectors; the mock's rules section is byte-identical to revision 3.
+- The stage is `handoff_ready`. Codex confirmed revision 4 on 2026-10-10 with no findings ([confirmation](../evidence/2026-10-10-categories-search-rev4-confirmation.md)). Its changes were prose and three added rule vectors; the mock's rules section is byte-identical to revision 3.
 - This document is not implementation authority. Build entry is Mike's separate decision.
 
 **Base.** Revision 4 is prepared on the shared local `codex/running-list` branch at `ecc301a031a59468bca823389812946cda50c752`. Revision 3 was committed in `49500c7ea1f7bc931a8fdf31a8ffc0dabc87994b`, and revision 2 in `5933728`. Two commits from another session sit between revision 3 and this base. `bba98bb` changed only the Xcode project's build number. `ecc301a` changed only another slice's documents, evidence and backlog entry.
@@ -116,6 +117,7 @@ Getting back to something you said more than a week ago is hard. Mike's directio
 | Source listed under [Current](#current) | Source at `6b0cbbe`, unchanged in `5933728`; backend unchanged since `6e1768b` |
 | [Codex feasibility review](../evidence/2026-10-05-categories-search-feasibility.md) of revision 1 | Codex, 2026-10-05, local read-only source and design review at `6e1768b`, with four synthetic probes of the revision 1 script |
 | [Codex feasibility re-review](../evidence/2026-10-09-categories-search-feasibility-recheck.md) of revision 2 | Codex, 2026-10-09, local read-only source and design review at `5933728`, with synthetic probes of the revision 2 script |
+| [Codex confirmation](../evidence/2026-10-10-categories-search-rev4-confirmation.md) of revision 4 | Codex, 2026-10-10, local read-only review of the revision 3 to 4 delta at `61532b4`, with 22 synthetic probes and byte comparisons against revision 3. It is not app or device evidence. |
 | [Codex feasibility re-review 2](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md) of revision 3 | Codex, 2026-10-10, local read-only source and design review at `49500c7`, with 28 synthetic oracle probes and an extracted-parser probe under Swift 6.2.4 on macOS. It is not app or device evidence. |
 | [Rule vectors](assets/2026-10-05-categories-search/verify-rules.mjs) | Claude, 2026-10-10: 197 of 197 synthetic checks (192 vectors in 18 groups, plus 5 calendar checks) pass against the mock's rules section in Node, with no network |
 | Extraction prompt and labeled fixtures | Synthetic fixtures only: tags often repeat a project, and people are 0–1 per note |
@@ -731,7 +733,7 @@ None are added. Completing a row keeps the shipped feedback.
 
 ## Codex handoff
 
-- **Exact committed handoff revision:** revision 4, in the commit that records it on the local `codex/running-list` branch, prepared against `ecc301a`. Find it with `git log -1 -- docs/handoffs/2026-10-05-categories-search.md`. The branch is not pushed.
+- **Exact committed handoff revision:** revision 4, committed in `61532b4c20c5a44feb8e03289d75c63344229586` on the local `codex/running-list` branch. It was prepared against `ecc301a`; its commit parent is `a30cede`, another session's documentation-only commit. Codex confirmed that file, SHA-256 `e8591e614450d98fbf2711196f3bf1783c9553221b327b5c4e1a6ac1d00d1855`. A later commit adds only Codex's confirmation receipt to this file, and `git diff 61532b4 -- docs/handoffs/2026-10-05-categories-search.md` shows it. The branch is not pushed.
 - **Identity:** [SHA256SUMS.txt](assets/2026-10-05-categories-search/SHA256SUMS.txt) covers 34 files: the frozen mock (`a3015c2c49396e26b1ecc64b47692a2a1024e06796423e3d90818ed63c610bff`), `verify-rules.mjs` (`b36b740c008b423db26ad62e10858be6fe1b8aa34d01c8e505536463626913a5`) and the 32 screens. The manifest itself is `695ddf58bdc9a7cfdc5358d346bf92d074e43bde3456dbd7a5e1519c88654732`. Check it with `shasum -a 256 -c SHA256SUMS.txt` in the asset directory. `node verify-rules.mjs` reports 197/197.
 - **Codex-owned paths:** production app and backend files, tests, canonical documents (including the decision log, CURRENT_STATE, the backlog and metrics) and integration. Claude owns the paths in `owned_paths`.
 - **Required evidence manifest:**
@@ -764,7 +766,9 @@ None are added. Completing a row keeps the shipped feedback.
   - Claude resolved CR1–CR6 in revision 3, as listed in [revision 3 changes](#revision-3-changes). These are Claude's resolutions.
 - **Codex re-review of revision 3:** Codex, 2026-10-10, [report](../evidence/2026-10-10-categories-search-feasibility-recheck-2.md). It reviewed revision 3 at `49500c7`: handoff `2c03b764bf73f3a164484775fa63bcd20868ea8fa121a228a9bde5e6862af0d5`, mock `4c5842ef138243a5c9a595247c45dc30abe6d8a46ba3eacc69d7203ceadf2ee1`, manifest `3989702d389edbb3ce0ef3a81191665726b31c895b2042a81679abd2b7aa83b2`. Another session advanced HEAD to `bba98bb`, a build-number change, during the review. Verdict `feasible`, with 0 blocking, 0 material and 2 minor findings (CT1–CT2).
   - Codex marked CR1–CR6 resolved, and CS1, CS4, CS5, CS6, CS7 and CS11 resolved at the contract level.
-  - Claude recorded CT1–CT2 in revision 4 as Codex proposed, as listed in [revision 4 changes](#revision-4-changes), and set `handoff_ready` as the receipt allows. Codex has not re-reviewed revision 4.
+  - Claude recorded CT1–CT2 in revision 4 as Codex proposed, as listed in [revision 4 changes](#revision-4-changes), and set `handoff_ready` as the receipt allows.
+- **Codex confirmation of revision 4:** Codex, 2026-10-10, [confirmation](../evidence/2026-10-10-categories-search-rev4-confirmation.md). It reviewed the handoff at `61532b4` (SHA-256 `e8591e614450d98fbf2711196f3bf1783c9553221b327b5c4e1a6ac1d00d1855`), the mock `a3015c2c49396e26b1ecc64b47692a2a1024e06796423e3d90818ed63c610bff` and the manifest `695ddf58bdc9a7cfdc5358d346bf92d074e43bde3456dbd7a5e1519c88654732`. Verdict `confirmed`, with 0 findings. CT1 and CT2 are resolved as proposed. The rules section, `verify-rules.mjs` and all 32 screens are byte-identical to revision 3.
+  - The only later edits to this file record this receipt: this entry, the stage note, the evidence row, the `feasibility_confirmation` field and the exact-revision line.
 - **Claude implementation reviewer and date:** pending; follows implementation.
 - **Exact implementation revision and visual/behavior evidence reviewed:** pending.
 - **Design, interaction, accessibility, and failure-state findings and resolution:** pending.
