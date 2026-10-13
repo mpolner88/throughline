@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-10-10",
+  "updated_at": "2026-10-12",
   "ordering": "Mike's September 30 order: deliver Candidate A running list (TL-TASK-001) to internal TestFlight first; categories and search (TL-KNOW-001) next; Private Evaluation (TL-EVAL-001) after that. Delivered capture recovery is preserved. Other portfolio positions remain historical and array position never authorizes work or waives a design, provider, policy, pricing, limit, onboarding or public-release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
@@ -338,15 +338,15 @@
         "pr_head": "55973a48ed1c2ef4db01fb0e7b485fb8e9a92e73",
         "identity_review": "R14 in docs/evidence/2026-09-28-codex-capture-rereview.md confirms normalized-text mutation; occurrence identity remains a running-list requirement after capture recovery.",
         "current_request": "Mike reported further scroll/tap bugs and authorized thorough investigation and repair. Release heartbeat paused at his request. Submitted public build remains separate.",
-        "current_bug": "Final Claude review received: landscape, largest text and Reduce Motion pass without P1/P2. Five prior gesture cases invalidated by unreliable injection remain runtime-unverified. Fast short RM swipes lack simulator drag feedback (P3, cause undetermined). Internal candidate compiled but macOS signing failed, including an independent probe; Terminal retry failed without a prompt; direct synthetic signing returns authentication failure. Keychain authentication pending. No upload.",
-        "current_verification": "docs/evidence/2026-10-10-interaction-delivery-readiness.md",
+        "current_bug": "Scroll/tap repair 1.0.6 (2026101201) is delivered internally: VALID, INTERNAL_ONLY, not expired, IN_BETA_TESTING and assigned to existing Internal QA as verified October 12. Signing recovered without credential changes. Five gesture cases, fast short Reduce Motion feedback and spoken VoiceOver remain phone checks.",
+        "current_verification": "docs/evidence/2026-10-12-interaction-delivery.md",
         "slice": "docs/slices/running-list.md",
-        "tandem_stage": "building",
+        "tandem_stage": "internal_testflight",
         "handoff": "docs/handoffs/2026-09-29-home-running-list.md",
         "handoff_sha256": "df675d539121ff12b98e3207c9466d5d18dcccf55f1a12244558c7f7d5ce7946",
         "handoff_asset_manifest_sha256": "237c804b2f0d1e0b48097ca0e33fe630e7996c20436f2bb729acb339d356a54d",
         "feasibility_status": "Reviewed repair follows Mike's direction to put older unfinished tasks in Today, with completed state and explicit moves intact. No backend or extraction change.",
-        "display_progress": "Scroll and tap repair — signing-key authentication blocked",
+        "display_progress": "Scroll and tap repair — available in TestFlight; phone check next",
         "review_pr_status": "Draft PR #4 was open at the September 30 verification; remote status was not refreshed in this October 5 app-only integration. No merge was performed.",
         "review_pr": "https://github.com/mpolner88/throughline/pull/4",
         "implementation_candidate": "docs/releases/2026-10-05-ios-1.0.5-2026100502-candidate.md",
@@ -363,10 +363,13 @@
         "public_listing_review": "docs/evidence/2026-10-05-claude-app-store-listing-review.md",
         "public_listing_readback": "docs/evidence/assets/2026-10-05-app-store/listing-verified.json",
         "public_submission_receipt": "docs/releases/2026-10-05-ios-1.0.5-2026100502-submission.md",
-        "interaction_candidate_revision": "bba98bb8fd01e28a3f3c73027932f1dfa66016b6",
+        "interaction_candidate_revision": "c4685b8945ba781c67618daca522d05415b3d899",
         "interaction_source_review": "docs/evidence/2026-10-06-claude-interaction-review.md",
         "interaction_runtime_review": "docs/evidence/2026-10-06-claude-interaction-runtime-recheck.md",
-        "interaction_final_review": "docs/evidence/2026-10-08-claude-interaction-final-review.md"
+        "interaction_final_review": "docs/evidence/2026-10-08-claude-interaction-final-review.md",
+        "public_release_verification": "October 12: Apple READY_FOR_DISTRIBUTION and independent US storefront confirm the previously approved 1.0.5 is public, released October 6. New interaction repair is separate.",
+        "public_storefront_receipt": "docs/evidence/assets/2026-10-12-interaction-delivery/public-storefront.json",
+        "interaction_delivery_receipt": "docs/evidence/2026-10-12-interaction-delivery.md"
       },
       "funnel_step": "recording_processed -> task revisited -> task completed",
       "hypothesis": "A time-based task home with source-note traceability will turn one-off voice capture into a repeatable daily workflow.",
@@ -378,7 +381,7 @@
         "TL-EXTRACT-001",
         "TL-CAP-001"
       ],
-      "next_action": "Mike authenticates the existing signing keychain in Terminal; Codex reruns a small synthetic signing probe before another archive attempt. Codex then verifies the signed package and Apple processing before delivery of internal-only build 2026101001 to existing Internal QA. Phone acceptance covers scrolling, curved/reversed gestures, Reduce Motion feedback and VoiceOver. Keep release heartbeat paused and public submission unchanged.",
+      "next_action": "Mike installs TestFlight 1.0.6 (2026101201) and checks scrolling, swipe cancellation, completion/Undo, tap targets and remaining accessibility cases. Codex resolves reported failures before any public-release packet. Categories/search is the next build decision; keep paused automations unchanged.",
       "slice_phase": "canary"
     },
     {
@@ -393,7 +396,12 @@
         "market_pattern": "Obsidian and Reflect establish search, structured properties and links as the durable knowledge-system layer.",
         "priority_decision": "Mike: categories assigned automatically from what was said; search finds both notes and tasks; after running-list internal TestFlight and before Private Evaluation.",
         "decision": "decision-log.md",
-        "verification": "docs/evidence/2026-09-30-running-list-feasibility.md"
+        "verification": "docs/evidence/2026-09-30-running-list-feasibility.md",
+        "tandem_stage": "handoff_ready",
+        "handoff": "docs/handoffs/2026-10-05-categories-search.md",
+        "handoff_sha256": "e2f93f1dbcf1d24dbdb8a2f0664d13857cd874fe08f28b281798d97923522520",
+        "feasibility_confirmation": "docs/evidence/2026-10-10-categories-search-rev4-confirmation.md",
+        "design_status": "Candidate B selected; revision 4 confirmed with no findings. Design-only: Mike has not approved build entry."
       },
       "funnel_step": "note saved -> note retrieved -> note reused",
       "hypothesis": "Search and entity-based retrieval will make old voice memories useful after the day they were captured.",
@@ -404,7 +412,7 @@
       "dependencies": [
         "TL-DATA-001"
       ],
-      "next_action": "Claude prepares categories and search designs now that Running List internal build 2026093001 is delivered: automatic categories from what was said, and search over both notes and tasks. Return a bounded contract for Codex feasibility review and Mike's selection before implementation."
+      "next_action": "Following phone acceptance of the delivered scroll/tap repair, Mike decides build entry for selected, reviewed Candidate B categories/search handoff revision 4. Codex builds after approval; Claude reviews implementation before internal delivery. Private Evaluation follows."
     },
     {
       "id": "TL-AGENT-001",

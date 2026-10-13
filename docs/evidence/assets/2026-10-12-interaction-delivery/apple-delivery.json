@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-13T02:04:47.472Z",
+  "found": true,
+  "id": "8bb87718-02f7-4d68-bbd9-cd5353842b9f",
+  "version": "1.0.6",
+  "build": "2026101201",
+  "processing": "VALID",
+  "expired": false,
+  "uploaded": "2026-10-12T19:02:52-07:00",
+  "internalOnly": true,
+  "buildAudienceType": "INTERNAL_ONLY",
+  "internalBuildState": "IN_BETA_TESTING",
+  "externalBuildState": "NOT_APPLICABLE",
+  "assignedInternalQA": true,
+  "groups": [
+    {
+      "name": "Internal QA",
+      "internal": true
+    }
+  ]
+}

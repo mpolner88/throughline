@@ -1,5 +1,7 @@
 # Scroll and Tap Repair — internal delivery readiness
 
+> **October 12 follow-up:** existing signing recovered without credential changes. Apple closed the approved 1.0.5 version, so the same reviewed app is packaged as 1.0.6 (2026101201). See the [current delivery receipt](2026-10-12-interaction-delivery.md).
+
 **Verified:** 2026-10-10. **Owner:** Codex. **Reviewed app code:** `cfa757890eb268a90e13b1f02a451a7bb80fdb08`. **Package source:** `bba98bb8fd01e28a3f3c73027932f1dfa66016b6`, local `codex/running-list`; the only iOS delta is the build number, 2026101001. **Current:** Release compilation completed, but macOS code signing failed. No signed archive, export or upload is confirmed.
 
 ## Final review and evidence correction
