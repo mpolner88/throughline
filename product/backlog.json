@@ -493,10 +493,14 @@
       "state": "collecting_evidence",
       "problem": "Throughline uses Groq for transcription and structured extraction, but it does not yet persist provider usage and estimated cost per processing stage.",
       "evidence": {
-        "as_of": "2026-08-09",
+        "as_of": "2026-10-25",
+        "source": "docs/slices/ai-cost-measurement.md",
         "provider": "Groq",
         "transcription_model": "whisper-large-v3-turbo",
-        "measurement_status": "request success and latency are observable; token, audio-duration, retry, and estimated-cost reporting are not yet canonical"
+        "extraction_model": "openai/gpt-oss-120b",
+        "measurement_status": "live legacy path discards Groq usage and retry counts; lineage path records usage but is rolled back, stores private snapshots, and cascade-deletes; no product cost ledger",
+        "estimate_not_measurement": "published prices suggest about $0.004-0.006 per 5-minute and $0.023-0.026 per 30-minute recording; extraction output tokens are the main unknown",
+        "recommended_option": "B: content-free usage ledger plus synthetic 1/5/15/30-minute cost curve, reconciled monthly against Groq console spend"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Recording stage-level usage and applying a versioned price table will make gross margin and premium limits measurable before monetization.",
@@ -508,7 +512,7 @@
         "TL-DATA-001",
         "TL-EVAL-001"
       ],
-      "next_action": "Persist model, stage, audio duration, input/output tokens, retry count, latency, and estimated USD cost; report totals and p50/p95 cost per successful recording."
+      "next_action": "Mike chooses an option in docs/slices/ai-cost-measurement.md (recommended: B), accepts or changes the decision-grade bar for unblocking TL-PREM-001, and approves build entry; Codex then reviews feasibility F1-F6 and implements."
     },
     {
       "id": "TL-PREM-001",
