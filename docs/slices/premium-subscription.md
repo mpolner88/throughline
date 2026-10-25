@@ -195,3 +195,5 @@ Each must be answered with dated evidence before Phase 2.
 ## Evidence and release manifest
 
 To be filled as work proceeds: Phase 0 decision-log entries, Codex feasibility receipt, selected design and handoff, Phase 1 sandbox end-to-end evidence, on-device file-size measurement, device matrix, release manifest and App Store submission record.
+
+- 2026-10-25: [Offer surface design candidates](../evidence/2026-10-25-plus-offer-candidates.md) (A, B, C), awaiting Mike's selection.

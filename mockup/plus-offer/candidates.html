@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plus offer — candidates</title>
+<!--
+  Design candidates for TL-PREM-001, the Throughline Plus offer surfaces:
+  the one-time sheet after a processed note, the Settings plan rows, and the line at the 5:00 free cap.
+  Design-only. Synthetic content. No production code. Nothing here is selected until Mike chooses.
+  Gallery:          candidates.html
+  One frame, bare:  candidates.html?only=a-sheet      (fills the viewport; used for reference renders)
+  Dark appearance:  &theme=dark       Larger text: &ax=1       Other phone: &w=375&h=667
+  Clipping check:   &check=1          (writes clipped containers into the page title)
+  Frame ids are listed in FRAMES below. Prices are placeholders; the app shows StoreKit's localized price.
+-->
+<style>
+  :root {
+    --blue: #2563EB; --blue-lifted: #3B82F6;
+    --pill-bg: #EFF6FF; --pill-text: #1E3A8C;
+    --bg: #FFFFFF; --ink: #111114; --sec: #6E6E73;
+    --border: rgba(17,17,20,0.14); --page: #F4F4F6; --danger: #C93A3A;
+    --muted-bg: #F2F2F4; --scrim: rgba(0,0,0,0.34); --grouped: #F2F2F7; --cell: #FFFFFF; --sheet: #FFFFFF;
+    --s: 1;
+  }
+  [data-theme="dark"] {
+    --blue: #3B82F6;
+    --pill-bg: rgba(59,130,246,0.18); --pill-text: #B9D0FF;
+    --bg: #0E0E10; --ink: #F4F4F5; --sec: #9A9AA1;
+    --border: rgba(244,244,245,0.16); --page: #050506; --danger: #E06C6C;
+    --muted-bg: #1C1C1F; --scrim: rgba(0,0,0,0.5); --grouped: #000000; --cell: #1C1C1E; --sheet: #1C1C1E;
+  }
+  body.ax { --s: 1.35; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--page); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  body.gallery { padding: 44px 36px 96px; }
+  body.bare { background: var(--bg); overflow: hidden; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-align: inherit; }
+  a { color: var(--blue); text-decoration: none; }
+
+  /* gallery chrome */
+  .eyebrow { font-size: calc(11px * var(--s)); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sec); }
+  .masthead { max-width: 940px; margin-bottom: 30px; display: flex; flex-direction: column; gap: 10px; }
+  .masthead h1 { font-size: 32px; font-weight: 500; letter-spacing: -0.01em; }
+  .masthead p, .doc p { font-size: 15px; line-height: 1.55; color: var(--sec); }
+  .doc { max-width: 940px; margin: 0 0 34px; border: 0.7px solid var(--border); border-radius: 8px; background: var(--bg); padding: 18px 22px; display: grid; gap: 10px; }
+  .doc h2 { font-size: 16px; font-weight: 600; }
+  .doc li { font-size: 13.5px; line-height: 1.55; color: var(--sec); margin-left: 18px; }
+  .doc li strong, .doc p strong { color: var(--ink); font-weight: 500; }
+  .doc table { border-collapse: collapse; font-size: 13px; line-height: 1.45; width: 100%; }
+  .doc th, .doc td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 0.7px solid var(--border); }
+  .doc th { font-weight: 600; color: var(--ink); }
+  .doc td { color: var(--sec); }
+  .current { display: flex; gap: 20px; flex-wrap: wrap; }
+  .current figure { width: 250px; }
+  .current img { width: 250px; border: 0.7px solid var(--border); border-radius: 22px; display: block; }
+  .current figcaption { font-size: 12.5px; line-height: 1.45; color: var(--sec); margin-top: 8px; }
+  .theme-toggle { position: fixed; top: 18px; right: 22px; z-index: 50; font: 500 13px/1 -apple-system, sans-serif;
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .cand { margin-bottom: 60px; }
+  .cand-head { max-width: 940px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .cand-head h2 { font-size: 24px; font-weight: 500; }
+  .cand-head p { font-size: 14px; line-height: 1.55; color: var(--sec); }
+  .cand-head p strong { color: var(--ink); font-weight: 500; }
+  .frames { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .frame { width: 390px; }
+  .anno { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .anno h3 { font-size: 14px; font-weight: 600; }
+  .anno h3 code { font: 500 11.5px ui-monospace, Menlo, monospace; color: var(--sec); margin-left: 6px; }
+  .anno p { font-size: 13px; line-height: 1.5; color: var(--sec); }
+
+  /* phone */
+  .phone { background: var(--bg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .gallery .phone { width: 390px; height: 844px; border: 1px solid var(--border); border-radius: 44px; }
+  .bare .phone { width: var(--w, 390px); height: var(--h, 844px); }
+  .statusbar { height: 52px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 34px 0; font-size: 15px; font-weight: 600; }
+  .statusbar .right { font-size: 12px; letter-spacing: 2px; }
+  .topbar { display: flex; align-items: center; padding: 20px 24px 14px; gap: 2px; flex: none; }
+  .wordmark { font-size: 21px; font-weight: 500; letter-spacing: -0.01em; border-bottom: 3px solid var(--blue); padding-bottom: 3px; line-height: 1.1; }
+  .topbar .sp { flex: 1; }
+  .tb-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); }
+  .tb-link { color: var(--blue); font-size: calc(15px * var(--s)); font-weight: 500; min-height: 44px; padding: 0 8px; }
+  .scroll { flex: 1; overflow: hidden; padding: 0 24px 16px; display: flex; flex-direction: column; }
+  .tabs { display: flex; gap: 22px; padding: 0 24px; border-bottom: 0.5px solid var(--border); flex: none; }
+  .tab { font-size: calc(15px * var(--s)); color: var(--sec); padding: 10px 0 11px; }
+  .tab.on { color: var(--ink); font-weight: 500; box-shadow: inset 0 -2px 0 var(--blue); }
+  .tab small { font-size: calc(12px * var(--s)); color: var(--sec); margin-left: 3px; }
+  .trow { display: flex; align-items: flex-start; gap: 6px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .circle { width: 44px; height: 44px; margin: -10px 0 -10px -11px; flex: none; display: flex; align-items: center; justify-content: center; }
+  .circle i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--sec); }
+  .tbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+  .ttext { font-size: calc(16px * var(--s)); line-height: 1.32; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: calc(12.5px * var(--s)); color: var(--sec); line-height: 1.35; }
+  .meta .srcl { text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; }
+  .sect { margin: 18px 0 4px; }
+  .date { font-size: calc(22px * var(--s)); font-weight: 500; margin-bottom: 6px; }
+  .tray { display: flex; gap: 10px; align-items: flex-start; padding: 12px 0; border-bottom: 0.5px solid var(--border); font-size: calc(14px * var(--s)); line-height: 1.4; }
+  .tray b { font-weight: 500; } .tray span.s { color: var(--sec); }
+  .spin { width: 14px; height: 14px; border-radius: 50%; border: 1.6px solid var(--border); border-top-color: var(--sec); flex: none; margin-top: 2px; }
+  .spin.w { border-color: rgba(255,255,255,0.35); border-top-color: #fff; margin: 0; }
+
+  .card { border: 0.7px solid var(--border); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .card .ttl { font-size: calc(17px * var(--s)); font-weight: 500; }
+  .card .sum { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.45; }
+  .capnote { font-size: calc(12.5px * var(--s)); color: var(--sec); line-height: 1.4; }
+
+  .rec { flex: none; padding: 10px 24px 30px; display: flex; flex-direction: column; gap: 9px; border-top: 0.5px solid var(--border); background: var(--bg); }
+  .rec-btn { width: 100%; height: 64px; border-radius: 8px; color: #fff; background: linear-gradient(150deg, var(--blue-lifted), #2563EB 62%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; font-size: calc(15px * var(--s)); font-weight: 500; text-align: center; }
+  .rec-btn small { font-size: calc(12.5px * var(--s)); opacity: 0.85; font-variant-numeric: tabular-nums; }
+  .rec-mark { display: flex; gap: 10px; } .rec-mark i { width: 26px; height: 3px; background: #fff; border-radius: 2px; }
+  .rec-sup { font-size: calc(13px * var(--s)); color: var(--sec); text-align: center; line-height: 1.4; }
+  .rec-sup a { font-weight: 500; display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; padding: 0 4px; }
+
+  /* sheets */
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--sheet); border-radius: 14px 14px 0 0; display: flex; flex-direction: column; }
+  .sheet.large { top: 58px; }
+  .grab { width: 36px; height: 5px; border-radius: 3px; background: var(--border); margin: 6px auto 0; flex: none; }
+  .sh { flex: 1; min-height: 0; overflow: hidden; padding: 22px 24px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .sh-foot { flex: none; padding: 4px 24px 30px; display: flex; flex-direction: column; gap: 10px; }
+  .sh-foot.edge { border-top: 0.5px solid var(--border); padding-top: 12px; }
+  .sh h2 { font-size: calc(26px * var(--s)); font-weight: 500; line-height: 1.18; letter-spacing: -0.01em; }
+  .sh .prose { font-size: calc(15px * var(--s)); line-height: 1.5; color: var(--sec); }
+  .sh .letter { font-size: calc(17px * var(--s)); line-height: 1.5; color: var(--ink); display: flex; flex-direction: column; gap: 12px; }
+  .sh .sig { color: var(--sec); }
+  .sh .spacer { flex: 1; }
+  .terms { font-size: calc(13px * var(--s)); line-height: 1.45; color: var(--sec); text-align: center; }
+  .terms b { color: var(--ink); font-weight: 500; }
+  .primary { width: 100%; min-height: 52px; border-radius: 8px; background: var(--blue); color: #fff; font-size: calc(16px * var(--s)); font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 8px 12px; }
+  .primary.off { opacity: 0.45; }
+  .textbtn { width: 100%; min-height: 44px; color: var(--blue); font-size: calc(16px * var(--s)); font-weight: 500; text-align: center; }
+  .textbtn.off { color: var(--sec); opacity: 0.6; }
+  .legal { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 4px; font-size: calc(12.5px * var(--s)); color: var(--sec); }
+  .legal a { color: var(--sec); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; min-height: 44px; display: inline-flex; align-items: center; padding: 0 4px; }
+  .notice { font-size: calc(14px * var(--s)); line-height: 1.45; color: var(--ink); border-left: 2px solid var(--sec); padding: 2px 0 2px 12px; }
+  .notice.err { border-left-color: var(--danger); }
+
+  /* length chart (candidate B) */
+  .len { display: flex; flex-direction: column; gap: 16px; padding: 6px 0 4px; }
+  .lrow { display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: center; }
+  .lrow .k { font-size: calc(13px * var(--s)); font-weight: 500; color: var(--sec); }
+  .lrow .track { position: relative; height: 18px; display: flex; align-items: center; }
+  .lrow .bar { height: 6px; border-radius: 3px; background: var(--sec); opacity: 0.55; }
+  .lrow.plus .bar { background: var(--blue); opacity: 1; }
+  .lrow .v { position: absolute; right: 0; top: -18px; font-size: calc(13px * var(--s)); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 500; }
+  .lrow.free .v { position: static; margin-left: 8px; }
+  .lrow .ex { grid-column: 2; font-size: calc(13px * var(--s)); color: var(--sec); line-height: 1.35; }
+  .lrow .ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; pointer-events: none; }
+  .same { font-size: calc(14px * var(--s)); color: var(--sec); line-height: 1.45; border-top: 0.5px solid var(--border); padding-top: 12px; }
+
+  /* reason chips (candidate C) */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 8px; border: 0.7px solid var(--border); font-size: calc(15px * var(--s)); }
+
+  /* native settings form */
+  .navbar { height: 52px; flex: none; position: relative; display: flex; align-items: center; justify-content: center; }
+  .navbar .title { font-size: calc(17px * var(--s)); font-weight: 600; }
+  .navbar .right { position: absolute; right: 18px; color: var(--blue); font-size: calc(17px * var(--s)); min-height: 44px; display: flex; align-items: center; }
+  .form { flex: 1; overflow: hidden; background: var(--grouped); padding: 4px 16px 16px; display: flex; flex-direction: column; }
+  .settings { background: var(--grouped); }
+  .settings .statusbar, .settings .navbar { background: var(--grouped); }
+  .fhead { font-size: calc(13px * var(--s)); color: var(--sec); padding: 18px 16px 7px; }
+  .group { background: var(--cell); border-radius: 10px; overflow: hidden; }
+  .cell { min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 10px 16px; position: relative; font-size: calc(17px * var(--s)); width: 100%; }
+  .cell + .cell::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: 0.5px solid var(--border); }
+  .cell .lbl { flex: 1; min-width: 0; line-height: 1.25; }
+  .cell .lbl small { display: block; font-size: calc(13px * var(--s)); color: var(--sec); margin-top: 3px; line-height: 1.35; }
+  .cell .val { color: var(--sec); font-size: calc(15px * var(--s)); }
+  .cell.link { color: var(--blue); }
+  .cell.danger { color: var(--danger); }
+  .cell.muted { color: var(--sec); font-size: calc(15px * var(--s)); }
+  .chev { color: var(--sec); flex: none; }
+  .ffoot { font-size: calc(13px * var(--s)); color: var(--sec); line-height: 1.4; padding: 7px 16px 0; }
+  .ffoot.warn { color: var(--ink); }
+  .badge { font-size: calc(12px * var(--s)); font-weight: 500; color: var(--pill-text); background: var(--pill-bg); border-radius: 5px; padding: 2px 7px; }
+  .mini-len { display: flex; flex-direction: column; gap: 7px; width: 100%; }
+  .mini-len .row { display: flex; align-items: center; gap: 10px; font-size: calc(13px * var(--s)); color: var(--sec); }
+  .mini-len .row span:first-child { width: 34px; }
+  .mini-len .bar { height: 5px; border-radius: 3px; background: var(--sec); opacity: 0.55; }
+  .mini-len .bar.plus { background: var(--blue); opacity: 1; }
+
+  /* confirmation dialog */
+  .dialog { position: absolute; left: 10px; right: 10px; bottom: 34px; display: flex; flex-direction: column; gap: 8px; }
+  .dialog .box { background: var(--cell); border-radius: 14px; overflow: hidden; text-align: center; }
+  .dialog .msg { padding: 14px 18px; font-size: calc(13px * var(--s)); color: var(--sec); line-height: 1.4; border-bottom: 0.5px solid var(--border); }
+  .dialog .msg b { display: block; color: var(--sec); font-weight: 600; margin-bottom: 4px; }
+  .dialog .opt { min-height: 56px; display: flex; align-items: center; justify-content: center; font-size: calc(19px * var(--s)); color: var(--blue); border-top: 0.5px solid var(--border); }
+  .dialog .msg + .opt { border-top: 0; }
+  .dialog .opt.danger { color: var(--danger); }
+  .dialog .opt.cancel { font-weight: 600; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" hidden>Dark</button>
+<div id="root"></div>
+<script>
+const P = new URLSearchParams(location.search);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ICON = {
+  gear: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  chev: '<svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 6.5 1.5 11.5"/></svg>',
+  ext: '<svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>',
+};
+const PRICE = '$4.99';
+const status = () => '<div class="statusbar"><span>9:41</span><span class="right">●●● ◒ ▮</span></div>';
+function recorder({ title = 'Start recording', detail = '', sup = '' } = {}) {
+  return `<div class="rec"><button class="rec-btn"><span class="rec-mark"><i></i><i></i></span>${esc(title)}${detail ? `<small>${esc(detail)}</small>` : ''}</button>${sup ? `<p class="rec-sup">${sup}</p>` : ''}</div>`;
+}
+function phone(inner, { rec = recorder(), cls = '' } = {}) {
+  return `<div class="phone ${cls}">` + status() + inner + (rec || '') + '</div>';
+}
+const homeTop = () => `<div class="topbar"><span class="wordmark">throughline</span><span class="sp"></span><button class="tb-link">notes</button><button class="tb-btn" aria-label="Settings">${ICON.gear}</button></div>`;
+const tabs = () => '<div class="tabs"><span class="tab on">today<small>3</small></span><span class="tab">this week<small>1</small></span><span class="tab">later<small>0</small></span></div>';
+const trow = (t, src) => `<div class="trow"><span class="circle"><i></i></span><div class="tbody"><span class="ttext">${esc(t)}</span><span class="meta"><span class="srcl">${esc(src)}</span></span></div></div>`;
+function homeRows() {
+  return trow('Call the venue about Saturday', 'from weekend plans · 8:12 AM') + trow('Send the draft budget before Friday', 'from weekend plans · 8:12 AM') + trow('Pick up the bike from the shop', 'from drive home · yesterday');
+}
+const home = (extra = '') => homeTop() + tabs() + `<div class="scroll">${extra}<p class="eyebrow sect">today</p><p class="date">Sunday, October 25</p>${homeRows()}</div>`;
+
+/* ---------- offer sheet pieces ---------- */
+const legal = () => '<div class="legal"><a>Restore purchase</a>·<a>Terms of Use</a>·<a>Privacy Policy</a></div>';
+const termsLine = () => `<p class="terms"><b>${PRICE} a month.</b> Renews monthly until you cancel in Settings.</p>`;
+function buy({ state = 'ready' } = {}) {
+  if (state === 'buying') return `<button class="primary off" aria-busy="true"><span class="spin w"></span>Subscribing…</button><button class="textbtn off" disabled>Not now</button>`;
+  if (state === 'loading') return `<button class="primary off" disabled>Loading price…</button><button class="textbtn">Not now</button>`;
+  if (state === 'offline') return `<button class="primary off" disabled>Subscribe for ${PRICE}/month</button><button class="textbtn">Not now</button>`;
+  if (state === 'failed') return `<button class="primary">Try again</button><button class="textbtn">Not now</button>`;
+  return `<button class="primary">Subscribe for ${PRICE}/month</button><button class="textbtn">Not now</button>`;
+}
+function sheet(inner, { large = false, height = 0 } = {}) {
+  const [body, foot = ''] = inner.split('<!--foot-->');
+  const style = !large && height ? ` style="height:${height}px"` : '';
+  return `<div class="scrim"></div><div class="sheet${large ? ' large' : ''}" role="dialog" aria-label="Throughline Plus"${style}><div class="grab"></div><div class="sh">${body}</div>${foot ? `<div class="sh-foot">${foot}</div>` : ''}</div>`;
+}
+const overHome = (sh, rec = recorder()) => phone(home() + rec + sh, { rec: '' });
+
+/* Candidate A — plain terms, native medium sheet */
+function aBody(state = 'ready') {
+  const notice = {
+    offline: '<p class="notice">You’re offline. Subscribing needs a connection.</p>',
+    failed: '<p class="notice err">The purchase didn’t go through. You haven’t been charged.</p>',
+  }[state] || '';
+  return `<span class="eyebrow">Throughline Plus</span>
+    <h2>Talk for up to 30 minutes.</h2>
+    <p class="prose">Your note is saved. Free recordings stop at 5 minutes. With Plus, each recording can keep going for up to 30, long enough for a walk or the drive to work. Nothing else changes.</p>
+    <!--foot-->${notice}${termsLine()}${buy({ state })}${legal()}`;
+}
+const aSheet = (state = 'ready') => overHome(sheet(aBody(state), { large: P.get('ax') === '1' || (+P.get('h') || 844) < 760, height: ['failed', 'offline'].includes(state) ? 560 : 500 }));
+
+/* Candidate B — show the length, large sheet */
+function lengthChart() {
+  return `<div class="len" role="img" aria-label="Free recordings run up to 5 minutes. Plus recordings run up to 30 minutes.">
+    <div class="lrow free"><span class="k">free</span><span class="track"><span class="bar" style="width:16.7%"></span><span class="v">5 min</span></span><span class="ex">a thought at a red light</span></div>
+    <div class="lrow plus"><span class="k">plus</span><span class="track"><span class="bar" style="width:100%"></span><span class="v">30 min</span></span><span class="ex">the whole drive to work</span></div>
+  </div>`;
+}
+function bBody() {
+  return `<span class="eyebrow">Throughline Plus</span>
+    <h2>Keep talking through the whole drive.</h2>
+    <p class="prose">Your note is saved. When a thought runs long, Plus lets one recording keep going for up to 30 minutes.</p>
+    ${lengthChart()}
+    <p class="same">Notes, to-dos, search and agent access work the same on free and Plus.</p>
+    <!--foot-->${termsLine()}${buy()}${legal()}`;
+}
+const bSheet = () => overHome(sheet(bBody(), { large: true }));
+
+/* Candidate C — a note from the maker */
+function cBody() {
+  return `<div class="letter">
+      <p>Your note is saved.</p>
+      <p>Throughline is free, with recordings up to 5 minutes. If your thoughts sometimes run longer, Throughline Plus lets each recording go up to 30 minutes.</p>
+      <p>It costs ${PRICE} a month, and it helps me keep building Throughline.</p>
+      <p class="sig">Mike, who makes Throughline</p>
+    </div>
+    <!--foot-->${termsLine()}${buy()}${legal()}`;
+}
+const cSheet = () => overHome(sheet(cBody(), { large: P.get('ax') === '1' || (+P.get('h') || 844) < 760, height: 560 }));
+function cReasons() {
+  return overHome(sheet(`<h2>No problem. What’s closest?</h2>
+    <p class="prose">One tap helps decide what to build next.</p>
+    <div class="chips" role="group" aria-label="Reason"><button class="chip">5 minutes is enough</button><button class="chip">Too expensive</button><button class="chip">Maybe later</button><button class="chip">Something else</button></div>
+    <!--foot-->
+    <p class="terms">Only the choice is recorded, never anything you’ve said.</p>
+    <button class="textbtn">Skip</button>`, { large: P.get('ax') === '1', height: 400 }));
+}
+
+/* ---------- shared sheet states (shown in A's layout) ---------- */
+function successSheet() {
+  return overHome(sheet(`<span class="eyebrow">Throughline Plus</span>
+    <h2>You’re on Plus.</h2>
+    <p class="prose">Each recording can now run up to 30 minutes. You can manage or cancel it any time in Settings.</p>
+    <!--foot--><button class="primary">Done</button>`, { height: 340 }), recorder({ title: 'Start recording' }));
+}
+function pendingSheet() {
+  return overHome(sheet(`<span class="eyebrow">Throughline Plus</span>
+    <h2>Waiting for approval.</h2>
+    <p class="prose">Plus starts as soon as the purchase is approved. Recordings stay at 5 minutes until then.</p>
+    <!--foot--><button class="primary">Done</button>`, { height: 340 }));
+}
+
+/* ---------- settings ---------- */
+const navbar = () => '<div class="navbar"><span class="title">settings</span><span class="right">done</span></div>';
+const cell = (lbl, { sub = '', cls = '', right = '' } = {}) => `<button class="cell ${cls}"><span class="lbl">${lbl}${sub ? `<small>${sub}</small>` : ''}</span>${right}</button>`;
+function restOfSettings() {
+  return `<div class="fhead">account</div><div class="group">${cell('<span style="color:var(--sec);font-size:15px">Signed in</span>')}${cell('sign out', { cls: 'link' })}${cell('delete account', { cls: 'danger' })}</div>
+    <div class="fhead">voice notes</div><div class="group">${cell('AI voice notes', { right: '<span class="val">On</span>' })}${cell('How it works', { right: ICON.chev })}</div>`;
+}
+function settings(planHtml, { dialog = '' } = {}) {
+  return `<div class="phone settings">${status()}${navbar()}<div class="form">${planHtml}${restOfSettings()}</div>${dialog}</div>`;
+}
+const planA = {
+  free: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: `30-minute recordings · ${PRICE}/month`, right: ICON.chev })}${cell('restore purchases', { cls: 'link' })}</div><p class="ffoot">You’re on free: recordings up to 5 minutes.</p>`,
+  plus: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: 'Renews 25 November · 30-minute recordings', right: '<span class="badge">active</span>' })}${cell('manage subscription', { cls: 'link', right: ICON.ext })}${cell('restore purchases', { cls: 'link' })}</div>`,
+  ending: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: 'Ends 25 November. Recordings go back to 5 minutes after that.', right: '<span class="badge">active</span>' })}${cell('manage subscription', { cls: 'link', right: ICON.ext })}${cell('restore purchases', { cls: 'link' })}</div>`,
+  billing: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: 'Apple couldn’t renew it. Plus stays on while Apple retries.', right: '<span class="badge">active</span>' })}${cell('update payment in Apple settings', { cls: 'link', right: ICON.ext })}${cell('restore purchases', { cls: 'link' })}</div>`,
+  restoreNone: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: `30-minute recordings · ${PRICE}/month`, right: ICON.chev })}${cell('restore purchases', { cls: 'link' })}</div><p class="ffoot warn">No Plus subscription found for this Apple Account.</p>`,
+  signedOut: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: '30-minute recordings', cls: 'muted' })}</div><p class="ffoot">Sign in to subscribe. Plus belongs to your Throughline account.</p>`,
+  unknown: `<div class="fhead">plan</div><div class="group">${cell('Throughline Plus', { sub: 'Couldn’t check your plan. Showing the last known status.', right: '<span class="badge">active</span>' })}${cell('try again', { cls: 'link' })}</div>`,
+};
+const planB = {
+  free: `<div class="fhead">recording length</div><div class="group"><div class="cell"><div class="mini-len" role="img" aria-label="Your recordings run up to 5 minutes. Plus runs up to 30."><div class="row"><span>free</span><span class="bar" style="width:16.7%"></span><span>5 min · you</span></div><div class="row"><span>plus</span><span class="bar plus" style="width:62%"></span><span>30 min</span></div></div></div>${cell('Get 30 minutes with Plus', { sub: `${PRICE}/month`, cls: 'link', right: ICON.chev })}${cell('restore purchases', { cls: 'link' })}</div>`,
+  plus: `<div class="fhead">recording length</div><div class="group"><div class="cell"><div class="mini-len" role="img" aria-label="Your recordings run up to 30 minutes with Plus."><div class="row"><span>plus</span><span class="bar plus" style="width:62%"></span><span>30 min · you</span></div></div></div>${cell('Throughline Plus', { sub: 'Renews 25 November', right: '<span class="badge">active</span>' })}${cell('manage subscription', { cls: 'link', right: ICON.ext })}${cell('restore purchases', { cls: 'link' })}</div>`,
+};
+function deleteDialog() {
+  return `<div class="scrim"></div><div class="dialog"><div class="box"><div class="msg"><b>Delete account?</b>Deleting your account doesn’t cancel Throughline Plus. Cancel it in Apple settings to stop being charged.</div><div class="opt">Manage subscription</div><div class="opt danger">Delete account</div></div><div class="box"><div class="opt cancel">Cancel</div></div></div>`;
+}
+
+/* ---------- cap surfaces ---------- */
+const capSupA = `Stopped at 5:00 and saved. Plus records up to 30 minutes. <a>See Plus</a>`;
+const trayRow = () => '<div class="tray"><span class="spin"></span><span><b>Saved to your account.</b> <span class="s">Structuring your note…</span></span></div>';
+function noteCard({ cap = false } = {}) {
+  return `<div class="card"><span class="eyebrow">freeform · 8:12</span><span class="ttl">Weekend plans</span><span class="sum">Saturday logistics, the budget draft and the bike.</span>${cap ? '<span class="capnote">Stopped at 5:00, the free limit.</span>' : ''}</div>`;
+}
+function bCapHome() {
+  return phone(homeTop() + tabs() + `<div class="scroll"><p class="eyebrow sect">notes</p>${noteCard({ cap: true })}</div>`);
+}
+function bCapDetail() {
+  return overHome(sheet(`<span class="eyebrow">freeform · 8:12 · 5:00</span><h2>Weekend plans</h2>
+    <p class="prose">Saturday logistics, the budget draft and the bike.</p>
+    <div class="trow" style="border-top:0.5px solid var(--border)"><span class="circle"><i></i></span><div class="tbody"><span class="ttext">Call the venue about Saturday</span></div></div>
+    <div class="trow"><span class="circle"><i></i></span><div class="tbody"><span class="ttext">Send the draft budget before Friday</span></div></div>
+    <div class="spacer"></div>
+    <p class="notice">This recording reached the 5-minute free limit, so anything after 5:00 wasn’t captured. Plus records up to 30 minutes. <a>See Plus</a></p>`, { large: true }));
+}
+
+/* ---------- frames ---------- */
+const FRAMES = {};
+const F = (id, c, t, d, html) => { FRAMES[id] = { c, t, d, html }; };
+
+F('a-sheet', 'a', 'Offer sheet', 'Native medium-detent sheet over Home at the first calm moment after a note is processed. Price appears twice: in the terms line and the button. Swipe down, “Not now” and the close gesture all dismiss the same way.', () => aSheet());
+F('a-settings-free', 'a', 'Settings · free', 'A new “plan” section at the top of the existing native form. The Plus row opens the same sheet; restore is always present.', () => settings(planA.free));
+F('a-settings-plus', 'a', 'Settings · Plus', 'Status, renewal date, Apple’s subscription management and restore. No upsell once subscribed.', () => settings(planA.plus));
+F('a-cap', 'a', 'At the 5:00 cap', 'The recording saves exactly as today. The recorder’s existing supporting-text slot carries one quiet line until the next recording starts. No sheet.', () => phone(home(trayRow()), { rec: recorder({ sup: capSupA }) }));
+
+F('b-sheet', 'b', 'Offer sheet', 'Large sheet that shows the difference instead of describing it: two lengths on one scale with concrete moments. States plainly that nothing else is gated.', () => bSheet());
+F('b-settings-free', 'b', 'Settings · free', 'The plan section is named for what it controls, “recording length”, and repeats the scale in miniature.', () => settings(planB.free));
+F('b-settings-plus', 'b', 'Settings · Plus', 'The scale shows the current length; status and management below.', () => settings(planB.plus));
+F('b-cap', 'b', 'At the 5:00 cap · note card', 'The cap is recorded on the note itself, as provenance: the card says the recording stopped at the limit. It stays with the note, not with the moment.', () => bCapHome());
+F('b-cap-detail', 'b', 'At the 5:00 cap · note detail', 'The note detail explains what the limit meant for this note and offers Plus once, at the bottom, below the structured result.', () => bCapDetail());
+
+F('c-sheet', 'c', 'Offer sheet', 'A short, plain letter from the maker. No comparison graphic; the case is honesty about who makes Throughline and what the money does.', () => cSheet());
+F('c-reasons', 'c', 'After “Not now”', 'One optional tap on why, in the same sheet. Swipe down skips it. Only a reason category is sent, as a content-free event.', () => cReasons());
+F('c-cap', 'c', 'At the 5:00 cap', 'Same slot as A, in the maker’s voice.', () => phone(home(trayRow()), { rec: recorder({ sup: 'Stopped at 5:00 and saved. If you need longer, Plus records up to 30 minutes. <a>See Plus</a>' }) }));
+F('c-settings-free', 'c', 'Settings · free', 'Same native rows as A; the sheet it opens is the letter.', () => settings(planA.free));
+
+F('s-loading', 's', 'Price loading', 'When opened from Settings before StoreKit returns a price. The first-note sheet never appears until a price has loaded.', () => aSheet('loading'));
+F('s-buying', 's', 'Purchasing', 'Apple’s purchase sheet sits above this. The button shows progress; dismissal is held until Apple returns.', () => aSheet('buying'));
+F('s-success', 's', 'Purchased', 'Confirms the one thing that changed. The recorder now reads “/ 30:00” while recording.', () => successSheet());
+F('s-failed', 's', 'Purchase failed', 'Plain cause and no charge. A user cancel in Apple’s sheet returns to the ready state with no message.', () => aSheet('failed'));
+F('s-pending', 's', 'Ask to Buy pending', 'Pending purchases do not grant Plus until approved.', () => pendingSheet());
+F('s-offline', 's', 'Offline', 'Subscribe is disabled with the reason above it; Not now still works.', () => aSheet('offline'));
+F('s-recording-plus', 's', 'Recording with Plus', 'The only change to recording: the limit in the existing detail line.', () => phone(home(), { rec: recorder({ title: 'Stop recording', detail: '12:04 / 30:00', sup: 'Listening… Tap when you’re done' }) }));
+F('s-plus-cap', 's', 'Plus user reaches 30:00', 'Saved, with no offer.', () => phone(home(trayRow()), { rec: recorder({ sup: 'Stopped at 30:00, the longest a recording can run, and saved.' }) }));
+F('s-ending', 's', 'Cancelled, still active', 'Plus stays until the period ends; the row says when it returns to 5 minutes.', () => settings(planA.ending));
+F('s-billing', 's', 'Billing retry', 'Apple is retrying a failed renewal. Plus stays on through Apple’s grace period.', () => settings(planA.billing));
+F('s-restore-none', 's', 'Nothing to restore', 'Restore result when the Apple Account has no Plus subscription.', () => settings(planA.restoreNone));
+F('s-signed-out', 's', 'Signed out', 'Plus is tied to the Throughline account, so subscribing needs sign-in.', () => settings(planA.signedOut));
+F('s-unknown', 's', 'Status unknown', 'RevenueCat or the server can’t be reached; the last known status is shown and recording limits follow the server.', () => settings(planA.unknown));
+F('s-delete', 's', 'Delete account', 'The existing confirmation adds that deleting doesn’t cancel the Apple subscription, with a route to manage it.', () => settings(planA.plus, { dialog: deleteDialog() }));
+
+const CANDS = {
+  a: { name: 'A — Plain terms', pitch: '<strong>Say it once, plainly, in native iOS.</strong> A compact sheet that states the one difference (5 → 30 minutes), the price and the terms, then gets out of the way. The cap line reuses the recorder’s existing supporting-text slot. Lowest risk and closest to “be native where trust matters”; least memorable.' },
+  b: { name: 'B — Show the length', pitch: '<strong>Show the difference instead of describing it.</strong> Two lengths on one scale with concrete moments (“a thought at a red light”, “the whole drive to work”), and an explicit line that nothing else is gated. The cap becomes provenance on the note itself, which is also honest about truncation. Most persuasive and most traceable; adds a new chart pattern that must not read as the brand underline.' },
+  c: { name: 'C — A note from the maker', pitch: '<strong>Ask honestly, as a person, and learn why.</strong> A short letter that says who makes Throughline and what the money does, plus one optional tap on why after “Not now”. Best for the slice’s second goal, learning whether and why people pay; puts Mike’s name in the product and adds a content-free reason event.' },
+  s: { name: 'Shared states', pitch: 'Every candidate needs these states. They are drawn in A’s layout; B and C use the same behavior and copy in their own sheet.' },
+};
+
+/* ---------- render ---------- */
+const root = document.getElementById('root');
+const theme = P.get('theme'); if (theme) document.documentElement.dataset.theme = theme;
+if (P.get('ax') === '1') document.body.classList.add('ax');
+if (P.get('w')) document.documentElement.style.setProperty('--w', P.get('w') + 'px');
+if (P.get('h')) document.documentElement.style.setProperty('--h', P.get('h') + 'px');
+const only = P.get('only');
+if (only && FRAMES[only]) {
+  document.body.classList.add('bare');
+  root.innerHTML = FRAMES[only].html();
+} else {
+  document.body.classList.add('gallery');
+  const t = document.getElementById('themeToggle'); t.hidden = false;
+  t.onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? '' : 'dark'; t.textContent = d.dataset.theme === 'dark' ? 'Light' : 'Dark'; };
+  let html = `<header class="masthead"><span class="eyebrow">TL-PREM-001 · design candidates · not selected</span><h1>Throughline Plus offer surfaces</h1>
+    <p>Three ways to offer 30-minute recordings for ${PRICE} a month: a one-time sheet after a processed note, a plan section in Settings, and a quiet line when a free recording stops at 5:00. Synthetic content. Prices are placeholders for StoreKit’s localized price.</p></header>
+    <section class="doc"><h2>Current flow</h2><div class="current">
+      <figure><img src="current/home-light-sim.png" alt="Current Home"><figcaption>Home, populated preview fixture. Before AI consent the recorder reads “Agree and record”.</figcaption></figure>
+      <figure><img src="current/recording-light-sim.png" alt="Current recording state"><figcaption>Recording: “0:18 / 5:00”. At 5:00 it stops and saves with no message.</figcaption></figure>
+      <figure><img src="current/settings-light-sim.png" alt="Current Settings"><figcaption>Settings: account, voice notes, agent, feedback, legal. No plan section.</figcaption></figure>
+    </div></section>`;
+  for (const [c, meta] of Object.entries(CANDS)) {
+    html += `<section class="cand"><div class="cand-head"><h2>${meta.name}</h2><p>${meta.pitch}</p></div><div class="frames">`;
+    for (const [id, f] of Object.entries(FRAMES)) if (f.c === c) html += `<div class="frame">${f.html()}<div class="anno"><h3>${esc(f.t)}<code>${id}</code></h3><p>${esc(f.d)}</p></div></div>`;
+    html += '</div></section>';
+  }
+  root.innerHTML = html;
+}
+/* A sheet body taller than its detent scrolls under pinned actions; a hairline marks the edge. */
+document.querySelectorAll('.sh').forEach(el => { if (el.scrollHeight > el.clientHeight + 1) el.nextElementSibling?.classList.add('edge'); });
+if (only && P.get('check') === '1') {
+  const phoneBottom = document.querySelector('.phone').getBoundingClientRect().bottom;
+  const notes = [...document.querySelectorAll('.sh')].filter(el => el.scrollHeight > el.clientHeight + 1).map(el => 'body scrolls +' + (el.scrollHeight - el.clientHeight));
+  const clipped = [...document.querySelectorAll('.form, .scroll')].filter(el => el.scrollHeight > el.clientHeight + 1).map(el => el.className + ' clipped');
+  const footCut = [...document.querySelectorAll('.sh-foot')].some(el => el.getBoundingClientRect().bottom > phoneBottom + 1) ? ['actions cut off'] : [];
+  document.title = 'CHECK ' + ([...clipped, ...footCut, ...notes].join(', ') || 'ok');
+}
+</script>
+</body>
+</html>
