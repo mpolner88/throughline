@@ -1,6 +1,6 @@
 # Throughline Plus offer surfaces — design candidates (TL-PREM-001)
 
-**Verified:** 2026-10-25. **Author:** Claude Code (design only). **Tandem stage:** `candidates_ready`, then `awaiting_mike_selection`. **Backlog:** TL-PREM-001 (`collecting_evidence`, slice phase `baseline`). The Phase 0 decisions in the [brief](../slices/premium-subscription.md#phase-0--mike-only) (price, recording limit, processor and priority) are not yet recorded. These candidates are the brief's Phase 1b design work. Selecting one does not approve those decisions or build entry. No production app, backend, prompt, schema, pricing or release file was changed.
+**Verified:** 2026-10-25. **Author:** Claude Code (design only). **Tandem stage:** `candidates_ready`, then `awaiting_mike_selection`. **Backlog:** TL-PREM-001 (`collecting_evidence`, slice phase `baseline`). The Phase 0 decisions in the [brief](../slices/premium-subscription.md#phase-0--mike-only) were recorded on 2026-10-25: price, recording limit and processor approved; starting before AI cost measurement (TL-COST-001) declined. These candidates are the brief's Phase 1b design work, parked until Plus is prioritized. Selecting one does not approve build entry. No production app, backend, prompt, schema, pricing or release file was changed.
 
 - Checkout: `throughline-local`, branch `claude/paid-tier-scope`, HEAD `5afdb3f79787a99da098eea12e01dc77662194a0`. There are no `ios/`, `supabase/` or `core/` changes since `eabb79c`.
 - Candidates: [mockup/plus-offer/candidates.html](../../mockup/plus-offer/candidates.html), SHA-256 `c756c3ada56b27cf48206dd78a70c2a119354eb0523d5e5d731bec112803685a`. Use `?only=<frame>` for one frame, plus `&theme=dark`, `&ax=1` for larger text, `&w=375&h=667`, and `&check=1` to report clipped containers in the page title.
@@ -49,7 +49,7 @@ Today a free recording stops at 5:00 and saves with no message. Someone talking 
 - RevenueCat Paywalls.
 - Changes to onboarding, the recorder's shape, processing, or the free limit.
 
-**Authority.** Mike selects a candidate and the final product name. Codex implements. Price, limit, processor and data-use changes need Mike's explicit Phase 0 approval.
+**Authority.** Mike selects a candidate and the final product name. Codex implements. Mike approved the price, limit, processor and data-use change on 2026-10-25; build entry remains his decision.
 
 **Rollback.** The server switch `THROUGHLINE_PLUS_ENABLED` hides every surface, and the 5:00 cap and the Settings form return to today's behavior.
 
@@ -132,4 +132,4 @@ This is a recommendation, not a selection.
 
 ## Next
 
-Mike selects. After selection, Claude records it here and writes the handoff from [the template](../templates/UI_DESIGN_HANDOFF.md) with frozen assets. Codex then reviews it for feasibility (F1–F8). The Phase 0 decision-log entries need Mike's explicit approval separately.
+Mike selects. After selection, Claude records it here and writes the handoff from [the template](../templates/UI_DESIGN_HANDOFF.md) with frozen assets. Codex then reviews it for feasibility (F1–F8). Build entry is still Mike's separate decision, after TL-COST-001.

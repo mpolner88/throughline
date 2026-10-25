@@ -34,7 +34,7 @@ Each decision should explain the call that was made, the alternatives considered
 
 ---
 
-## 2026-04-30 — Pricing tiers and recording limits
+## 2026-04-30 — Pricing tiers and recording limits [Paid price SUPERSEDED by 2026-10-25 entry below]
 
 **Decision:** Three tiers. Demo (no account): 30s per recording, 3 per device per 24 hours. Free (with account): 10 min/day total split as 5 morning + 5 evening, 5 min cap per recording, Apple Speech transcription. Paid: $9.99/mo, up to 30 min per recording, no daily cap, Groq Whisper Turbo transcription.
 
@@ -482,7 +482,7 @@ Each decision should explain the call that was made, the alternatives considered
 
 ---
 
-## 2026-08-17 — Premium limits and evaluation credits remain backlog-only
+## 2026-08-17 — Premium limits and evaluation credits remain backlog-only [15-minute premium figure SUPERSEDED by 2026-10-25 entry below; backlog-only sequencing still in effect]
 
 **Decision:** Premium recordings up to 15 minutes and evaluation credits remain backlog items. They are not a current program milestone, implementation commitment, or credit-ledger build.
 
@@ -807,3 +807,19 @@ The previously approved public release then proceeded: 1.0.5 (2026100502), with 
 **Automation:** Mike said the heartbeat is unnecessary. The release monitor is paused; do not resume it. The separate daily-health automation remains unchanged.
 
 **Evidence:** [Interaction repair](docs/evidence/2026-10-06-interaction-repair.md). Focused tests and an isolated Debug build pass. Claude source review is received, its code findings addressed, and final runtime checks and exact-source recheck are pending; the Mac locked during simulator verification. No new delivery or complete touch-matrix result is claimed.
+
+
+## 2026-10-25 — Throughline Plus terms approved; build waits for AI cost measurement
+
+**Decision owner:** Mike. These are his answers to the four Phase 0 questions in the [Plus brief](docs/slices/premium-subscription.md#phase-0--mike-only). A parallel session relayed them first, and Mike then confirmed them directly in the scoping session.
+
+1. **Price:** approved. Plus is one auto-renewing monthly subscription at $4.99, with no free trial. The free tier and its 5-minute cap are how people use Throughline before they pay. This supersedes the $9.99/month Paid price in the 2026-04-30 "Pricing tiers and recording limits" entry.
+2. **Recording limit:** approved. Plus recordings may run up to 30 minutes, and the free limit stays at 5 minutes. This replaces the 15-minute premium figure in the 2026-08-17 backlog-only entry.
+3. **Processor:** approved. RevenueCat is the subscription processor, and the privacy policy will name it. It receives only a random billing ID and Apple purchase and subscription data, never audio, transcripts or notes. The policy text changes when Plus is built.
+4. **Priority:** declined. Plus does not start before the cost baseline, because Mike wants AI cost measurement (TL-COST-001) first. The 2026-08-17 sequencing stays in effect: premium work remains in the backlog until cost per successful recording is measured and Mike prioritizes Plus.
+
+**Not authorized:** This entry starts nothing. It authorizes no code, no RevenueCat account or project, no App Store Connect subscription or agreement step, no privacy-policy edit, no submission and no cost-measurement work. Items 1–3 fix the terms Plus will use once Mike approves build entry. The offer-surface candidates (A, B and C) still await his selection, and the product name is still open. Data portability stays out of Plus v1 and is tracked as TL-PORT-001.
+
+**Evidence:** [Plus brief](docs/slices/premium-subscription.md); [offer-surface candidates](docs/evidence/2026-10-25-plus-offer-candidates.md). TL-PREM-001 stays `collecting_evidence`.
+
+**Revisit when:** TL-COST-001 reports AI cost per successful recording and Mike decides whether Plus enters build, or he changes the approved price or limit.

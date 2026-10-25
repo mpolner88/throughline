@@ -1,9 +1,9 @@
 # Throughline Plus — TL-PREM-001
 
 **Scoped:** 2026-10-15 by Claude with Mike (conversation 2026-10-12 to 2026-10-15). Base: `codex/running-list` at `eabb79c`. Updated 2026-10-25 with measured file sizes and official RevenueCat and Groq documentation.
-**Backlog state:** `collecting_evidence` (unchanged until Mike records the Phase 0 decisions below)
-**Slice phase:** `baseline` — baseline established and scope chosen by Mike in conversation. Build selection and the approval-bound decisions are not yet recorded in [decision-log.md](../../decision-log.md). Recording them moves the backlog state and phase forward together.
-**Next gate:** Mike reviews this brief and records the four Phase 0 decisions. Codex reviews feasibility under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement).
+**Backlog state:** `collecting_evidence`. Plus is sequenced after TL-COST-001.
+**Slice phase:** `baseline`. The Phase 0 decisions were recorded in [decision-log.md](../../decision-log.md) on 2026-10-25: price, recording limit and processor approved; starting before the cost baseline declined. Build entry waits for AI cost measurement and Mike's prioritization.
+**Next gate:** TL-COST-001 reports AI cost per successful recording, then Mike decides whether Plus enters build. Design selection (candidates A, B and C) and the product name stay open until then. Codex reviews feasibility under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement) once Plus is prioritized.
 **Authority:** Pricing, recording-limit, provider, data-use policy and App Store submission changes each require Mike's explicit approval ([WORKFLOW.md](../WORKFLOW.md)). This brief approves none of them. It does not authorize code, App Store Connect changes, RevenueCat setup, policy edits or a release.
 
 ## Problem
@@ -23,13 +23,13 @@ Chosen by Mike in conversation, 2026-10-12 to 2026-10-15.
 | --- | --- | --- |
 | Goal | Payments plumbing verified first, then a minimal real offer | Full revenue launch; cost recovery only |
 | Paid benefit | **30-minute** cap per recording | 15 min; 60 min; unlimited with hidden safety cap |
-| Data portability | **Deferred** out of v1 (new backlog item) | Obsidian/Markdown sync; one-tap export; original audio |
+| Data portability | **Deferred** out of v1 (TL-PORT-001) | Obsidian/Markdown sync; one-tap export; original audio |
 | Price | **$4.99/month**, one auto-renewing product, no trial | $9.99/month; monthly + annual; one-time unlock |
 | First offer | One-time sheet **after the first note finishes processing** | At the five-minute cap; staged; post-purchase welcome |
 | After dismissal | **Settings row + one quiet line** when a free recording stops at 5:00 | Settings only; repeating sheet |
 | Entitlement provider | **RevenueCat** | Own StoreKit 2 verification + App Store Server Notifications; client-only check |
 
-This scope supersedes the 2026-04-30 Paid tier ($9.99/month, 30 minutes, no daily cap, different transcription) and reopens the 2026-08-17 decision that premium limits stay backlog-only until cost baselines are decision-grade. Both must be recorded in the decision log (Phase 0).
+Recorded 2026-10-25: the $4.99 price supersedes the 2026-04-30 Paid tier price ($9.99/month), and the 30-minute limit replaces the 15-minute premium figure from 2026-08-17. Mike declined to reopen the 2026-08-17 sequencing, so premium work stays backlog-only until cost baselines are decision-grade.
 
 ## Baseline evidence
 
@@ -137,6 +137,8 @@ Agents cannot accept agreements or enter banking or tax details.
   3. RevenueCat is approved as a processor, with the data-use and privacy-policy change described above.
   4. TL-PREM-001 starts ahead of the TL-COST-001 baseline, superseding the 2026-04-30 Paid tier and reopening the 2026-08-17 decision.
 
+**Outcome (2026-10-25, [decision log](../../decision-log.md)):** 1–3 approved, with no trial because the free 5-minute tier is the way to try Throughline before paying. Decision 4 was declined: Mike wants AI cost measurement (TL-COST-001) first. The App Store Connect agreement, Small Business Program and RevenueCat steps have not started and wait for build entry.
+
 ### Phase 1 — Payments working, hidden
 
 - **Backend:** `billing_accounts`, API routes, `billing-webhook`, capture-limit enforcement, account-deletion cleanup, server switch with allowlist.
@@ -177,7 +179,7 @@ App Store submission with the subscription attached (Apple requires a first subs
 
 ## Non-goals
 
-Data portability or export (tracked as a new backlog item), annual plans, free trials, introductory or promotional offers, daily caps, Family Sharing, Android or web purchase, changes to the onboarding demo limit, putting any existing feature behind payment, and meeting or team recording.
+Data portability or export (tracked as TL-PORT-001), annual plans, free trials, introductory or promotional offers, daily caps, Family Sharing, Android or web purchase, changes to the onboarding demo limit, putting any existing feature behind payment, and meeting or team recording.
 
 ## Open technical questions for Phase 1
 
@@ -197,3 +199,4 @@ Each must be answered with dated evidence before Phase 2.
 To be filled as work proceeds: Phase 0 decision-log entries, Codex feasibility receipt, selected design and handoff, Phase 1 sandbox end-to-end evidence, on-device file-size measurement, device matrix, release manifest and App Store submission record.
 
 - 2026-10-25: [Offer surface design candidates](../evidence/2026-10-25-plus-offer-candidates.md) (A, B, C), awaiting Mike's selection.
+- 2026-10-25: Phase 0 decisions recorded in [decision-log.md](../../decision-log.md): price, limit and processor approved; early start declined, so Plus is sequenced after TL-COST-001.

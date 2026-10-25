@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated_at": "2026-10-12",
+  "updated_at": "2026-10-25",
   "ordering": "Mike's September 30 order: deliver Candidate A running list (TL-TASK-001) to internal TestFlight first; categories and search (TL-KNOW-001) next; Private Evaluation (TL-EVAL-001) after that. Delivered capture recovery is preserved. Other portfolio positions remain historical and array position never authorizes work or waives a design, provider, policy, pricing, limit, onboarding or public-release gate.",
   "portfolio_rules": {
     "priority_owner": "Mike",
@@ -517,10 +517,13 @@
       "state": "collecting_evidence",
       "problem": "The free app currently caps a recording at five minutes, while higher-intent users may value longer capture sessions enough to support a paid plan.",
       "evidence": {
-        "as_of": "2026-08-09",
-        "source": "founder product direction",
+        "as_of": "2026-10-25",
+        "source": "Mike's Phase 0 decisions (decision-log.md, 2026-10-25) and the slice brief",
+        "slice": "docs/slices/premium-subscription.md",
         "current_free_limit_seconds": 300,
-        "priority": "backlog-only; premium limits up to 15 minutes are not an implementation commitment until usage and cost baselines are decision-grade"
+        "approved_terms": "$4.99/month auto-renewing subscription, no trial; Plus recordings up to 30 minutes; free stays at 5 minutes; RevenueCat as subscription processor",
+        "priority": "sequenced after TL-COST-001; Mike declined to start Plus before AI cost measurement, so the approved terms are not an implementation commitment",
+        "design": "offer-surface candidates A, B and C await Mike's selection (docs/evidence/2026-10-25-plus-offer-candidates.md); product name open"
       },
       "funnel_step": "recording limit reached -> premium offer -> longer recording processed",
       "hypothesis": "A premium plan with longer recordings will monetize high-intent capture without weakening the useful free experience.",
@@ -532,7 +535,30 @@
         "TL-COST-001",
         "TL-DATA-001"
       ],
-      "next_action": "Keep premium duration, pricing, and entitlement design in evidence/backlog only; revisit only after cost, activation, and retention baselines are decision-grade."
+      "next_action": "Wait for TL-COST-001 to report AI cost per successful recording; then Mike decides whether Plus enters build. No code, RevenueCat setup, App Store product or policy edit until then."
+    },
+    {
+      "id": "TL-PORT-001",
+      "title": "Let people take their notes with them",
+      "type": "trust",
+      "state": "collecting_evidence",
+      "problem": "Portability today is read-only agent access over MCP; there is no in-app export of notes, to-dos or audio.",
+      "evidence": {
+        "as_of": "2026-10-25",
+        "source": "founder product direction during Plus scoping; Mike deferred portability out of the first Plus release",
+        "status": "backlog-only; not part of TL-PREM-001 and not an implementation commitment",
+        "open_questions": "which format (Markdown, Obsidian sync, one-tap export, original audio), whether it is free or Plus, and what it costs to store and serve audio"
+      },
+      "funnel_step": "note processed -> exported or synced outside Throughline",
+      "hypothesis": "Letting people take structured notes into the tools they already use would increase trust and the value of paying for Plus.",
+      "primary_metric": "to be defined in product/metrics.md if Mike prioritizes it",
+      "guardrail": "no note text, transcripts or audio in analytics; exports go only where the owner sends them",
+      "approval_required": true,
+      "authority": "Mike decides priority and whether portability is free or paid; any data-use policy change needs his approval.",
+      "dependencies": [
+        "TL-PREM-001"
+      ],
+      "next_action": "Keep in backlog until Mike prioritizes it; then scope formats and the free/Plus split."
     },
     {
       "id": "TL-CRED-001",
