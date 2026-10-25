@@ -1,6 +1,6 @@
 # Throughline Plus — TL-PREM-001
 
-**Scoped:** 2026-10-15 by Claude with Mike (conversation 2026-10-12 to 2026-10-15). Base: `codex/running-list` at `eabb79c`.
+**Scoped:** 2026-10-15 by Claude with Mike (conversation 2026-10-12 to 2026-10-15). Base: `codex/running-list` at `eabb79c`. Updated 2026-10-25 with measured file sizes and official RevenueCat and Groq documentation.
 **Backlog state:** `collecting_evidence` (unchanged until Mike records the Phase 0 decisions below)
 **Slice phase:** `baseline` — baseline established and scope chosen by Mike in conversation. Build selection and the approval-bound decisions are not yet recorded in [decision-log.md](../../decision-log.md). Recording them moves the backlog state and phase forward together.
 **Next gate:** Mike reviews this brief and records the four Phase 0 decisions. Codex reviews feasibility under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement).
@@ -38,11 +38,13 @@ Verified in source on 2026-10-15 unless noted.
 - **The five-minute cap is client-only.** `maxRecordingSeconds = 300` in [HomeView.swift](../../ios/Throughline/Views/HomeView.swift); see the "Authenticated recording limit" row in [CURRENT_STATE.md](../CURRENT_STATE.md).
 - **The server checks length only for demos,** using the client-reported `x-throughline-duration-seconds` header ([api/index.ts](../../supabase/functions/api/index.ts), `DEMO_MAX_DURATION_SECONDS`). Authenticated uploads have no duration check.
 - **No purchase code exists.** StoreKit is imported only for `AppTransaction` attribution in [ProductEventAttribution.swift](../../ios/Throughline/Services/ProductEventAttribution.swift).
-- **Recording is foreground-only.** No `UIBackgroundModes` entry exists in the iOS project, and the app does not disable the idle timer. [AudioRecorder.swift](../../ios/Throughline/Services/AudioRecorder.swift) records AAC, 44.1 kHz, mono, "high" quality, with no explicit bitrate.
+- **Recording is foreground-only.** No `UIBackgroundModes` entry exists in the iOS project, and the app does not disable the idle timer. [AudioRecorder.swift](../../ios/Throughline/Services/AudioRecorder.swift) records AAC, 44.1 kHz, mono, "high" quality, with no explicit bitrate. A Mac estimate of those settings (AVAudioFile with the same encoder settings, 125 seconds of synthetic speech, 2026-10-25) measured about 63 kbps: about 2.4 MB per five minutes and 14.2 MB per 30 minutes. Confirm on a physical device.
 - **Portability today** is read-only agent access over MCP ([agent-connect.md](../agent-connect.md)). There is no in-app export.
 - **AI cost per recording is not measured** (`TL-COST-001`, `collecting_evidence`).
-- **User base:** about seven accounts ever, from a 2026-10-10 analytics probe. That probe is not a tracked evidence file; re-verify before treating it as a baseline.
-- **External, read 2026-10-15, re-verify in Phase 1:** Groq's [speech-to-text guide](https://console.groq.com/docs/speech-to-text) lists a 25 MB upload limit; its [Whisper Large v3 page](https://console.groq.com/docs/model/whisper-large-v3) lists 100 MB for paid tiers via URL. Third-party summaries of RevenueCat pricing say it is free up to $2.5K monthly tracked revenue, then 1%; one says server-side webhooks need a paid plan. RevenueCat's [webhook docs](https://www.revenuecat.com/docs/integrations/webhooks) recommend an authorization header and re-reading the customer record after each event.
+- **User base:** an untracked 2026-10-17 analytics probe (aggregate counts only) found about 17 first-open sessions since 2026-08-15, about 14 of them human-looking, roughly matching 16 App Store downloads. Only Mike was active after 2026-10-06, and the acquisition channel was always `unknown`. Re-verify before treating it as a baseline.
+- **External, read from official pages on 2026-10-25; re-verify in Phase 1:**
+  - **Groq:** the [speech-to-text guide](https://console.groq.com/docs/speech-to-text) caps direct file uploads at 25 MB on every tier; larger files, up to 100 MB on the dev tier, must use the `url` parameter. Throughline sends a direct file upload ([api/index.ts](../../supabase/functions/api/index.ts)), so 25 MB binds, and a 30-minute recording at today's settings fits. The [model page](https://console.groq.com/docs/model/whisper-large-v3-turbo) lists a flat 100 MB without that split; the guide is the stricter source. Transcription bills $0.04 per audio hour with a 10-second minimum per request, so a 30-minute recording costs about $0.02 to transcribe. Extraction cost remains unmeasured (`TL-COST-001`).
+  - **RevenueCat:** the [pricing page](https://www.revenuecat.com/pricing) is free up to $2,500 monthly tracked revenue; above that, 1% applies to all tracked revenue. The free tier is the Pro plan, and the [webhook docs](https://www.revenuecat.com/docs/integrations/webhooks) say webhooks are available on Pro, so they should work at no cost. That is an inference; confirm when the account exists. The docs recommend an authorization header and re-reading the customer after each event. The REST API reads a customer with v1 `GET /subscribers/{app_user_id}` or v2 `GET /projects/{project_id}/customers/{customer_id}` (480 requests per minute); neither states a plan restriction. [Customer deletion](https://www.revenuecat.com/docs/api-v1/customers) is v1 `DELETE /subscribers/{app_user_id}`, queued asynchronously.
 
 ## User experience
 
@@ -79,7 +81,7 @@ Each Throughline account gets a random `billing_customer_id` (UUID) generated by
 - **`billing_accounts` table**, one row per account: `account_id`, `billing_customer_id`, `plus_active`, `plus_expires_at`, `environment` (sandbox or production), `refreshed_at` and `plus_offer_shown_at`. RLS: owners can read their own row; only service code writes.
 - **API routes:** one returns the caller's billing ID (creating the row if missing), Plus status and offer-shown state; one records that the one-time offer was shown.
 - **`billing-webhook` Edge Function:** verifies RevenueCat's authorization header (and HMAC signature if enabled), returns 200 promptly, then re-reads the customer from RevenueCat's REST API and upserts `billing_accounts`. Unknown or anonymous IDs are logged without identifiers and ignored.
-- **On-demand refresh:** if an upload claims more than 300 seconds and the account's row does not grant Plus, the server reads RevenueCat's REST API once before rejecting. This covers a purchase whose webhook has not arrived yet. It also keeps enforcement correct if webhooks fail or turn out to need a paid RevenueCat plan.
+- **On-demand refresh:** if an upload claims more than 300 seconds and the account's row does not grant Plus, the server reads RevenueCat's REST API once before rejecting. This covers a purchase whose webhook has not arrived yet. It also keeps enforcement correct if webhooks are delayed or fail.
 - **Server switch:** `THROUGHLINE_PLUS_ENABLED`, off by default, with an internal-account allowlist for Phase 1. When off, offer surfaces are hidden and the server limit stays 300 seconds, except that active subscribers keep 1,800 (see Rollback).
 
 ### Limit enforcement in the capture path
@@ -93,7 +95,7 @@ accept when reported_duration <= limit + 10 seconds
 ```
 
 - The 24-hour window covers a subscription lapsing mid-recording and capture-queue retries after expiry.
-- The size ceiling applies only to uploads claiming more than 300 seconds. It is derived from the fixed bitrate with headroom, because reported duration can be forged. Uploads of 300 seconds or less keep today's acceptance, so older app builds are unaffected.
+- The size ceiling applies only to uploads claiming more than 300 seconds. It is derived from the recording bitrate measured on device, with headroom, because reported duration can be forged. Uploads of 300 seconds or less keep today's acceptance, so older app builds are unaffected.
 - **Over the limit:** a non-retryable 4xx with code `recording_limit_exceeded`. The capture queue keeps the local copy and shows a clear message; it does not retry-loop.
 - **RevenueCat unreachable during refresh:** a retryable 503 with code `entitlement_unavailable`. A paying user's recording is never rejected permanently because of a provider outage.
 
@@ -106,15 +108,15 @@ accept when reported_duration <= limit + 10 seconds
 - **Long-recording reliability:**
   - Enable the `audio` background mode so recording continues when the screen locks.
   - Handle interruptions (calls, Siri) and route changes (CarPlay, Bluetooth) by finalizing safely into the existing durable capture.
-  - Set an explicit encoding of 16 kHz mono at about 32 kbps (about 7 MB per 30 minutes; Whisper processes 16 kHz audio). This also changes free recordings, so it needs an evaluation check for transcription accuracy before release.
+  - Keep today's encoding. At about 63 kbps a 30-minute recording is about 14 MB, under Groq's 25 MB direct-upload limit, so free recordings do not change. Codex may pin the measured bitrate explicitly so the server's size ceiling is deterministic. A lower-quality encoding (16 kHz at 32 kbps measured about 7.3 MB per 30 minutes) is held in reserve; any change that lowers quality needs an evaluation check before release.
 
 ### Processing
 
-A 30-minute recording produces a transcript about six times longer than today's maximum. Verify extraction quality, extraction latency, and Edge Function wall-clock limits end to end with a real 30-minute recording.
+A 30-minute recording produces a transcript about six times longer than today's maximum, and an upload of about 14 MB. Verify extraction quality, extraction latency, and Edge Function wall-clock limits end to end with a real 30-minute recording.
 
 ### Account deletion
 
-Delete the `billing_accounts` row and request deletion of the RevenueCat customer, matching the existing processor-deletion request for PostHog. Deleting an account does not cancel an Apple subscription; the deletion flow must say so and link to subscription management.
+Delete the `billing_accounts` row and request deletion of the RevenueCat customer (asynchronous; a retry treats 200 or 404 as success), matching the existing processor-deletion request for PostHog. Deleting an account does not cancel an Apple subscription; the deletion flow must say so and link to subscription management.
 
 ### Privacy policy
 
@@ -138,7 +140,7 @@ Agents cannot accept agreements or enter banking or tax details.
 ### Phase 1 — Payments working, hidden
 
 - **Backend:** `billing_accounts`, API routes, `billing-webhook`, capture-limit enforcement, account-deletion cleanup, server switch with allowlist.
-- **iOS:** RevenueCat integration, Settings row, background recording, interruption handling, fixed bitrate, dynamic cap.
+- **iOS:** RevenueCat integration, Settings row, background recording, interruption handling, on-device bitrate check, dynamic cap.
 - **Metrics:** add the new event and metric definitions to [product/metrics.md](../../product/metrics.md) and the product-event contract.
 - **Exit:** on a physical iPhone, in internal TestFlight with sandbox purchases: purchase → 30-minute recording with the screen locked → note processed → cancel or expire → five-minute limit restored. No capture is lost at any step. Restore works after reinstall.
 
@@ -163,14 +165,13 @@ App Store submission with the subscription attached (Apple requires a first subs
 - **Xcode StoreKit configuration tests:** purchase, cancel, expire, restore and refund.
 - **Sandbox end to end** in internal TestFlight on a physical device (Phase 1 exit above).
 - **Device matrix:** screen lock, incoming call, Siri, CarPlay or Bluetooth route change, low storage, airplane mode during upload. Label simulator and physical-device evidence separately.
-- **Evaluation:** transcription accuracy at the new bitrate against the existing corpus, with no regression beyond the eval's noise band.
+- **Evaluation:** only if the encoding changes, transcription accuracy against the existing corpus, with no regression beyond the eval's noise band.
 - **Processing:** at least one real 30-minute recording through transcription and extraction in production-equivalent settings.
 - **Claude review** of the implemented surfaces against the selected design before internal release.
 
 ## Rollback
 
 - **Stop selling:** turn off `THROUGHLINE_PLUS_ENABLED` to hide offer surfaces, and remove the product from sale in App Store Connect. Active subscribers keep the 30-minute limit until their period ends; rollback must never take away a paid benefit mid-period.
-- **Bitrate:** revert in an app build if evaluation or users show a regression.
 - **Background audio:** revert in an app build. Plus stays gated off until long recordings are reliable again.
 - **RevenueCat removal** requires an app release and a migration of entitlement records. Not expected in v1.
 
@@ -182,10 +183,10 @@ Data portability or export (tracked as a new backlog item), annual plans, free t
 
 Each must be answered with dated evidence before Phase 2.
 
-1. RevenueCat: confirm current pricing and whether webhooks are available on the free plan, from RevenueCat's official pricing page.
-2. Groq: confirm the upload limit for `whisper-large-v3-turbo` on Throughline's account tier.
+1. RevenueCat pricing and webhooks. **Answered 2026-10-25** (Baseline evidence): free to $2,500 monthly tracked revenue; webhooks expected on the free Pro plan. Confirm webhooks when the account exists.
+2. Groq upload limit. **Answered 2026-10-25:** 25 MB for direct uploads on every tier.
 3. Baseline: what happens today, on a physical device, to a recording when the screen auto-locks.
-4. Baseline: the actual file size of a five-minute recording at current settings.
+4. Baseline five-minute file size. **Partly answered 2026-10-25:** about 2.4 MB from a Mac estimate; confirm on a physical device.
 5. Edge Function wall-clock and extraction quality for a 30-minute transcript.
 6. Capture-queue behavior on a non-retryable 4xx limit rejection.
 7. App Review: background-audio justification and subscription metadata (display name, description, review screenshot).
@@ -193,4 +194,4 @@ Each must be answered with dated evidence before Phase 2.
 
 ## Evidence and release manifest
 
-To be filled as work proceeds: Phase 0 decision-log entries, Codex feasibility receipt, selected design and handoff, Phase 1 sandbox end-to-end evidence, evaluation result, device matrix, release manifest and App Store submission record.
+To be filled as work proceeds: Phase 0 decision-log entries, Codex feasibility receipt, selected design and handoff, Phase 1 sandbox end-to-end evidence, on-device file-size measurement, device matrix, release manifest and App Store submission record.
