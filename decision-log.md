@@ -823,3 +823,17 @@ The previously approved public release then proceeded: 1.0.5 (2026100502), with 
 **Evidence:** [Plus brief](docs/slices/premium-subscription.md); [offer-surface candidates](docs/evidence/2026-10-25-plus-offer-candidates.md). TL-PREM-001 stays `collecting_evidence`.
 
 **Revisit when:** TL-COST-001 reports AI cost per successful recording and Mike decides whether Plus enters build, or he changes the approved price or limit.
+
+## 2026-10-25 — AI cost measurement (TL-COST-001) enters build as Option B
+
+**Decision owner:** Mike, answering the three questions in the [AI cost measurement brief](docs/slices/ai-cost-measurement.md).
+
+1. **Option B approved for build.** Throughline gets a content-free AI usage ledger: one row per processing run and one per Groq attempt, with no content and no user or recording link. It sits behind `THROUGHLINE_AI_USAGE_LEDGER_ENABLED`, which defaults to off. A versioned price table and an aggregate `product:cost` report come with it. A one-off synthetic duration curve at 1, 5, 15 and 30 minutes is also approved, with expected Groq spend under $1. Option A (Groq console spend) stays as the monthly reconciliation inside B. Option C (re-enabling lineage) is not chosen.
+2. **Decision-grade bar accepted.** Plus can be reconsidered when three things hold: the synthetic curve is complete; the ledger has run in production for at least 14 days with zero processing regressions; and ledger cost for a calendar period is within ±20% of Groq's console spend, or the difference is explained. Real public-use cost by recording length keeps being measured but does not block Plus.
+3. **TL-EVAL-001 is no longer a dependency of TL-COST-001.** Option B doesn't use lineage.
+
+**Not authorized:** no change to the provider, models, `reasoning_effort`, output caps, prompts, retries or timeouts. Lineage writes are not turned on. No privacy-policy edit: the ledger is designed to fit existing policy wording, and any finding that it needs new text comes back to Mike. No per-user cost, no PostHog cost events and no Plus build. Codex owns implementation under the [tandem rules](docs/AGENT_TANDEM.md), and Claude reviews it before the production switch is turned on.
+
+**Evidence:** [AI cost measurement brief](docs/slices/ai-cost-measurement.md). TL-COST-001 is now `approved_for_build`, and its slice phase is `selected`.
+
+**Revisit when:** the decision-grade bar is met and Mike decides whether Plus enters build, or the ledger shows a cost or reliability problem that needs a model, prompt or retry decision.

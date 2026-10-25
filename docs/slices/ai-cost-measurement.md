@@ -1,12 +1,12 @@
 # AI Cost Measurement — TL-COST-001
 
 **Scoped:** 2026-10-25 by Claude, after Mike sequenced Throughline Plus behind AI cost measurement ([decision log](../../decision-log.md), 2026-10-25). Base: `claude/paid-tier-scope` at `3d6b0bb` (source identical to `codex/running-list` at `eabb79c`).
-**Backlog state:** `collecting_evidence`
-**Slice phase:** `baseline`. The baseline is below, and the options are ready for Mike's build-entry decision.
-**Next gate:** Mike chooses an option (recommended: B) and approves build entry. Codex reviews feasibility (F1–F6) under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement) and implements.
+**Backlog state:** `approved_for_build`
+**Slice phase:** `selected`. Mike chose Option B and approved build entry on 2026-10-25 ([decision log](../../decision-log.md)).
+**Next gate:** Codex answers F1–F6 and writes a bounded plan from this brief at its committed revision (`planned`), then implements. Claude reviews the result under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement) before the switch is turned on in production.
 **Program:** [Core Quality and Learning](../programs/core-quality-learning.md)
 **Unblocks:** [Throughline Plus](premium-subscription.md) (TL-PREM-001), which waits for cost per successful recording.
-**Authority:** Agents may build measurement within an approved slice. Provider, model, data-use policy and pricing changes need Mike's explicit approval. This brief approves no build and changes no provider or model setting, prompt, retry rule or policy.
+**Authority:** Agents may build measurement within an approved slice. Provider, model, data-use policy and pricing changes need Mike's explicit approval. Mike's approval covers Option B as written, including the synthetic curve's Groq spend of under $1. It changes no provider or model setting, prompt, retry rule or policy.
 
 ## Problem
 
@@ -133,7 +133,7 @@ Internal and other use are reported separately, with an `unpriced` count. Eviden
 - **What stays out of the repository:** generated audio, transcripts and outputs. The repository tracks only the script and an aggregate evidence file.
 - **Spend:** expected Groq spend is under $1.
 
-### Decision-grade bar (proposed, for Mike)
+### Decision-grade bar (accepted by Mike, 2026-10-25)
 
 Plus can be reconsidered when all three of these hold:
 
@@ -186,12 +186,15 @@ Turn off `THROUGHLINE_AI_USAGE_LEDGER_ENABLED`. Processing never depends on the 
 - **F5:** Is a migration plus an api deploy behind a default-off switch routine reversible work under the [workflow](../WORKFLOW.md)? It should be.
 - **F6:** Does recording the `is_internal_user` lookup per run add a request on the processing path? If it does, reuse the value already resolved for that request.
 
-## Questions for Mike
+## Mike's decisions (2026-10-25)
 
-1. Build Option B?
-2. Accept the decision-grade bar above for unblocking Plus, or set a different one?
-3. Should we drop TL-EVAL-001 as a dependency of TL-COST-001? Option B doesn't need lineage.
+1. **Option B:** build it.
+2. **Decision-grade bar:** accepted as written above.
+3. **TL-EVAL-001:** dropped as a dependency. Option B doesn't need lineage.
+
+**Privacy-policy check for the implementer:** the ledger is designed to need no privacy-policy change. It holds no content and no user or recording link, which fits the policy's existing "recording-processing outcomes" wording. One caveat: while a recording still exists, `audio_seconds` plus `usage_date` could be joined back to it by someone with the service role. If review finds the ledger needs new policy text, or whole-second audio length is judged too linkable, stop and bring it back to Mike. A data-use policy change is his to approve.
 
 ## Evidence
 
+- 2026-10-25: Mike chose Option B, accepted the decision-grade bar and dropped the TL-EVAL-001 dependency ([decision log](../../decision-log.md)).
 - 2026-10-25: this baseline; Groq prices and usage fields read from the official pages linked above.

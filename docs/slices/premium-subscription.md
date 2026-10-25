@@ -3,7 +3,7 @@
 **Scoped:** 2026-10-15 by Claude with Mike (conversation 2026-10-12 to 2026-10-15). Base: `codex/running-list` at `eabb79c`. Updated 2026-10-25 with measured file sizes and official RevenueCat and Groq documentation.
 **Backlog state:** `collecting_evidence`. Plus is sequenced after TL-COST-001.
 **Slice phase:** `baseline`. The Phase 0 decisions were recorded in [decision-log.md](../../decision-log.md) on 2026-10-25: price, recording limit and processor approved; starting before the cost baseline declined. Build entry waits for AI cost measurement and Mike's prioritization.
-**Next gate:** TL-COST-001 ([scoped brief](ai-cost-measurement.md)) reports AI cost per successful recording, then Mike decides whether Plus enters build. Design selection (candidates A, B and C) and the product name stay open until then. Codex reviews feasibility under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement) once Plus is prioritized.
+**Next gate:** TL-COST-001 ([brief](ai-cost-measurement.md), in build) meets the bar Mike accepted on 2026-10-25: the synthetic duration curve is complete, the cost ledger has run in production for 14 days, and it agrees with Groq's bill within ±20%. Then Mike decides whether Plus enters build. Design selection (candidates A, B and C) and the product name stay open until then. Codex reviews feasibility under [the tandem rules](../AGENT_TANDEM.md#daily-working-agreement) once Plus is prioritized.
 **Authority:** Pricing, recording-limit, provider, data-use policy and App Store submission changes each require Mike's explicit approval ([WORKFLOW.md](../WORKFLOW.md)). This brief approves none of them. It does not authorize code, App Store Connect changes, RevenueCat setup, policy edits or a release.
 
 ## Problem

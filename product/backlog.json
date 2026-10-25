@@ -490,7 +490,7 @@
       "id": "TL-COST-001",
       "title": "Measure AI cost per successful recording",
       "type": "measurement",
-      "state": "collecting_evidence",
+      "state": "approved_for_build",
       "problem": "Throughline uses Groq for transcription and structured extraction, but it does not yet persist provider usage and estimated cost per processing stage.",
       "evidence": {
         "as_of": "2026-10-25",
@@ -500,7 +500,8 @@
         "extraction_model": "openai/gpt-oss-120b",
         "measurement_status": "live legacy path discards Groq usage and retry counts; lineage path records usage but is rolled back, stores private snapshots, and cascade-deletes; no product cost ledger",
         "estimate_not_measurement": "published prices suggest about $0.004-0.006 per 5-minute and $0.023-0.026 per 30-minute recording; extraction output tokens are the main unknown",
-        "recommended_option": "B: content-free usage ledger plus synthetic 1/5/15/30-minute cost curve, reconciled monthly against Groq console spend"
+        "recommended_option": "B: content-free usage ledger plus synthetic 1/5/15/30-minute cost curve, reconciled monthly against Groq console spend",
+        "decision": "2026-10-25: Mike approved Option B for build, accepted the decision-grade bar (synthetic curve, 14 days of ledger, ±20% reconciliation with Groq spend), and dropped the TL-EVAL-001 dependency"
       },
       "funnel_step": "recording_uploaded -> transcription -> extraction -> recording_processed",
       "hypothesis": "Recording stage-level usage and applying a versioned price table will make gross margin and premium limits measurable before monetization.",
@@ -509,10 +510,9 @@
       "approval_required": false,
       "authority": "Agents may build measurement within an approved slice; provider and pricing changes remain Mike-approved.",
       "dependencies": [
-        "TL-DATA-001",
-        "TL-EVAL-001"
+        "TL-DATA-001"
       ],
-      "next_action": "Mike chooses an option in docs/slices/ai-cost-measurement.md (recommended: B), accepts or changes the decision-grade bar for unblocking TL-PREM-001, and approves build entry; Codex then reviews feasibility F1-F6 and implements."
+      "next_action": "Codex answers feasibility questions F1-F6 in docs/slices/ai-cost-measurement.md and writes a bounded plan, then implements Option B behind THROUGHLINE_AI_USAGE_LEDGER_ENABLED (default off); Claude reviews before the production switch is turned on."
     },
     {
       "id": "TL-PREM-001",
